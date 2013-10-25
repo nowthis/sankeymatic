@@ -6,7 +6,9 @@
 <style>
 
 #chart {
-  height: 500px;
+  height: 600px;
+  width: 960px;
+  border: 1px solid #000000;
 }
 
 .node rect {
@@ -44,9 +46,14 @@ svg { font: 12px sans-serif; }
 function render_sankey() {
     "use strict";
 
-    var raw_json_nodes, raw_json_paths, cleaned_json, margin, width, height,
-        dollars_format, colorlist, svg, sankey, path, link, node;
+    var raw_json_nodes, raw_json_paths, cleaned_json, canvas_width, canvas_height,
+        dollars_format, colorlist, first_word, svg, sankey, path, link, node,
+        node_width = 15, node_padding = 10, 
+        total_width = 960, total_height = 600,
+        margin_top = 2, margin_bottom = 6,
+        margin_left = 2, margin_right = 2;
 
+    // # set chart dimensions to match?
     //console.log('inside function');
     raw_json_nodes = document.getElementById('json_nodes_in').value;
     raw_json_paths = document.getElementById('json_paths_in').value;
@@ -58,31 +65,28 @@ function render_sankey() {
     };
     // console.log(cleaned_json);
 
-    // define dimensions:
-    // 1 x 6 x 1 x 1 margin:
-    margin = {top: 1, right: 1, bottom: 6, left: 1};
-    //  960 x 500 space:
-    width = 960 - margin.left - margin.right;
-    height = 500 - margin.top - margin.bottom;
-    //console.log("width=",width);
+    // Set the dimensions of the space:
+    canvas_width = total_width - margin_left - margin_right;
+    canvas_height = total_height - margin_top - margin_bottom;
+    //console.log("width=",canvas_width);
 
     // set up: formatting function for numeric labels
     dollars_format = function (d) { return '$' + d3.format(",.0f")(d); };
 
     colorlist = d3.scale.category20(); // produces a list of 20 compatible colors to choose from
 
-    // establish svg space with the defined dimensions:
+    // append the svg canvas to the page with the defined dimensions:
     svg = d3.select("#chart").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", total_width)
+        .attr("height", total_height)
         .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
 
-// create a sankey object, node widths constant at 15 and padding 10
+    // create a sankey object & its properties.. node widths constant at 15 & padding 10
     sankey = d3.sankey()
-        .nodeWidth(15)
-        .nodePadding(10)
-        .size([width, height])
+        .nodeWidth(node_width)
+        .nodePadding(node_padding)
+        .size([canvas_width, canvas_height])
         .nodes(cleaned_json.nodes)
         .links(cleaned_json.links)
         .layout(32);
@@ -92,32 +96,36 @@ function render_sankey() {
 
     link = svg.append("g").selectAll(".link")
         .data(cleaned_json.links)
-        .enter().append("path")
+        .enter()
+        .append("path")
         .attr("class", "link")
         .attr("d", path) // embed coordinates
-        .style("stroke-width", function (d) { return Math.max(1, d.dy); })
-        .sort(function (a, b) { return b.dy - a.dy; });
+        .style("stroke-width", function (d) { return Math.max(1, d.dy); }) // apply stroke-width
+        .sort(function (a, b) { return b.dy - a.dy; }); // set the order of display?
 
-    link.append("title")    // Make tooltips for flows
+    link.append("title") // Make tooltips for FLOWS
         .text(function (d) { return d.source.name + " → " + d.target.name + "\n" + dollars_format(d.value); });
 
     // define drag function for use in node definitions
     function dragmove(d) {
-        // Calculate new position
-        d.y = Math.max(0, Math.min(height - d.dy, d3.event.y));
+        // Calculate new position:
+        d.x = Math.max(0, Math.min(canvas_width - d.dx, d3.event.x));
+        d.y = Math.max(0, Math.min(canvas_height - d.dy, d3.event.y));
         d3.select(this).attr(
             "transform",
             "translate(" + d.x + "," + d.y + ")"
         );
-        // re-render
+        // re-render:
         sankey.relayout();
-        // ??
+        // re-write new path metadata?
         link.attr("d", path);
     }
 
+    // Set up NODE info, behaviors:
     node = svg.append("g").selectAll(".node")
         .data(cleaned_json.nodes)
-        .enter().append("g")
+        .enter()
+        .append("g")
         .attr("class", "node")
         .attr("transform", function (d) { return "translate(" + d.x + "," + d.y + ")"; })
         .call(d3.behavior.drag()
@@ -126,34 +134,41 @@ function render_sankey() {
             .on("drag", dragmove)
             );
 
+    // Construct actual rectangles for NODEs:
     node.append("rect")
         .attr("height", function (d) { return d.dy; })
-        .attr("width", sankey.nodeWidth())
+        .attr("width", node_width)
         .style("fill", function (d) {
-            d.color = colorlist(d.name.replace(/ [\w\W]*/, ""));
+            // Use the first word of the label as the basis for finding an 
+            // already-used color or picking a new one (case sensitive):
+            first_word = (/^\W*(\w+)/.exec(d.name))[1];
+            d.color = colorlist(first_word);
             return d.color;
         })
         .style("stroke", function (d) { return d3.rgb(d.color).darker(2); })
-        .append("title")
+        .append("title")    // Add tooltips for NODES
         .text(function (d) { return d.name + "\n" + dollars_format(d.value); });
 
+    // Put in NODE labels
     node.append("text")
+        // x,y = offsets relative to the node rectangle
         .attr("x", -6)
         .attr("y", function (d) { return d.dy / 2; })
         .attr("dy", ".35em")
         .attr("text-anchor", "end")
         .attr("transform", null)
         .text(function (d) { return d.name; })
-        .filter(function (d) { return d.x < width / 2; })
-        .attr("x", 6 + sankey.nodeWidth())
+        // In the left half of the picture, place labels to the right of nodes:
+        .filter(function (d) { return d.x < canvas_width / 2; })
+        .attr("x", 6 + node_width)
         .attr("text-anchor", "start");
 }
 
 
 </script>
 <form onsubmit="document.getElementById('chart').innerHTML = ''; render_sankey(); return false;">
-<textarea id="json_nodes_in" placeholder="Nodes go here" rows="15" cols="40"></textarea>
-<textarea id="json_paths_in" placeholder="Paths go here" rows="15" cols="40"></textarea>
+<textarea id="json_nodes_in" placeholder="Nodes go here" rows="10" cols="30"></textarea>
+<textarea id="json_paths_in" placeholder="Paths go here" rows="10" cols="40"></textarea>
 <button name="json_submit" type="submit">
 Render</button>
 </form>
