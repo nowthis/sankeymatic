@@ -2,13 +2,34 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>My sankey testing ground</title>
+<title>Sankeymatic</title>
 <style>
 
+body {
+    font-family: sans-serif;
+    font-size: small;
+    background-color: #F8FDFF;
+}
+
+.errormessage {
+    background-color: pink;
+    color: black;
+    border: 1px solid red;
+    padding: 4px;
+}
+
+#entirety, #inputs {
+  margin: 0px auto;
+  display:table;
+}
+
 #chart {
-  height: 600px;
-  width: 960px;
-  border: 1px solid #000000;
+    height: 500px;
+    width: 960px;
+    border: 1px solid #447799;
+    text-align: center;
+    color: #006699;
+    margin: 10px auto;
 }
 
 .node rect {
@@ -32,8 +53,31 @@
 /* near-black links when hovering: */
 .link:hover { stroke-opacity: .5; }
 
-/* style all the label text: */
+/* style for all of the svg label text: */
 svg { font: 12px sans-serif; }
+
+td {
+    background-color: #BBDDEE;
+    vertical-align: top;
+    padding: 2px;
+}
+
+/* cellspacing 0 */
+table { border-collapse: collapse; border-spacing: 0; }
+
+th#title {
+    padding: 0px 10px;
+    background-color: #88BBCC;
+    font-size: large;
+}
+
+td#instructions
+{
+    text-align: center;
+    padding: 5px;
+    vertical-align: middle;
+}
+
 
 </style>
 </head>
@@ -43,27 +87,68 @@ svg { font: 12px sans-serif; }
 <script src="d3.v2.js"></script>
 <script src="sankey.js"></script>
 <script>
-function render_sankey() {
+function process_sankey() {
+    "use strict";
+    var approved_nodes, approved_flows, approved_config;
+
+    var nodes_messages = document.getElementById('nodes_messages');
+    var flows_messages = document.getElementById('flows_messages');
+
+    var raw_nodes_var = document.getElementById('nodes_in').value;
+    var raw_flows_var = document.getElementById('flows_in').value;
+
+    // Reset messages:
+    nodes_messages.innerHTML = '';
+    nodes_messages.classList.remove('errormessage');
+
+    flows_messages.innerHTML = '';
+    flows_messages.classList.remove('errormessage');
+
+    // Go through lots of validation with plenty of bailout points and
+    // informative messages for the poor soul trying to do this.
+
+    // First we check out the Nodes list. If anything's wrong there, we
+    // don't make it to Flows validation.
+    if (raw_nodes_var.length == 0) {
+        nodes_messages.innerHTML = 'Enter a list of nodes, one per line.';
+        nodes_messages.classList.add('errormessage');
+        return null;
+    }
+
+    // Flows validation:
+    if (raw_flows_var.length == 0) {
+        flows_messages.innerHTML = 'Enter a list of flows (one per line) as: From Amount To';
+        flows_messages.classList.add('errormessage');
+        return null;
+    }
+
+    // while debugging just don't try to parse & process:
+    return null;
+
+    // parse into structures: approved_nodes, approved_flows, approved_config
+
+
+    // do the actual rendering:
+    return render_sankey(approved_nodes, approved_flows, approved_config);
+}
+
+
+function render_sankey(nodes_in, flows_in, config_in) {
     "use strict";
 
-    var raw_json_nodes, raw_json_paths, cleaned_json, canvas_width, canvas_height,
-        dollars_format, colorlist, first_word, svg, sankey, path, link, node,
-        node_width = 15, node_padding = 10, 
-        total_width = 960, total_height = 600,
+    var canvas_width, canvas_height,
+        dollars_format, colorlist, first_word, svg, sankey, flow, link, node,
+        node_width = 15, node_padding = 10,
+        total_width = 960, total_height = 500,
         margin_top = 2, margin_bottom = 6,
         margin_left = 2, margin_right = 2;
 
     // # set chart dimensions to match?
     //console.log('inside function');
-    raw_json_nodes = document.getElementById('json_nodes_in').value;
-    raw_json_paths = document.getElementById('json_paths_in').value;
-    //console.log(raw_json_nodes);
-    //console.log(raw_json_paths);
-    cleaned_json = {
-        "nodes": JSON.parse("[" + raw_json_nodes + "]"),
-        "links": JSON.parse("[" + raw_json_paths + "]")
+    var the_clean_json = {
+        "nodes": nodes_in,
+        "links": flows_in
     };
-    // console.log(cleaned_json);
 
     // Set the dimensions of the space:
     canvas_width = total_width - margin_left - margin_right;
@@ -74,6 +159,9 @@ function render_sankey() {
     dollars_format = function (d) { return '$' + d3.format(",.0f")(d); };
 
     colorlist = d3.scale.category20(); // produces a list of 20 compatible colors to choose from
+
+    // clear out all contents:
+    document.getElementById('chart').innerHTML = '';
 
     // append the svg canvas to the page with the defined dimensions:
     svg = d3.select("#chart").append("svg")
@@ -87,19 +175,19 @@ function render_sankey() {
         .nodeWidth(node_width)
         .nodePadding(node_padding)
         .size([canvas_width, canvas_height])
-        .nodes(cleaned_json.nodes)
-        .links(cleaned_json.links)
+        .nodes(the_clean_json.nodes)
+        .links(the_clean_json.links)
         .layout(32);
 
-    // path is a function returning coordinates and specs for each flow area
-    path = sankey.link();
+    // flow is a function returning coordinates and specs for each flow area
+    flow = sankey.link();
 
     link = svg.append("g").selectAll(".link")
-        .data(cleaned_json.links)
+        .data(the_clean_json.links)
         .enter()
         .append("path")
         .attr("class", "link")
-        .attr("d", path) // embed coordinates
+        .attr("d", flow) // embed coordinates
         .style("stroke-width", function (d) { return Math.max(1, d.dy); }) // apply stroke-width
         .sort(function (a, b) { return b.dy - a.dy; }); // set the order of display?
 
@@ -117,13 +205,13 @@ function render_sankey() {
         );
         // re-render:
         sankey.relayout();
-        // re-write new path metadata?
-        link.attr("d", path);
+        // re-write new flow metadata?
+        link.attr("d", flow);
     }
 
     // Set up NODE info, behaviors:
     node = svg.append("g").selectAll(".node")
-        .data(cleaned_json.nodes)
+        .data(the_clean_json.nodes)
         .enter()
         .append("g")
         .attr("class", "node")
@@ -139,7 +227,7 @@ function render_sankey() {
         .attr("height", function (d) { return d.dy; })
         .attr("width", node_width)
         .style("fill", function (d) {
-            // Use the first word of the label as the basis for finding an 
+            // Use the first word of the label as the basis for finding an
             // already-used color or picking a new one (case sensitive):
             first_word = (/^\W*(\w+)/.exec(d.name))[1];
             d.color = colorlist(first_word);
@@ -166,13 +254,63 @@ function render_sankey() {
 
 
 </script>
-<form onsubmit="document.getElementById('chart').innerHTML = ''; render_sankey(); return false;">
-<textarea id="json_nodes_in" placeholder="Nodes go here" rows="10" cols="30"></textarea>
-<textarea id="json_paths_in" placeholder="Paths go here" rows="10" cols="40"></textarea>
-<button name="json_submit" type="submit">
-Render</button>
+<div id="entirety">
+<form onsubmit="process_sankey(); return false;">
+<table id="inputs">
+<tr>
+<th id="title">SankeyMATIC &alpha;
+<p style="margin:0; font-weight: normal; font-size:normal; font-style: italic;">alpha</p>
+</th>
+<td rowspan="2">
+Nodes<br />
+<textarea id="nodes_in" placeholder="Enter Nodes: one per line" rows="8" cols="30">
+Wire
+AD
+RE Bill
+Funding Agency 1
+Funding Agency 2
+Tax Collector
+Waste
+</textarea>
+</td><td rowspan="2">
+Flows<br />
+<textarea id="flows_in" placeholder="Enter Flows: From Amount To (ex: X 20 Y)" rows="8" cols="40">
+Wire 10000 AD
+AD 10000 RE Bill
+RE Bill 5000 Funding Agency 1
+RE Bill 4000 Funding Agency 2
+RE Bill 1000 Tax Collector
+AD 2000 Waste
+</textarea>
+</td>
+<td rowspan="2">
+<input type="checkbox" name="live_validation" id="live_validation">
+<label for="live_validation"><s>Preview as I edit</s></label><br />
+<button type="submit">Preview</button><br />
+<br />
+...Units?<br />
+... Show units on hover / always / never?<br />
+</td></tr>
+<tr>
+<td id="instructions">
+Enter a list of <strong>nodes</strong>,<br />
+a list of <strong>flows</strong> between nodes, <br />
+then <strong>Preview</strong>.</td>
+</tr>
+<tr>
+<td></td>
+<td id="nodes_messages"></td>
+<td id="flows_messages"></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td colspan="2" id="advisories"></td>
+<td></td>
+</tr>
+</table>
 </form>
 
-<p id="chart">
-
+<p id="chart"><small>Diagram will appear here</small></p>
+</div>
 </body></html>
