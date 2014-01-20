@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Sankeymatic</title>
+<title>SankeyMATIC &alpha;</title>
 <style>
 
 body {
@@ -71,7 +71,7 @@ th#title {
     font-size: large;
 }
 
-td#instructions
+td#flows_entry
 {
     text-align: center;
     padding: 5px;
@@ -91,33 +91,21 @@ function process_sankey() {
     "use strict";
     var approved_nodes, approved_flows, approved_config;
 
-    var nodes_messages = document.getElementById('nodes_messages');
     var flows_messages = document.getElementById('flows_messages');
 
-    var raw_nodes_var = document.getElementById('nodes_in').value;
     var raw_flows_var = document.getElementById('flows_in').value;
 
     // Reset messages:
-    nodes_messages.innerHTML = '';
-    nodes_messages.classList.remove('errormessage');
-
     flows_messages.innerHTML = '';
     flows_messages.classList.remove('errormessage');
 
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
 
-    // First we check out the Nodes list. If anything's wrong there, we
-    // don't make it to Flows validation.
-    if (raw_nodes_var.length == 0) {
-        nodes_messages.innerHTML = 'Enter a list of nodes, one per line.';
-        nodes_messages.classList.add('errormessage');
-        return null;
-    }
-
     // Flows validation:
+    // Is there anything there at all?
     if (raw_flows_var.length == 0) {
-        flows_messages.innerHTML = 'Enter a list of flows (one per line) as: From Amount To';
+        flows_messages.innerHTML = 'Enter a list of flows (one per line). See TKTKTK for examples.';
         flows_messages.classList.add('errormessage');
         return null;
     }
@@ -254,63 +242,44 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
 
 </script>
+
 <div id="entirety">
+
 <form onsubmit="process_sankey(); return false;">
+
 <table id="inputs">
 <tr>
-<th id="title">SankeyMATIC &alpha;
-<p style="margin:0; font-weight: normal; font-size:normal; font-style: italic;">alpha</p>
-</th>
-<td rowspan="2">
-Nodes<br />
-<textarea id="nodes_in" placeholder="Enter Nodes: one per line" rows="8" cols="30">
-Wire
-AD
-RE Bill
-Funding Agency 1
-Funding Agency 2
-Tax Collector
-Waste
-</textarea>
-</td><td rowspan="2">
-Flows<br />
-<textarea id="flows_in" placeholder="Enter Flows: From Amount To (ex: X 20 Y)" rows="8" cols="40">
-Wire 10000 AD
-AD 10000 RE Bill
-RE Bill 5000 Funding Agency 1
-RE Bill 4000 Funding Agency 2
-RE Bill 1000 Tax Collector
-AD 2000 Waste
-</textarea>
-</td>
-<td rowspan="2">
-<input type="checkbox" name="live_validation" id="live_validation">
-<label for="live_validation"><s>Preview as I edit</s></label><br />
-<button type="submit">Preview</button><br />
-<br />
-...Units?<br />
-... Show units on hover / always / never?<br />
-</td></tr>
-<tr>
-<td id="instructions">
-Enter a list of <strong>nodes</strong>,<br />
-a list of <strong>flows</strong> between nodes, <br />
-then <strong>Preview</strong>.</td>
+    <th id="title" rowspan="3">SankeyMATIC &alpha;
+    <p style="margin:0; font-weight: normal; font-size:normal; font-style: italic;">alpha</p>
+    </th>
+    <td id="flows_entry">
+    <strong>Enter a <u>list of FLOWS</u></strong>, one per line<br />
+    Format: <strong>Source Amount Target</strong>, separated by spaces<br />
+    Example: Electricity 200 Waste heat<br />
+    <textarea id="flows_in" placeholder="Source Amount Target" rows="8" cols="40"></textarea></td>
+    <td>
+    <input type="checkbox" name="live_validation" id="live_validation">
+    <label for="live_validation"><s>Preview as I edit</s></label><br />
+    <button type="submit">Preview</button><br />
+    <br />
+    ...Units?<br />
+    ... Show units on hover / always / never?<br />
+    ... size<br />
+    ... width of nodes<br />
+    </td>
 </tr>
 <tr>
-<td></td>
-<td id="nodes_messages"></td>
-<td id="flows_messages"></td>
-<td></td>
+    <td id="flows_messages" colspan="2"></td>
 </tr>
 <tr>
-<td></td>
-<td colspan="2" id="advisories"></td>
-<td></td>
+    <td id="advisories" colspan="2"></td>
 </tr>
 </table>
+
 </form>
 
 <p id="chart"><small>Diagram will appear here</small></p>
+
 </div>
+
 </body></html>
