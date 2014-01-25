@@ -23,6 +23,14 @@ body {
   display:table;
 }
 
+textarea#flows_in {
+	border: 1px solid #006699;
+    padding: 3px;
+    margin: 4px;
+	font-family: sans-serif;
+	font-size: small;
+}
+
 #chart {
     height: 500px;
     width: 960px;
@@ -62,6 +70,10 @@ td {
     padding: 2px;
 }
 
+td#other_entry {
+    background-color: #DDEEFF;
+}
+
 /* cellspacing 0 */
 table { border-collapse: collapse; border-spacing: 0; }
 
@@ -87,17 +99,34 @@ td#flows_entry
 <script src="d3.v2.js"></script>
 <script src="sankey.js"></script>
 <script>
+function isNumeric(n) {
+    // borrowed from jquery:
+    /* "parseFloat NaNs numeric-cast false positives (null|true|false|"")
+       ...but misinterprets leading-number strings, particularly hex literals ("0x...")
+       subtraction forces infinities to NaN" */
+    return n - parseFloat( n ) >= 0;
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }
+
 function process_sankey() {
     "use strict";
-    var approved_nodes, approved_flows, approved_config;
-
-    var flows_messages = document.getElementById('flows_messages');
-
+    var flow_list, good_lines = [], bad_lines = [], line_ix, line_in,
+        unique_nodes = {}, matched_params, amount_in;
+    var messages_el = document.getElementById('flows_messages');
     var raw_flows_var = document.getElementById('flows_in').value;
+    var approved_nodes = [], approved_flows = [], approved_config = {};
 
     // Reset messages:
-    flows_messages.innerHTML = '';
-    flows_messages.classList.remove('errormessage');
+    messages_el.innerHTML = '';
+    messages_el.classList.remove('errormessage');
 
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
@@ -105,16 +134,92 @@ function process_sankey() {
     // Flows validation:
     // Is there anything there at all?
     if (raw_flows_var.length == 0) {
-        flows_messages.innerHTML = 'Enter a list of flows (one per line). See TKTKTK for examples.';
-        flows_messages.classList.add('errormessage');
+        messages_el.innerHTML = 'Enter a list of flows (one per line). See TKTKTK for examples.';
+        messages_el.classList.add('errormessage');
         return null;
     }
 
-    // while debugging just don't try to parse & process:
-    return null;
-
     // parse into structures: approved_nodes, approved_flows, approved_config
+    flow_list = raw_flows_var.split("\n");
 
+    // parse all lines, storing good ones vs bad ones:
+    for (line_ix = 0; line_ix < flow_list.length; ++line_ix) {
+        // Does this line match our format?
+        line_in = flow_list[line_ix];
+        matched_params = line_in.match( /^(.+)\[([\d\.\s\+\-]+)\](.+)$/ );
+        if (matched_params !== null) {
+            // console.log('matched', matched_params.join(' / ') );
+
+            // The Amount looked like a number; is it really (after tossing out whitespace)?
+            amount_in = matched_params[2].replace(/\s/g,'');
+            if ( !isNumeric(amount_in) ) {
+                bad_lines.push (
+                    { 'value' : line_in,
+                      'message' : 'The Amount is not a valid decimal number.' } );
+            } else if (amount_in < 0) {
+                // The Sankey library doesn't currently support negative numbers:
+                bad_lines.push (
+                    { 'value' : line_in,
+                      'message' : 'An Amount cannot be negative.' } );
+            } else {
+                // All seems well, save it as good:
+                good_lines.push(
+                    { 'source' : matched_params[1].trim(),
+                      'target' : matched_params[3].trim(),
+                      'amount' : amount_in } );
+            }
+        } else {
+            // Something made it not match the pattern:
+            bad_lines.push(
+                { 'value' : line_in,
+                  'message' : 'The line is not in the format: Source [Amount] Target' } );
+        }
+    }
+
+    //good_lines.forEach(function(entry) {
+    //    console.log(JSON.stringify(entry));
+    //});
+    bad_lines.forEach(function(entry) {
+        console.log(JSON.stringify(entry));
+    });
+    // TODO: Mention the bad lines in the message area:
+    if ( bad_lines.length > 0 ) {
+        // *&*&*&*
+        // escapeHtml(x.value);
+    }
+
+    // Given good_lines, make the lists of nodes and flows
+    good_lines.forEach( function(node) {
+        // new_node = node.source;
+        // console.log(new_node)
+        // Have we seen these nodes already? If not, add them to the list:
+        if ( !(node.source in unique_nodes) ) {
+            // remember which index number the node will use:
+            unique_nodes[node.source] = approved_nodes.length;
+            approved_nodes.push( { "name": node.source } );
+        }
+        if ( !(node.target in unique_nodes) ) {
+            // remember which index number the node will use:
+            unique_nodes[node.target] = approved_nodes.length;
+            approved_nodes.push( { "name": node.target } );
+        }
+        // If we have seen a node, there's nothing else to do currently
+        // (Eventually: look for any additional properties the user may have put on this line)
+
+
+        // Add the encoded flow to the list of approved flows:
+        approved_flows.push({
+            "source": unique_nodes[node.source],
+            "target": unique_nodes[node.target],
+            "value": node.amount
+            });
+    });
+
+    // while debugging just don't try to parse & process:
+//    return null;
+
+    //approved_nodes.forEach( function(x) { console.log(JSON.stringify(x)); } );
+    //approved_flows.forEach( function(x) { console.log(JSON.stringify(x)); } );
 
     // do the actual rendering:
     return render_sankey(approved_nodes, approved_flows, approved_config);
@@ -128,8 +233,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
         dollars_format, colorlist, first_word, svg, sankey, flow, link, node,
         node_width = 15, node_padding = 10,
         total_width = 960, total_height = 500,
-        margin_top = 2, margin_bottom = 6,
-        margin_left = 2, margin_right = 2;
+        margin_top = 6, margin_bottom = 6,
+        margin_left = 6, margin_right = 6;
 
     // # set chart dimensions to match?
     //console.log('inside function');
@@ -165,7 +270,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .size([canvas_width, canvas_height])
         .nodes(the_clean_json.nodes)
         .links(the_clean_json.links)
-        .layout(32);
+        .layout(64);
 
     // flow is a function returning coordinates and specs for each flow area
     flow = sankey.link();
@@ -252,12 +357,23 @@ function render_sankey(nodes_in, flows_in, config_in) {
     <th id="title" rowspan="3">SankeyMATIC &alpha;
     <p style="margin:0; font-weight: normal; font-size:normal; font-style: italic;">alpha</p>
     </th>
+
     <td id="flows_entry">
     <strong>Enter a <u>list of FLOWS</u></strong>, one per line<br />
-    Format: <strong>Source Amount Target</strong>, separated by spaces<br />
-    Example: Electricity 200 Waste heat<br />
-    <textarea id="flows_in" placeholder="Source Amount Target" rows="8" cols="40"></textarea></td>
-    <td>
+    Format: <strong>Source [Amount] Target</strong>, separated by spaces<br />
+
+    <textarea id="flows_in" rows="8" cols="40">Thing One [10] Holding Area
+Holding Area [7] Thing Three
+Holding Area [6] Thing 4
+Thing 1.5 [5] Holding Area
+Holding Area [5] Thing 5
+Thing 6 [3] Holding Area
+Thing 4 [4] Item 7
+Thing 4 [2] Item 8
+Thing 5 [5] New thing 8</textarea>
+    </td>
+
+    <td id="other_entry">
     <input type="checkbox" name="live_validation" id="live_validation">
     <label for="live_validation"><s>Preview as I edit</s></label><br />
     <button type="submit">Preview</button><br />
