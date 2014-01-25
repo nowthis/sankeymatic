@@ -176,17 +176,15 @@ function process_sankey() {
         }
     }
 
-    //good_lines.forEach(function(entry) {
-    //    console.log(JSON.stringify(entry));
-    //});
-    bad_lines.forEach(function(entry) {
-        console.log(JSON.stringify(entry));
+    // console.log(JSON.stringify(bad_lines));
+
+    // Mention the bad lines in the message area:
+    bad_lines.forEach(function(parse_error) {
+        messages_el.innerHTML = messages_el.innerHTML +
+            '<p class="errormessage">&quot;' +
+            escapeHtml(parse_error.value) +
+            '&quot;: ' + parse_error.message + '</p>';
     });
-    // TODO: Mention the bad lines in the message area:
-    if ( bad_lines.length > 0 ) {
-        // *&*&*&*
-        // escapeHtml(x.value);
-    }
 
     // Given good_lines, make the lists of nodes and flows
     good_lines.forEach( function(node) {
