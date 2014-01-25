@@ -13,12 +13,21 @@ body {
 
 .errormessage {
     background-color: pink;
-    color: black;
+    color: #660000;
     border: 1px solid red;
     padding: 4px;
+    margin: -1px;
 }
 
-#entirety, #inputs {
+.cautionmessage {
+    background-color: #FFFFAA;
+    color: #DD7700;
+    border: 1px solid darkorange;
+    padding: 4px;
+    margin: -1px;
+}
+
+#entirety, #inputs, #messages {
   margin: 0px auto;
   display:table;
 }
@@ -120,13 +129,18 @@ function process_sankey() {
     "use strict";
     var flow_list, good_lines = [], bad_lines = [], line_ix, line_in,
         unique_nodes = {}, matched_params, amount_in;
-    var messages_el = document.getElementById('flows_messages');
+    var messages_el = document.getElementById('messages_area');
     var raw_flows_var = document.getElementById('flows_in').value;
     var approved_nodes = [], approved_flows = [], approved_config = {};
 
-    // Reset messages:
+    // Clear all messages:
     messages_el.innerHTML = '';
-    messages_el.classList.remove('errormessage');
+
+    // Put a message on the page using the specified class:
+    function add_message(msg_class, msg_html) {
+        messages_el.innerHTML = messages_el.innerHTML +
+            '<p class="' + msg_class + '">' + msg_html + '</p>';
+    }
 
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
@@ -134,22 +148,21 @@ function process_sankey() {
     // Flows validation:
     // Is there anything there at all?
     if (raw_flows_var.length == 0) {
-        messages_el.innerHTML = 'Enter a list of flows (one per line). See TKTKTK for examples.';
-        messages_el.classList.add('errormessage');
+        add_message('errormessage',
+            'Enter a list of flows (one per line). See TKTKTK for examples.');
+        // No point in proceeding any further:
         return null;
     }
 
     // parse into structures: approved_nodes, approved_flows, approved_config
     flow_list = raw_flows_var.split("\n");
 
-    // parse all lines, storing good ones vs bad ones:
+    // parse all the input lines, storing good ones vs bad ones:
     for (line_ix = 0; line_ix < flow_list.length; ++line_ix) {
-        // Does this line match our format?
+        // Does this line match the basic format?
         line_in = flow_list[line_ix];
         matched_params = line_in.match( /^(.+)\[([\d\.\s\+\-]+)\](.+)$/ );
         if (matched_params !== null) {
-            // console.log('matched', matched_params.join(' / ') );
-
             // The Amount looked like a number; is it really (after tossing out whitespace)?
             amount_in = matched_params[2].replace(/\s/g,'');
             if ( !isNumeric(amount_in) ) {
@@ -180,10 +193,9 @@ function process_sankey() {
 
     // Mention the bad lines in the message area:
     bad_lines.forEach(function(parse_error) {
-        messages_el.innerHTML = messages_el.innerHTML +
-            '<p class="errormessage">&quot;' +
+        add_message('errormessage', '&quot;<b>' +
             escapeHtml(parse_error.value) +
-            '&quot;: ' + parse_error.message + '</p>';
+            '</b>&quot;: ' + parse_error.message);
     });
 
     // Given good_lines, make the lists of nodes and flows
@@ -382,11 +394,11 @@ Thing 5 [5] New thing 8</textarea>
     ... width of nodes<br />
     </td>
 </tr>
+</table>
+
+<table id="messages">
 <tr>
-    <td id="flows_messages" colspan="2"></td>
-</tr>
-<tr>
-    <td id="advisories" colspan="2"></td>
+    <td id="messages_area" colspan="2"></td>
 </tr>
 </table>
 
