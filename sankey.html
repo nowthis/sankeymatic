@@ -27,9 +27,21 @@ body {
     margin: -1px;
 }
 
-a.tooltip { border-bottom: 1px dotted; }
+.okmessage {
+    text-align: center;
+    background-color: #DDEEFF;
+    color: #003366;
+    border: 1px solid #006699;
+    padding: 4px;
+    margin: -1px;
+}
 
-#entirety, #inputs, #messages {
+dfn { 
+    font-style: normal;
+    border-bottom: 1px dotted;
+}
+
+#entirety, #inputs, #messages, #credits {
   margin: 0px auto;
   display:table;
 }
@@ -127,27 +139,32 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
-function round_to_places(number_in, places) {
+function round_to(number_in, places) {
     return Math.round( number_in * Math.pow( 10, places ) )
         / Math.pow( 10, places );
 }
 
 function process_sankey() {
     "use strict";
-    var flow_list, good_lines = [], bad_lines = [], line_ix, line_in,
-        unique_nodes = {}, matched_params, amount_in;
+    var flow_list = [], good_lines = [], bad_lines = [], line_ix = 0, line_in = '',
+        unique_nodes = {}, matched_params = [], amount_in = 0;
     var messages_el = document.getElementById('messages_area');
     var raw_flows_var = document.getElementById('flows_in').value;
     var approved_nodes = [], approved_flows = [], approved_config = {};
-    var max_decimal_places = 0;
+    var total_inflow = 0, total_outflow = 0, max_places = 0;
+    var status_message = '', total_difference = 0;
 
     // Clear all messages:
     messages_el.innerHTML = '';
 
     // Put a message on the page using the specified class:
-    function add_message(msg_class, msg_html) {
-        messages_el.innerHTML = messages_el.innerHTML +
-            '<p class="' + msg_class + '">' + msg_html + '</p>';
+    function add_message( msg_class, msg_html, at_beginning ) {
+        var new_msg = '<p class="' + msg_class + '">' + msg_html + '</p>';
+        if (at_beginning) {
+            messages_el.innerHTML = new_msg + messages_el.innerHTML;
+        } else {
+            messages_el.innerHTML = messages_el.innerHTML + new_msg;
+        }
     }
 
     // Go through lots of validation with plenty of bailout points and
@@ -157,7 +174,7 @@ function process_sankey() {
     // Is there anything there at all?
     if (raw_flows_var.length == 0) {
         add_message('errormessage',
-            'Enter a list of flows (one per line). See TKTKTK for examples.');
+            'Enter a list of flows (one per line). See TKTKTK for examples.', 0);
         // No point in proceeding any further:
         return null;
     }
@@ -181,9 +198,9 @@ function process_sankey() {
                 // The Sankey library doesn't currently support negative numbers:
                 bad_lines.push (
                     { 'value' : line_in,
-                      'message' : 'An Amount cannot be negative.' } );
+                      'message' : 'Amounts must be positive.' } );
             } else {
-                // All seems well, save it as good:
+                // All seems well, save it as good (even if 0):
                 good_lines.push(
                     { 'source' : matched_params[1].trim(),
                       'target' : matched_params[3].trim(),
@@ -191,8 +208,8 @@ function process_sankey() {
                 // We need the maximum precision of the inputs (# of characters
                 // to the RIGHT of the decimal) for some error checking
                 // operations later:
-                max_decimal_places =
-                    Math.max( max_decimal_places,
+                max_places =
+                    Math.max( max_places,
                         ( ( amount_in.split( /\./ ) )[1] || '' ).length );
             }
         } else if ( line_in !== '' ) {
@@ -207,13 +224,13 @@ function process_sankey() {
         // someone can separate their input lines with whitespace if desired.
     }
 
-    // console.log(JSON.stringify(bad_lines));
+    // TODO: Look for cycles and post errors about them
 
     // Mention the bad lines in the message area:
     bad_lines.forEach(function(parse_error) {
         add_message('errormessage',
             '&quot;<b>' + escapeHtml(parse_error.value) + '</b>&quot;: ' +
-             parse_error.message);
+             parse_error.message, 0);
     });
 
     // save_node: Add a node to the unique list (if it's not there already):
@@ -230,7 +247,8 @@ function process_sankey() {
             approved_nodes.push( { "name": nodename } );
         }
         // If we have seen a node, there's nothing else to do currently
-        // (Eventually: look for any additional properties the user may have put on this line)
+        // (Eventually: look for any additional properties the user may have put
+        // on this line)
     }
 
     // Given good_lines, make the lists of nodes and flows
@@ -259,14 +277,14 @@ function process_sankey() {
     // OUT OF it; warn the user if not:
     Object.keys(unique_nodes).forEach( function(nodename) {
         var this_node = unique_nodes[nodename], difference;
-        // Skip any nodes with 0 as the From or To amount; those are the starting &
-        // ending nodes for the whole graph:
+        // Skip any nodes with 0 as the From or To amount; those are the
+        // starting & ending nodes for the whole graph:
         if ( this_node.from_sum > 0 && this_node.to_sum > 0) {
             difference = this_node.to_sum - this_node.from_sum;
             // Is the difference great enough to matter? (i.e. bigger than 1/10
             // the smallest unit used?)
             if ( Math.abs(difference) >=
-                Math.pow( 10,-max_decimal_places - 1 ) ) {
+                Math.pow( 10,-max_places - 1 ) ) {
                 // Construct a hyper-informative error message about the
                 // imbalance.
                 // If we don't round the outputs to match the maximum precision
@@ -274,26 +292,50 @@ function process_sankey() {
                 add_message( "cautionmessage",
                     "&quot;<b>" + escapeHtml(nodename) + "</b>&quot;: " +
                     "The amount <strong>in</strong> (" +
-                    '<a class="tooltip" title="' +
+                    '<dfn title="' +
                     this_node.to_list.join(' + ') + '">' +
-                    round_to_places( this_node.to_sum, max_decimal_places ) +
-                    "</a>) is different from the amount <strong>out</strong> (" +
-                    '<a class="tooltip" title="' +
+                    round_to( this_node.to_sum, max_places ) +
+                    "</dfn>) does not match the amount <strong>out</strong> (" +
+                    '<dfn title="' +
                     this_node.from_list.join(' + ') + '">' +
-                    round_to_places( this_node.from_sum, max_decimal_places ) +
-                    "</a>) by " +
-                    round_to_places( difference, max_decimal_places ) + "." );
+                    round_to( this_node.from_sum, max_places ) +
+                    "</dfn>). &Delta; = " +
+                    round_to( difference, max_places ) + ".", 0 );
             }
+        } else {
+            // One of these values will be 0 every time, but so what...
+            total_inflow += this_node.from_sum;
+            total_outflow += this_node.to_sum;
         }
     });
 
-    //approved_nodes.forEach( function(x) { console.log(JSON.stringify(x)); } );
-    //approved_flows.forEach( function(x) { console.log(JSON.stringify(x)); } );
+    status_message = "Showing: <strong>" + approved_flows.length +
+        " flows</strong> between <strong>" + approved_nodes.length +
+        " nodes</strong>.";
+    total_difference = total_inflow - total_outflow
+    if ( Math.abs(total_difference) < Math.pow( 10,-max_places - 1 ) ) {
+        status_message +=
+            " Total <strong>In</strong> = Total <strong>Out</strong> = " +
+            round_to( total_inflow, max_places ) + ".";
+    } else {
+        // Leave out the differing totals from the status message, issue a
+        // Caution instead:
+        add_message( "cautionmessage",
+            "The <strong>Total In</strong> (" +
+            round_to( total_inflow, max_places ) +
+            ") does not match the <strong>Total Out</strong> (" +
+            round_to( total_outflow, max_places ) +
+            "). &Delta; = " + round_to( total_difference, max_places ) + ".",
+            0 );
+    }
+    add_message( "okmessage", status_message, 1 );
 
-    // do the actual rendering:
+    // Spit out the message queue:
+    // render_messages();
+
+    // Finally, do the actual rendering:
     return render_sankey(approved_nodes, approved_flows, approved_config);
 }
-
 
 function render_sankey(nodes_in, flows_in, config_in) {
     "use strict";
@@ -456,15 +498,18 @@ Thing 5 [5] New thing 8</textarea>
 </table>
 
 <table id="messages">
-<tr>
-    <td id="messages_area" colspan="2"></td>
-</tr>
+<tr><td id="messages_area"></td></tr>
 </table>
 
 </form>
 
 <p id="chart"><small>Diagram will appear here</small></p>
 
+<p id="credits">SankeyMATIC is by <a href="http://nowthis.com/">Steve Bogart</a>
+(<a href="https://twitter.com/nowthis">@nowthis</a>).
+It is built on top of the
+<a href="http://bost.ocks.org/mike/sankey/">Sankey library</a> of <a
+href="http://d3js.org/">D3.js</a>.</p>
 </div>
 
 </body></html>
