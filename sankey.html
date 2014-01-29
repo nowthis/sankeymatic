@@ -55,13 +55,14 @@ textarea#flows_in {
 	font-size: small;
 }
 
-#chart {
-    height: 960px;
-    width: 960px;
-    border: 1px solid #447799;
+p#chart {
+    height: 700px;
+    width: 700px;
+    border: 1px dotted #BBDDEE;
     text-align: center;
     color: #006699;
     margin: 10px auto;
+    background-color: white;
 }
 
 .node rect {
@@ -88,7 +89,7 @@ textarea#flows_in {
 /* style for all of the svg label text: */
 svg { font: 12px sans-serif; }
 
-td { vertical-align: top; }
+td { vertical-align: top; padding: 2px;}
 
 td#other_entry {
     padding: 2px;
@@ -295,14 +296,27 @@ function process_sankey() {
         unit_suffix: "",
         max_places: max_places,
         display_full_precision: 0,
-        include_values_in_nodes: 0
+        include_values_in_nodes: 0,
+        canvas_height: 700,
+        canvas_width: 700,
+        top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10
     };
 
-    // Simple strings:
+    // Plain strings:
     (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
         // console.log(field_name, field_val);
         if (field_val.length < 10) {
+            approved_config[field_name] = field_val;
+        }
+    });
+    // Whole positive numbers:
+    (["canvas_width", "canvas_height",
+        "top_margin","right_margin",
+        "bottom_margin","left_margin"]).forEach( function(field_name) {
+        var field_val = document.getElementById(field_name).value;
+        // console.log(field_name, field_val);
+        if (field_val.length < 10 && field_val.match(/^\d+$/)) {
             approved_config[field_name] = field_val;
         }
     });
@@ -311,6 +325,11 @@ function process_sankey() {
         approved_config[field_name] = document.getElementById(field_name).checked;
         // console.log(field_name, approved_config[field_name]);
     });
+
+    // Given the canvas size, adjust the size of the containing element:
+    var chart_el = document.getElementById('chart');
+    chart_el.style.height = approved_config.canvas_height + "px";
+    chart_el.style.width = approved_config.canvas_width + "px";
 
     // Flow cross-check: Test if the total INTO a node is equal to the amount
     // OUT OF it; warn the user if not:
@@ -376,12 +395,15 @@ function process_sankey() {
 function render_sankey(nodes_in, flows_in, config_in) {
     "use strict";
 
-    var canvas_width, canvas_height,
+    var graph_width, graph_height,
         units_format, colorlist, first_word, svg, sankey, flow, link, node,
         node_width = 15, node_padding = 10,
-        total_width = 960, total_height = 960,
-        margin_top = 6, margin_bottom = 6,
-        margin_left = 6, margin_right = 6;
+        total_width   = config_in.canvas_width,
+        total_height  = config_in.canvas_height,
+        margin_top    = config_in.top_margin,
+        margin_bottom = config_in.bottom_margin,
+        margin_left   = config_in.left_margin,
+        margin_right  = config_in.right_margin;
 
     // console.log(typeof config_in.unit_prefix);
 
@@ -402,9 +424,9 @@ function render_sankey(nodes_in, flows_in, config_in) {
     };
 
     // Set the dimensions of the space:
-    canvas_width = total_width - margin_left - margin_right;
-    canvas_height = total_height - margin_top - margin_bottom;
-    //console.log("width=",canvas_width);
+    graph_width = total_width - margin_left - margin_right;
+    graph_height = total_height - margin_top - margin_bottom;
+    //console.log("width=",graph_width);
 
     // set up: formatting function for numeric labels
     // *&*&*&* TODO: Does this function really need to be assigned to a variable?
@@ -432,10 +454,10 @@ function render_sankey(nodes_in, flows_in, config_in) {
     sankey = d3.sankey()
         .nodeWidth(node_width)
         .nodePadding(node_padding)
-        .size([canvas_width, canvas_height])
+        .size([graph_width, graph_height])
         .nodes(the_clean_json.nodes)
         .links(the_clean_json.links)
-        .layout(64);
+        .layout(32);
 
     // flow is a function returning coordinates and specs for each flow area
     flow = sankey.link();
@@ -455,8 +477,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // define drag function for use in node definitions
     function dragmove(d) {
         // Calculate new position:
-        d.x = Math.max(0, Math.min(canvas_width - d.dx, d3.event.x));
-        d.y = Math.max(0, Math.min(canvas_height - d.dy, d3.event.y));
+        d.x = Math.max(0, Math.min(graph_width - d.dx, d3.event.x));
+        d.y = Math.max(0, Math.min(graph_height - d.dy, d3.event.y));
         d3.select(this).attr(
             "transform",
             "translate(" + d.x + "," + d.y + ")"
@@ -509,7 +531,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
                     ? ": " + units_format(d.value)
                     : "" ); })
         // In the left half of the picture, place labels to the right of nodes:
-        .filter(function (d) { return d.x < canvas_width / 2; })
+        .filter(function (d) { return d.x < graph_width / 2; })
         .attr("x", 6 + node_width)
         .attr("text-anchor", "start");
 }
@@ -549,8 +571,8 @@ Thing 5 [5] New thing 8</textarea>
 <tr>
 <td id="other_entry">
 <strong>Units:</strong>
-Prefix = <input type="text" id="unit_prefix" size="3" maxlength="10">
-Suffix = <input type="text" id="unit_suffix" size="5" maxlength="10"><br />
+<label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10">
+<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10"><br />
 
 <input type="checkbox" id="include_values_in_nodes" value="1">
 <label for="include_values_in_nodes">Show values as part of node labels</label><br />
@@ -559,17 +581,29 @@ Suffix = <input type="text" id="unit_suffix" size="5" maxlength="10"><br />
 <label for="display_full_precision">Always show full precision
 <small>(e.g. for currency: $DD.cc)</small></label><br />
 <br />
+
+<strong>Canvas:</strong>
+<label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="700">
+<label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="700"><br />
+<br />
+
+<strong>Inner Margin</strong> (pixels):<br />
+<label for="top_margin">Top</label> <input type="text" id="top_margin" size="3" maxlength="6" value="10">
+<label for="right_margin">Right</label> <input type="text" id="right_margin" size="3" maxlength="6" value="10">
+<label for="bottom_margin">Bottom</label> <input type="text" id="bottom_margin" size="3" maxlength="6" value="10">
+<label for="left_margin">Left</label> <input type="text" id="left_margin" size="3" maxlength="6" value="10">
+<br />
+<br />
+
 <!-- <input type="checkbox" name="live_validation" id="live_validation">
 <label for="live_validation"><s>Preview as I edit</s></label><br /> -->
 
-<button type="submit">Preview</button><br />
+<p style="margin: auto; text-align: center;"><button id="preview_graph" type="submit">Preview</button></p>
 
 <!--
 <br />
-... Show units on hover / always / never?<br />
-... size<br />
-... Show units on nodes<br />
 ... width of nodes<br />
+... FONT SIZE
  -->
 </td>
 </tr>
