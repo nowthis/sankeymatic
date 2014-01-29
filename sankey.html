@@ -46,6 +46,7 @@ dfn {
   display:table;
 }
 
+
 textarea#flows_in {
 	border: 1px solid #006699;
     padding: 3px;
@@ -55,7 +56,7 @@ textarea#flows_in {
 }
 
 #chart {
-    height: 500px;
+    height: 960px;
     width: 960px;
     border: 1px solid #447799;
     text-align: center;
@@ -87,32 +88,36 @@ textarea#flows_in {
 /* style for all of the svg label text: */
 svg { font: 12px sans-serif; }
 
-td {
-    background-color: #BBDDEE;
-    vertical-align: top;
-    padding: 2px;
-}
+td { vertical-align: top; }
 
 td#other_entry {
+    padding: 2px;
     background-color: #DDEEFF;
+}
+
+td#grapharea {
+    padding: 0px;
+    margin: 0px;
 }
 
 /* cellspacing 0 */
 table { border-collapse: collapse; border-spacing: 0; }
 
+
 th#title {
-    padding: 0px 10px;
+    padding: 5px 10px;
     background-color: #88BBCC;
     font-size: large;
 }
 
 td#flows_entry
 {
+    padding: 2px;
+    background-color: #BBDDEE;
     text-align: center;
     padding: 5px;
     vertical-align: middle;
 }
-
 
 </style>
 </head>
@@ -271,7 +276,10 @@ function process_sankey() {
         unique_nodes[node.target].to_list.push(node.amount);
     });
 
-    // console.log(JSON.stringify(unique_nodes));
+    // Get & fill in the config.
+    // Why now? For one thing, we need the Units for the messages we make below.
+    // First fill in basic defaults. Values from the form will override if present.
+    approved_config = { unit_prefix: null, unit_suffix: null };
 
     // Flow cross-check: Test if the total INTO a node is equal to the amount
     // OUT OF it; warn the user if not:
@@ -328,10 +336,7 @@ function process_sankey() {
             "). &Delta; = " + round_to( total_difference, max_places ) + ".",
             0 );
     }
-    add_message( "okmessage", status_message, 1 );
-
-    // Spit out the message queue:
-    // render_messages();
+    add_message( "okmessage", status_message, 1 ); // always display main status line first
 
     // Finally, do the actual rendering:
     return render_sankey(approved_nodes, approved_flows, approved_config);
@@ -341,11 +346,22 @@ function render_sankey(nodes_in, flows_in, config_in) {
     "use strict";
 
     var canvas_width, canvas_height,
-        dollars_format, colorlist, first_word, svg, sankey, flow, link, node,
+        units_format, colorlist, first_word, svg, sankey, flow, link, node,
         node_width = 15, node_padding = 10,
-        total_width = 960, total_height = 500,
+        total_width = 960, total_height = 960,
         margin_top = 6, margin_bottom = 6,
         margin_left = 6, margin_right = 6;
+
+    // console.log(typeof config_in.unit_prefix);
+
+    config_in.unit_prefix =
+        ( typeof config_in.unit_prefix === "undefined"
+            || config_in.unit_prefix === null )
+            ? "" : config_in.unit_prefix;
+    config_in.unit_suffix =
+        ( typeof config_in.unit_suffix === "undefined"
+            || config_in.unit_suffix === null)
+            ? "" : config_in.unit_suffix;
 
     // # set chart dimensions to match?
     //console.log('inside function');
@@ -360,7 +376,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
     //console.log("width=",canvas_width);
 
     // set up: formatting function for numeric labels
-    dollars_format = function (d) { return '$' + d3.format(",.0f")(d); };
+    // *&*&*&* TODO: Does this function really need to be assigned to a variable?
+    units_format = function (d) {
+        return config_in.unit_prefix + d3.format(",.0f")(d) +
+        config_in.unit_suffix;
+    };
 
     colorlist = d3.scale.category20(); // produces a list of 20 compatible colors to choose from
 
@@ -396,7 +416,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .sort(function (a, b) { return b.dy - a.dy; }); // set the order of display?
 
     link.append("title") // Make tooltips for FLOWS
-        .text(function (d) { return d.source.name + " → " + d.target.name + "\n" + dollars_format(d.value); });
+        .text(function (d) { return d.source.name + " → " + d.target.name + "\n" + units_format(d.value); });
 
     // define drag function for use in node definitions
     function dragmove(d) {
@@ -439,7 +459,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         })
         .style("stroke", function (d) { return d3.rgb(d.color).darker(2); })
         .append("title")    // Add tooltips for NODES
-        .text(function (d) { return d.name + "\n" + dollars_format(d.value); });
+        .text(function (d) { return d.name + "\n" + units_format(d.value); });
 
     // Put in NODE labels
     node.append("text")
@@ -461,19 +481,22 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
 <div id="entirety">
 
-<form onsubmit="process_sankey(); return false;">
+<table><tr><td>
+
 
 <table id="inputs">
 <tr>
-    <th id="title" rowspan="3">SankeyMATIC &alpha;
-    <p style="margin:0; font-weight: normal; font-size:normal; font-style: italic;">alpha</p>
+    <th id="title">SankeyMATIC
+    <span style="margin:0; font-weight: normal; font-size:normal; font-style: italic;">alpha</span>
     </th>
-
+</tr>
+<tr>
     <td id="flows_entry">
+    <form onsubmit="process_sankey(); return false;">
     <strong>Enter a <u>list of FLOWS</u></strong>, one per line<br />
     Format: <strong>Source [Amount] Target</strong>, separated by spaces<br />
 
-    <textarea id="flows_in" rows="8" cols="50">Thing One [10] Holding Area
+    <textarea id="flows_in" rows="25" cols="30">Thing One [10] Holding Area
 Holding Area [7] Thing Three
 Holding Area [6] Thing 4
 Thing 1.5 [5] Holding Area
@@ -482,31 +505,46 @@ Thing 6 [3] Holding Area
 Thing 4 [4] Item 7
 Thing 4 [2] Item 8
 Thing 5 [5] New thing 8</textarea>
-    </td>
+<br />
 
-    <td id="other_entry">
-    <input type="checkbox" name="live_validation" id="live_validation">
-    <label for="live_validation"><s>Preview as I edit</s></label><br />
-    <button type="submit">Preview</button><br />
-    <br />
-    ...Units?<br />
-    ... Show units on hover / always / never?<br />
-    ... size<br />
-    ... width of nodes<br />
-    </td>
+<strong>Units:</strong>
+Prefix = <input type="text" id="unit_prefix" size="3" maxlength="5">
+Suffix = <input type="text" id="unit_suffix" size="5" maxlength="10"><br />
+<br />
+Always show <input type="text" id="always_display_places" size="2" maxlength="2" value="-"> decimal places<br />
+<small>(Useful for currency, not for much else)</small><br />
+<br />
+<!-- <input type="checkbox" name="live_validation" id="live_validation">
+<label for="live_validation"><s>Preview as I edit</s></label><br /> -->
+
+<button type="submit">Preview</button><br />
+
+<!-- 
+<br />
+... Show units on hover / always / never?<br />
+... size<br />
+... Show units on nodes<br />
+... width of nodes<br />
+ -->
+
+</form>
+
+</td>
 </tr>
 </table>
+
+</td><td id="grapharea">
 
 <table id="messages">
 <tr><td id="messages_area"></td></tr>
 </table>
 
-</form>
 
 <p id="chart"><small>Diagram will appear here</small></p>
 
-<p id="credits">SankeyMATIC is by <a href="http://nowthis.com/">Steve Bogart</a>
-(<a href="https://twitter.com/nowthis">@nowthis</a>).
+</td></tr></table>
+
+<p id="credits">SankeyMATIC is by <a href="http://nowthis.com/">Steve Bogart</a> aka <a href="https://twitter.com/nowthis">@nowthis</a>.
 It is built on top of the
 <a href="http://bost.ocks.org/mike/sankey/">Sankey library</a> of <a
 href="http://d3js.org/">D3.js</a>.</p>
