@@ -36,7 +36,7 @@ body {
     margin: -1px;
 }
 
-dfn { 
+dfn {
     font-style: normal;
     border-bottom: 1px dotted;
 }
@@ -144,10 +144,6 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
-function round_to(number_in, places) {
-    return Math.round( number_in * Math.pow( 10, places ) )
-        / Math.pow( 10, places );
-}
 
 function process_sankey() {
     "use strict";
@@ -159,9 +155,7 @@ function process_sankey() {
     var total_inflow = 0, total_outflow = 0, max_places = 0;
     var status_message = '', total_difference = 0;
 
-    // Clear all messages:
-    messages_el.innerHTML = '';
-
+    // Define utility functions:
     // Put a message on the page using the specified class:
     function add_message( msg_class, msg_html, at_beginning ) {
         var new_msg = '<p class="' + msg_class + '">' + msg_html + '</p>';
@@ -171,6 +165,23 @@ function process_sankey() {
             messages_el.innerHTML = messages_el.innerHTML + new_msg;
         }
     }
+
+    // Format a value as it will be in the graph. Uses approved_config and
+    // max_places
+    function unit_fy(number_in) {
+        var number_portion = d3.format( ",." + max_places + "f" )(number_in);
+        if (!approved_config.display_full_precision) {
+            number_portion = number_portion.replace( /0+$/, '' );
+        }
+        return approved_config.unit_prefix
+            + number_portion
+            + approved_config.unit_suffix;
+        //return Math.round( number_in * Math.pow( 10, places ) )
+        //    / Math.pow( 10, places );
+    }
+
+    // BEGIN by clearing all messages:
+    messages_el.innerHTML = '';
 
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
@@ -279,7 +290,27 @@ function process_sankey() {
     // Get & fill in the config.
     // Why now? For one thing, we need the Units for the messages we make below.
     // First fill in basic defaults. Values from the form will override if present.
-    approved_config = { unit_prefix: null, unit_suffix: null };
+    approved_config = {
+        unit_prefix: "",
+        unit_suffix: "",
+        max_places: max_places,
+        display_full_precision: 0,
+        include_values_in_nodes: 0
+    };
+
+    // Simple strings:
+    (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
+        var field_val = document.getElementById(field_name).value;
+        // console.log(field_name, field_val);
+        if (field_val.length < 10) {
+            approved_config[field_name] = field_val;
+        }
+    });
+    // Checkboxes:
+    (["display_full_precision","include_values_in_nodes"]).forEach( function(field_name) {
+        approved_config[field_name] = document.getElementById(field_name).checked;
+        // console.log(field_name, approved_config[field_name]);
+    });
 
     // Flow cross-check: Test if the total INTO a node is equal to the amount
     // OUT OF it; warn the user if not:
@@ -302,13 +333,13 @@ function process_sankey() {
                     "The amount <strong>in</strong> (" +
                     '<dfn title="' +
                     this_node.to_list.join(' + ') + '">' +
-                    round_to( this_node.to_sum, max_places ) +
+                    unit_fy(this_node.to_sum) +
                     "</dfn>) does not match the amount <strong>out</strong> (" +
                     '<dfn title="' +
                     this_node.from_list.join(' + ') + '">' +
-                    round_to( this_node.from_sum, max_places ) +
+                    unit_fy(this_node.from_sum) +
                     "</dfn>). &Delta; = " +
-                    round_to( difference, max_places ) + ".", 0 );
+                    unit_fy(difference) + ".", 0 );
             }
         } else {
             // One of these values will be 0 every time, but so what...
@@ -324,16 +355,16 @@ function process_sankey() {
     if ( Math.abs(total_difference) < Math.pow( 10,-max_places - 1 ) ) {
         status_message +=
             " Total <strong>In</strong> = Total <strong>Out</strong> = " +
-            round_to( total_inflow, max_places ) + ".";
+            unit_fy(total_inflow) + ".";
     } else {
         // Leave out the differing totals from the status message, issue a
         // Caution instead:
         add_message( "cautionmessage",
             "The <strong>Total In</strong> (" +
-            round_to( total_inflow, max_places ) +
+            unit_fy(total_inflow) +
             ") does not match the <strong>Total Out</strong> (" +
-            round_to( total_outflow, max_places ) +
-            "). &Delta; = " + round_to( total_difference, max_places ) + ".",
+            unit_fy(total_outflow) +
+            "). &Delta; = " + unit_fy(total_difference) + ".",
             0 );
     }
     add_message( "okmessage", status_message, 1 ); // always display main status line first
@@ -378,8 +409,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // set up: formatting function for numeric labels
     // *&*&*&* TODO: Does this function really need to be assigned to a variable?
     units_format = function (d) {
-        return config_in.unit_prefix + d3.format(",.0f")(d) +
-        config_in.unit_suffix;
+        var number_portion = d3.format( ",." + config_in.max_places + "f" )(d);
+        if (!config_in.display_full_precision) {
+            number_portion = number_portion.replace(/0+$/,'');
+        }
+        return config_in.unit_prefix + number_portion + config_in.unit_suffix;
     };
 
     colorlist = d3.scale.category20(); // produces a list of 20 compatible colors to choose from
@@ -469,7 +503,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .attr("dy", ".35em")
         .attr("text-anchor", "end")
         .attr("transform", null)
-        .text(function (d) { return d.name; })
+        .text(function (d) {
+            return d.name
+                + ( config_in.include_values_in_nodes
+                    ? ": " + units_format(d.value)
+                    : "" ); })
         // In the left half of the picture, place labels to the right of nodes:
         .filter(function (d) { return d.x < canvas_width / 2; })
         .attr("x", 6 + node_width)
@@ -483,6 +521,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
 <table><tr><td>
 
+<form onsubmit="process_sankey(); return false;">
 
 <table id="inputs">
 <tr>
@@ -492,11 +531,10 @@ function render_sankey(nodes_in, flows_in, config_in) {
 </tr>
 <tr>
     <td id="flows_entry">
-    <form onsubmit="process_sankey(); return false;">
-    <strong>Enter a <u>list of FLOWS</u></strong>, one per line<br />
-    Format: <strong>Source [Amount] Target</strong>, separated by spaces<br />
+    <strong>Enter a <u>list of FLOWS</u></strong>, one per line, as:<br />
+    <strong>Source [Amount] Target</strong>, separated by spaces<br />
 
-    <textarea id="flows_in" rows="25" cols="30">Thing One [10] Holding Area
+    <textarea id="flows_in" rows="25" cols="35">Thing One [10] Holding Area
 Holding Area [7] Thing Three
 Holding Area [6] Thing 4
 Thing 1.5 [5] Holding Area
@@ -505,33 +543,39 @@ Thing 6 [3] Holding Area
 Thing 4 [4] Item 7
 Thing 4 [2] Item 8
 Thing 5 [5] New thing 8</textarea>
-<br />
+</td>
+</tr>
 
+<tr>
+<td id="other_entry">
 <strong>Units:</strong>
-Prefix = <input type="text" id="unit_prefix" size="3" maxlength="5">
+Prefix = <input type="text" id="unit_prefix" size="3" maxlength="10">
 Suffix = <input type="text" id="unit_suffix" size="5" maxlength="10"><br />
-<br />
-Always show <input type="text" id="always_display_places" size="2" maxlength="2" value="-"> decimal places<br />
-<small>(Useful for currency, not for much else)</small><br />
+
+<input type="checkbox" id="include_values_in_nodes" value="1">
+<label for="include_values_in_nodes">Show values as part of node labels</label><br />
+
+<input type="checkbox" id="display_full_precision" value="1">
+<label for="display_full_precision">Always show full precision
+<small>(e.g. for currency: $DD.cc)</small></label><br />
 <br />
 <!-- <input type="checkbox" name="live_validation" id="live_validation">
 <label for="live_validation"><s>Preview as I edit</s></label><br /> -->
 
 <button type="submit">Preview</button><br />
 
-<!-- 
+<!--
 <br />
 ... Show units on hover / always / never?<br />
 ... size<br />
 ... Show units on nodes<br />
 ... width of nodes<br />
  -->
-
-</form>
-
 </td>
 </tr>
 </table>
+
+</form>
 
 </td><td id="grapharea">
 
