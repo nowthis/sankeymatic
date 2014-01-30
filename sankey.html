@@ -145,10 +145,17 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
+function remove_zeroes(number_string) {
+    // Strip off zeros from after any decimal.
+    // If no digits remain, remove the '.' as well.
+    return number_string.replace( /(\.[^0]*)0+$/, '$1' )
+        .replace( /\.$/, '');
+}
 
 function process_sankey() {
     "use strict";
-    var flow_list = [], good_lines = [], bad_lines = [], line_ix = 0, line_in = '',
+    var flow_list = [], good_lines = [], bad_lines = [],
+        line_ix = 0, line_in = '',
         unique_nodes = {}, matched_params = [], amount_in = 0;
     var messages_el = document.getElementById('messages_area');
     var raw_flows_var = document.getElementById('flows_in').value;
@@ -171,14 +178,11 @@ function process_sankey() {
     // max_places
     function unit_fy(number_in) {
         var number_portion = d3.format( ",." + max_places + "f" )(number_in);
-        if ( !approved_config.display_full_precision ) {
-            number_portion = number_portion.replace( /(\.\d+)0+$/, 'p1' );
-        }
         return approved_config.unit_prefix
-            + number_portion
+            + ( approved_config.display_full_precision
+                ? number_portion
+                : remove_zeroes(number_portion) )
             + approved_config.unit_suffix;
-        //return Math.round( number_in * Math.pow( 10, places ) )
-        //    / Math.pow( 10, places );
     }
 
     // BEGIN by clearing all messages:
@@ -188,13 +192,6 @@ function process_sankey() {
     // informative messages for the poor soul trying to do this.
 
     // Flows validation:
-    // Is there anything there at all?
-    if (raw_flows_var.length == 0) {
-        add_message('okmessage',
-            'Enter a list of flows (one per line). See TKTKTK for examples.', 0);
-        // No point in proceeding any further:
-        return null;
-    }
 
     // parse into structures: approved_nodes, approved_flows, approved_config
     flow_list = raw_flows_var.split("\n");
@@ -251,7 +248,7 @@ function process_sankey() {
     });
 
     // save_node: Add a node to the unique list (if it's not there already):
-    function save_node(nodename) {
+    function save_node( nodename ) {
         // Have we NOT seen this node before? Then add it:
         if ( !(nodename in unique_nodes) ) {
             // establish the hash, including which index # this node will use:
@@ -270,7 +267,30 @@ function process_sankey() {
 
     // Given good_lines, make the lists of nodes and flows
     good_lines.forEach( function(node) {
-        // console.log(node.source)
+        // Look for extra content about this flow on the target-node end of the
+        // string:
+        var possible_color, possible_nodename, flow_color = '';
+        // Try to parse; there may be extra info that isn't actually the name:
+        // Format of the Target node can be:
+        // TODO: Target node ["Custom name for flow"] [#color[/opacity]]
+        // e.g. Clinton #CCDDEE
+        // TODO: e.g. Gondor "Legolas" #998877/0.25
+        // Look for an additional string starting with # for color info
+        matched_params = node.target.match( /^(.+)\s+(\#\S+)$/ );
+        if (matched_params !== null) {
+            // IFF the # string matches the pattern, separate the nodename
+            // into parts. Assume a color will have at least 3 numbers (rgb).
+            possible_nodename = matched_params[1];
+            possible_color    = matched_params[2];
+            matched_params = possible_color.match( /^(#[0-9A-F]{3,6})/ );
+            if ( matched_params !== null ) {
+                // We have a match; rewrite the node.
+                node.target = possible_nodename;
+                flow_color = possible_color;
+            }
+            // Otherwise we just treat it as part of the nodename
+        }
+
         save_node(node.source);
         save_node(node.target);
 
@@ -278,7 +298,8 @@ function process_sankey() {
         approved_flows.push({
             "source": unique_nodes[node.source].index,
             "target": unique_nodes[node.target].index,
-            "value": node.amount
+            "value": node.amount,
+            "color": flow_color
             }
         );
         // Save useful information for the flow cross-check:
@@ -368,14 +389,22 @@ function process_sankey() {
         }
     });
 
+    // Is there anything processable at all? If not, offer help:
+    if ( good_lines.length === 0 ) {
+        add_message('okmessage',
+            'Enter a list of flows (one per line). See TKTKTK for examples.', 0);
+        // No point in proceeding any further:
+        return null;
+    }
+
     status_message = "Showing: <strong>" + approved_flows.length +
         " flows</strong> between <strong>" + approved_nodes.length +
         " nodes</strong>.";
     total_difference = total_inflow - total_outflow
     if ( Math.abs(total_difference) < Math.pow( 10,-max_places - 1 ) ) {
         status_message +=
-            " Total <strong>In</strong> = Total <strong>Out</strong> = " +
-            unit_fy(total_inflow) + ".";
+            " Total <strong>In</strong> = Total <strong>Out</strong> = <strong>"
+            + unit_fy(total_inflow) + "</strong>.";
     } else {
         // Leave out the differing totals from the status message, issue a
         // Caution instead:
@@ -429,10 +458,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // *&*&*&* TODO: Does this function really need to be assigned to a variable?
     units_format = function (d) {
         var number_portion = d3.format( ",." + config_in.max_places + "f" )(d);
-        if ( !config_in.display_full_precision ) {
-            number_portion = number_portion.replace( /(\.\d+)0+$/, 'p1' );
-        }
-        return config_in.unit_prefix + number_portion + config_in.unit_suffix;
+        return config_in.unit_prefix
+            + ( config_in.display_full_precision
+                ? number_portion
+                : remove_zeroes(number_portion) )
+            + config_in.unit_suffix;
     };
 
     colorlist = d3.scale.category20(); // produces a list of 20 compatible colors to choose from
@@ -470,8 +500,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .append("path")
         .attr("class", "link")
         .attr("d", flow) // embed coordinates
-        .style("stroke-width", function (d) { return Math.max(1, d.dy); }) // apply stroke-width
-        .sort(function (a, b) { return b.dy - a.dy; }); // set the order of display?
+        .style("stroke-width", function (d) { return Math.max(1, d.dy); })
+        // custom stroke color; defaulting to gray if not specified:
+        .style("stroke", function (d) { return d.color || '#000000'; })
+        // sets the order of display, seems like:
+        .sort(function (a, b) { return b.dy - a.dy; });
 
     link.append("title") // Make tooltips for FLOWS
         .text(function (d) {
@@ -592,7 +625,7 @@ Lorem [5] Dolor</textarea>
 <label for="include_values_in_nodes">Show values as part of node labels</label><br />
 
 <input type="checkbox" id="display_full_precision" value="1">
-<label for="display_full_precision">Always show full precision
+<label for="display_full_precision">Always use full precision
 <small>(e.g. for currency: $DD.cc)</small></label>
 <br />
 <br />
@@ -633,14 +666,14 @@ Lorem [5] Dolor</textarea>
 </td></tr></table>
 
 <p id="questions" style="text-align: center;">
-Questions? Bugs? Suggestions? Contact <a href="https://twitter.com/sankeymatic">@SankeyMATIC</a> on Twitter.
+Questions? Bugs? Suggestions? Contact <a href="https://twitter.com/sankeymatic" target="_blank">@SankeyMATIC</a> on Twitter.
 </p>
 
 <p id="credits" style="text-align: center;">
-SankeyMATIC is produced by <a href="http://nowthis.com/">Steve Bogart</a> aka <a href="https://twitter.com/nowthis">@nowthis</a>.
+SankeyMATIC is produced by <a href="http://nowthis.com/" target="_blank">Steve Bogart</a> (<a href="https://twitter.com/nowthis" target="_blank">@nowthis</a>).
 It is built on top of the
-<a href="http://bost.ocks.org/mike/sankey/">Sankey library</a> of <a
-href="http://d3js.org/">D3.js</a>.
+<a href="http://bost.ocks.org/mike/sankey/" target="_blank">Sankey library</a> of <a
+href="http://d3js.org/" target="_blank">D3.js</a>.
 </p>
 
 </div>
