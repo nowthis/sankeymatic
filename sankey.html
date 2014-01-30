@@ -41,7 +41,7 @@ dfn {
     border-bottom: 1px dotted;
 }
 
-#entirety, #inputs, #messages, #credits {
+#entirety, #inputs, #credits {
   margin: 0px auto;
   display:table;
 }
@@ -171,8 +171,8 @@ function process_sankey() {
     // max_places
     function unit_fy(number_in) {
         var number_portion = d3.format( ",." + max_places + "f" )(number_in);
-        if (!approved_config.display_full_precision) {
-            number_portion = number_portion.replace( /0+$/, '' );
+        if ( !approved_config.display_full_precision ) {
+            number_portion = number_portion.replace( /(\.\d+)0+$/, 'p1' );
         }
         return approved_config.unit_prefix
             + number_portion
@@ -190,7 +190,7 @@ function process_sankey() {
     // Flows validation:
     // Is there anything there at all?
     if (raw_flows_var.length == 0) {
-        add_message('errormessage',
+        add_message('okmessage',
             'Enter a list of flows (one per line). See TKTKTK for examples.', 0);
         // No point in proceeding any further:
         return null;
@@ -224,7 +224,7 @@ function process_sankey() {
                       'amount' : amount_in } );
                 // We need the maximum precision of the inputs (# of characters
                 // to the RIGHT of the decimal) for some error checking
-                // operations later:
+                // operations (& display) later:
                 max_places =
                     Math.max( max_places,
                         ( ( amount_in.split( /\./ ) )[1] || '' ).length );
@@ -299,6 +299,7 @@ function process_sankey() {
         include_values_in_nodes: 0,
         canvas_height: 700,
         canvas_width: 700,
+        font_size: 12,
         top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10
     };
 
@@ -311,9 +312,9 @@ function process_sankey() {
         }
     });
     // Whole positive numbers:
-    (["canvas_width", "canvas_height",
-        "top_margin","right_margin",
-        "bottom_margin","left_margin"]).forEach( function(field_name) {
+    (["canvas_width", "canvas_height", "font_size",
+        "top_margin","right_margin", "bottom_margin",
+        "left_margin"]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
         // console.log(field_name, field_val);
         if (field_val.length < 10 && field_val.match(/^\d+$/)) {
@@ -416,8 +417,6 @@ function render_sankey(nodes_in, flows_in, config_in) {
             || config_in.unit_suffix === null)
             ? "" : config_in.unit_suffix;
 
-    // # set chart dimensions to match?
-    //console.log('inside function');
     var the_clean_json = {
         "nodes": nodes_in,
         "links": flows_in
@@ -426,27 +425,30 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // Set the dimensions of the space:
     graph_width = total_width - margin_left - margin_right;
     graph_height = total_height - margin_top - margin_bottom;
-    //console.log("width=",graph_width);
 
-    // set up: formatting function for numeric labels
     // *&*&*&* TODO: Does this function really need to be assigned to a variable?
     units_format = function (d) {
         var number_portion = d3.format( ",." + config_in.max_places + "f" )(d);
-        if (!config_in.display_full_precision) {
-            number_portion = number_portion.replace(/0+$/,'');
+        if ( !config_in.display_full_precision ) {
+            number_portion = number_portion.replace( /(\.\d+)0+$/, 'p1' );
         }
         return config_in.unit_prefix + number_portion + config_in.unit_suffix;
     };
 
     colorlist = d3.scale.category20(); // produces a list of 20 compatible colors to choose from
 
-    // clear out all contents:
-    document.getElementById('chart').innerHTML = '';
+    // clear out any old contents:
+    // Simply emptying the SVG tag didn't work well in Safari; we reset the whole tag here:
+    document.getElementById('chart').innerHTML =
+        '<svg id="the_svg" height="700" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
+    // Apply the font size setting now:
+    document.getElementById('the_svg').style.fontSize = config_in.font_size + "px";
 
-    // append the svg canvas to the page with the defined dimensions:
-    svg = d3.select("#chart").append("svg")
+    // Select the svg canvas, set the defined dimensions:
+    svg = d3.select("#the_svg")
         .attr("width", total_width)
         .attr("height", total_height)
+        //.attr("fontSize", config_in.font_size + "px")
         .append("g")
         .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
 
@@ -472,7 +474,10 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .sort(function (a, b) { return b.dy - a.dy; }); // set the order of display?
 
     link.append("title") // Make tooltips for FLOWS
-        .text(function (d) { return d.source.name + " → " + d.target.name + "\n" + units_format(d.value); });
+        .text(function (d) {
+            return d.source.name + " → " + d.target.name + "\n"
+                + units_format(d.value);
+        });
 
     // define drag function for use in node definitions
     function dragmove(d) {
@@ -554,22 +559,31 @@ function render_sankey(nodes_in, flows_in, config_in) {
 <tr>
     <td id="flows_entry">
     <strong>Enter a <u>list of FLOWS</u></strong>, one per line, as:<br />
-    <strong>Source [Amount] Target</strong>, separated by spaces<br />
+    <strong>Source [Amount] Target</strong><br />
 
-    <textarea id="flows_in" rows="25" cols="35">Thing One [10] Holding Area
-Holding Area [7] Thing Three
-Holding Area [6] Thing 4
-Thing 1.5 [5] Holding Area
-Holding Area [5] Thing 5
-Thing 6 [3] Holding Area
-Thing 4 [4] Item 7
-Thing 4 [2] Item 8
-Thing 5 [5] New thing 8</textarea>
+    <textarea id="flows_in" rows="25" cols="35">Foo [10] Quux
+Quux [7] Beta
+Quux [6] Ipsum
+Bar [5] Quux
+Quux [5] Lorem
+Baz [3] Quux
+Ipsum [3] Sit
+Ipsum [3] Amet
+Lorem [5] Dolor</textarea>
 </td>
 </tr>
 
 <tr>
 <td id="other_entry">
+<strong>Canvas size:</strong>
+<label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="700">
+<label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="700">
+<br />
+<br />
+<strong>Font size:</strong>
+<input type="text" id="font_size" size="2" maxlength="4" value="12"> <label for="font_size">px</label>
+<br />
+<br />
 <strong>Units:</strong>
 <label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10">
 <label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10"><br />
@@ -579,14 +593,9 @@ Thing 5 [5] New thing 8</textarea>
 
 <input type="checkbox" id="display_full_precision" value="1">
 <label for="display_full_precision">Always show full precision
-<small>(e.g. for currency: $DD.cc)</small></label><br />
+<small>(e.g. for currency: $DD.cc)</small></label>
 <br />
-
-<strong>Canvas:</strong>
-<label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="700">
-<label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="700"><br />
 <br />
-
 <strong>Inner Margin</strong> (pixels):<br />
 <label for="top_margin">Top</label> <input type="text" id="top_margin" size="3" maxlength="6" value="10">
 <label for="right_margin">Right</label> <input type="text" id="right_margin" size="3" maxlength="6" value="10">
@@ -603,7 +612,6 @@ Thing 5 [5] New thing 8</textarea>
 <!--
 <br />
 ... width of nodes<br />
-... FONT SIZE
  -->
 </td>
 </tr>
@@ -618,14 +626,23 @@ Thing 5 [5] New thing 8</textarea>
 </table>
 
 
-<p id="chart"><small>Diagram will appear here</small></p>
+<p id="chart">
+<svg id="the_svg" height="700" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
+</p>
 
 </td></tr></table>
 
-<p id="credits">SankeyMATIC is by <a href="http://nowthis.com/">Steve Bogart</a> aka <a href="https://twitter.com/nowthis">@nowthis</a>.
+<p id="questions" style="text-align: center;">
+Questions? Bugs? Suggestions? Contact <a href="https://twitter.com/sankeymatic">@SankeyMATIC</a> on Twitter.
+</p>
+
+<p id="credits" style="text-align: center;">
+SankeyMATIC is produced by <a href="http://nowthis.com/">Steve Bogart</a> aka <a href="https://twitter.com/nowthis">@nowthis</a>.
 It is built on top of the
 <a href="http://bost.ocks.org/mike/sankey/">Sankey library</a> of <a
-href="http://d3js.org/">D3.js</a>.</p>
+href="http://d3js.org/">D3.js</a>.
+</p>
+
 </div>
 
 </body></html>
