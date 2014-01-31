@@ -79,12 +79,9 @@ p#chart {
 /* GRAY links between nodes. fill should be nonexistent; stroke is all. */
 .link {
   fill: none;
-  stroke: #000;
-  stroke-opacity: .2;
+  stroke: #666;
+  stroke-opacity: .3;
 }
-
-/* near-black links when hovering: */
-.link:hover { stroke-opacity: .5; }
 
 /* style for all of the svg label text: */
 svg { font: 12px sans-serif; }
@@ -269,12 +266,13 @@ function process_sankey() {
     good_lines.forEach( function(node) {
         // Look for extra content about this flow on the target-node end of the
         // string:
-        var possible_color, possible_nodename, flow_color = '';
+        var possible_color, possible_nodename, flow_color = "",
+            opacity = "", opacity_on_hover = "";
         // Try to parse; there may be extra info that isn't actually the name:
         // Format of the Target node can be:
         // TODO: Target node ["Custom name for flow"] [#color[/opacity]]
         // e.g. Clinton #CCDDEE
-        // TODO: e.g. Gondor "Legolas" #998877/0.25
+        // e.g. Gondor "Legolas" #998877/0.25
         // Look for an additional string starting with # for color info
         matched_params = node.target.match( /^(.+)\s+(\#\S+)$/ );
         if (matched_params !== null) {
@@ -282,11 +280,18 @@ function process_sankey() {
             // into parts. Assume a color will have at least 3 numbers (rgb).
             possible_nodename = matched_params[1];
             possible_color    = matched_params[2];
-            matched_params = possible_color.match( /^(#[0-9A-F]{3,6})/ );
+            matched_params = possible_color.match(
+                /^(#[0-9A-F]{3,6})(\/0?\.\d{1,4})?$/ );
             if ( matched_params !== null ) {
-                // We have a match; rewrite the node.
+                // We got matches; rewrite the node & interpret the extra data
                 node.target = possible_nodename;
-                flow_color = possible_color;
+                flow_color = matched_params[1];
+                // Was there an opacity argument?
+                if ( matched_params[2] ) {
+                    opacity = matched_params[2].slice(1);
+                    // Make the hover opacity halfway between opacity and 1:
+                    opacity_on_hover = ( Number(opacity) + .9 ) / 2;
+                }
             }
             // Otherwise we just treat it as part of the nodename
         }
@@ -299,7 +304,9 @@ function process_sankey() {
             "source": unique_nodes[node.source].index,
             "target": unique_nodes[node.target].index,
             "value": node.amount,
-            "color": flow_color
+            "color": flow_color,
+            "opacity": opacity,
+            "opacity_on_hover": opacity_on_hover
             }
         );
         // Save useful information for the flow cross-check:
@@ -502,7 +509,13 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .attr("d", flow) // embed coordinates
         .style("stroke-width", function (d) { return Math.max(1, d.dy); })
         // custom stroke color; defaulting to gray if not specified:
-        .style("stroke", function (d) { return d.color || '#000000'; })
+        .style("stroke", function (d) { return d.color || '#666'; })
+        .style("stroke-opacity", function (d) { return d.opacity || '0.3'; })
+        // add hover behavior:
+        .on('mouseover', function(d){
+            d3.select(this).style( "stroke-opacity", d.opacity_on_hover || '0.5' ); })
+        .on('mouseout', function(d){
+            d3.select(this).style( "stroke-opacity", d.opacity || '0.3' ); })
         // sets the order of display, seems like:
         .sort(function (a, b) { return b.dy - a.dy; });
 
@@ -603,6 +616,7 @@ Baz [3] Quux
 Ipsum [3] Sit
 Ipsum [3] Amet
 Lorem [5] Dolor</textarea>
+<p style="margin: auto; text-align: center;"><button id="preview_graph" type="submit">Preview</button></p>
 </td>
 </tr>
 
@@ -640,7 +654,6 @@ Lorem [5] Dolor</textarea>
 <!-- <input type="checkbox" name="live_validation" id="live_validation">
 <label for="live_validation"><s>Preview as I edit</s></label><br /> -->
 
-<p style="margin: auto; text-align: center;"><button id="preview_graph" type="submit">Preview</button></p>
 
 <!--
 <br />
