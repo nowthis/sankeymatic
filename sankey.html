@@ -281,14 +281,14 @@ function process_sankey() {
             possible_nodename = matched_params[1];
             possible_color    = matched_params[2];
             matched_params = possible_color.match(
-                /^(#[0-9A-F]{3,6})(\/0?\.\d{1,4})?$/ );
+                /^(#[0-9A-F]{3,6})(\.\d{1,4})?$/ );
             if ( matched_params !== null ) {
                 // We got matches; rewrite the node & interpret the extra data
                 node.target = possible_nodename;
                 flow_color = matched_params[1];
                 // Was there an opacity argument?
                 if ( matched_params[2] ) {
-                    opacity = matched_params[2].slice(1);
+                    opacity = matched_params[2];
                     // Make the hover opacity halfway between opacity and 1:
                     opacity_on_hover = ( Number(opacity) + .9 ) / 2;
                 }
