@@ -145,7 +145,7 @@ function escapeHtml(unsafe) {
 function remove_zeroes(number_string) {
     // Strip off zeros from after any decimal.
     // If no digits remain, remove the '.' as well.
-    return number_string.replace( /(\.[^0]*)0+$/, '$1' )
+    return number_string.replace( /(\.\d*?)0+$/, '$1' )
         .replace( /\.$/, '');
 }
 
@@ -270,9 +270,9 @@ function process_sankey() {
             opacity = "", opacity_on_hover = "";
         // Try to parse; there may be extra info that isn't actually the name:
         // Format of the Target node can be:
-        // TODO: Target node ["Custom name for flow"] [#color[/opacity]]
+        // TODO: Target node ["Custom name for flow"] [#color[.opacity]]
         // e.g. Clinton #CCDDEE
-        // e.g. Gondor "Legolas" #998877/0.25
+        // e.g. Gondor "Legolas" #998877.25
         // Look for an additional string starting with # for color info
         matched_params = node.target.match( /^(.+)\s+(\#\S+)$/ );
         if (matched_params !== null) {
@@ -281,11 +281,14 @@ function process_sankey() {
             possible_nodename = matched_params[1];
             possible_color    = matched_params[2];
             matched_params = possible_color.match(
-                /^(#[0-9A-F]{3,6})(\.\d{1,4})?$/ );
+                /^#([0-9A-F]{0,6})?(\.\d{1,4})?$/ );
             if ( matched_params !== null ) {
                 // We got matches; rewrite the node & interpret the extra data
                 node.target = possible_nodename;
-                flow_color = matched_params[1];
+                // Was there a color spec?
+                if ( matched_params[1] ) {
+                    flow_color = '#' + matched_params[1];
+                }
                 // Was there an opacity argument?
                 if ( matched_params[2] ) {
                     opacity = matched_params[2];
