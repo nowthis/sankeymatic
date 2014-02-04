@@ -490,7 +490,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
     "use strict";
 
     var graph_width, graph_height,
-        units_format, d3_color_scale, first_word, svg, sankey, flow, link, node,
+        units_format, d3_color_scale, svg, sankey, flow, link, node,
         node_width = 15, node_padding = 10,
         total_width   = config_in.canvas_width,
         total_height  = config_in.canvas_height,
@@ -508,6 +508,22 @@ function render_sankey(nodes_in, flows_in, config_in) {
             || config_in.unit_suffix === null)
             ? "" : config_in.unit_suffix;
 
+    // Establish a list of 20 compatible colors to choose from:
+    d3_color_scale = d3.scale.category20();
+
+    // Fill in any missing node colors up front so they can be inherited from:
+    nodes_in.forEach( function(node) {
+        if (typeof node.color === 'undefined' || node.color === '') {
+            // Use the first word of the label as the basis for
+            // finding an already-used color or picking a new one (case
+            // sensitive).
+            // If there are no 'word' characters, substitute a word-ish value
+            // (rather than crash):
+            var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
+            node.color = d3_color_scale(first_word);
+        }
+    });
+
     var the_clean_json = {
         "nodes": nodes_in,
         "links": flows_in
@@ -516,9 +532,6 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // Set the dimensions of the space:
     graph_width = total_width - margin_left - margin_right;
     graph_height = total_height - margin_top - margin_bottom;
-
-    // Establish a list of 20 compatible colors to choose from:
-    d3_color_scale = d3.scale.category20();
 
     // *&*&*&* TODO: Does this function really need to be assigned to a variable?
     units_format = function (d) {
@@ -621,21 +634,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
     node.append("rect")
         .attr("height", function (d) { return d.dy; })
         .attr("width", node_width)
-        .style("fill", function (d) {
-            // Did the user specify a color for this node?
-            if ( d.hasOwnProperty('color') && typeof d.color !== 'undefined' &&
-                d.color !== '' ) {
-                return d.color
-            };
-            // Otherwise use the first word of the label as the basis for
-            // finding an already-used color or picking a new one (case
-            // sensitive).
-            // If there are no 'word' characters, substitute a word-ish value
-            // instead of crashing:
-            first_word = ( /^\W*(\w+)/.exec(d.name) || ['','not a word'] )[1];
-            d.color = d3_color_scale(first_word);
-            return d.color;
-        })
+        // we made sure above there will be a color defined:
+        .style("fill", function (d) { return d.color; })
         .style("stroke", function (d) { return d3.rgb(d.color).darker(2); })
         .append("title")    // Add tooltips for NODES
         .text(function (d) { return d.name + "\n" + units_format(d.value); });
