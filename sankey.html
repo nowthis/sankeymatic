@@ -42,10 +42,10 @@ dfn {
 }
 
 #entirety, #inputs, #credits {
+/* centering, in 2014: */
   margin: 0px auto;
   display:table;
 }
-
 
 textarea#flows_in {
 	border: 1px solid #006699;
@@ -59,8 +59,6 @@ p#chart {
     width: 700px;
     height: 400px;
     border: 1px dotted #666666;
-    text-align: center;
-    color: #006699;
     margin: 10px auto;
     background-color: white;
 }
@@ -73,7 +71,6 @@ p#chart {
 
 .node text {
   pointer-events: none;
-  text-shadow: 0 1px 0 #fff;
 }
 
 /* GRAY links between nodes. fill should be nonexistent; stroke is all. */
@@ -98,9 +95,8 @@ td#grapharea {
     margin: 0px;
 }
 
-/* cellspacing 0 */
+/* cellspacing 0 for all tables */
 table { border-collapse: collapse; border-spacing: 0; }
-
 
 th#title {
     padding: 5px 10px;
@@ -108,8 +104,7 @@ th#title {
     font-size: large;
 }
 
-td#flows_entry
-{
+td#flows_entry {
     padding: 2px;
     background-color: #BBDDEE;
     text-align: center;
@@ -257,14 +252,14 @@ function process_sankey() {
     // TODO: Look for 0s and post errors about them
 
     // Mention the bad lines in the message area:
-    bad_lines.forEach(function(parse_error) {
+    bad_lines.forEach( function(parse_error) {
         add_message('errormessage',
             '&quot;<b>' + escapeHtml(parse_error.value) + '</b>&quot;: ' +
              parse_error.message, 0);
     });
 
     // save_node: Add a node to the unique list (if it's not there already):
-    function save_node( nodename, nodeparams = {} ) {
+    function save_node( nodename, nodeparams ) {
         // Have we NOT seen this node before? Then add it:
         if ( !(nodename in unique_nodes) ) {
             // establish the hash:
@@ -277,15 +272,17 @@ function process_sankey() {
         }
         // Even if we have seen a node, there still may be more parameters
         // to add to its spec:
-        Object.keys(nodeparams).forEach( function(p) {
-            // console.log(nodename, p,
-            //    unique_nodes[nodename].hasOwnProperty(p) );
-            if ( nodeparams[p] !== null && nodeparams[p] !== "" ) {
-                // Note: If there are multiple lines specifying the same
-                // param for a node, the last one will win:
-                unique_nodes[nodename][p] = nodeparams[p];
-            }
-        } );
+        if ( typeof nodeparams === "object" ) {
+            Object.keys(nodeparams).forEach( function(p) {
+                // console.log(nodename, p,
+                //    unique_nodes[nodename].hasOwnProperty(p) );
+                if ( nodeparams[p] !== null && nodeparams[p] !== "" ) {
+                    // Note: If there are multiple lines specifying the same
+                    // param for a node, the last one will win:
+                    unique_nodes[nodename][p] = nodeparams[p];
+                }
+            } );
+        }
     }
 
     // First go through the Node list and set up any extra parameters we have:
@@ -709,7 +706,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
 </tr>
 <tr>
     <td id="flows_entry">
-    <textarea id="flows_in" rows="30" cols="40" onchange="process_sankey();"># To make a diagram:
+    <textarea id="flows_in" rows="25" cols="40" onchange="process_sankey();"># To make a diagram:
 # Type in a list of 'flows' in this format:
 #     Source [Amount] Target
 # Like these:
@@ -749,17 +746,19 @@ Far far away [3] Nearby #909
 <input type="text" id="font_size" size="2" maxlength="4" value="12" onchange="process_sankey();"> <label for="font_size">px</label>
 <br />
 <br />
-<strong>Units:</strong>
-<label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
-<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
+<strong>Labels:</strong>
+<label for="unit_prefix">Units Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
+<label for="unit_suffix">Units Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
 
 <input type="checkbox" id="include_values_in_nodes" value="1" onchange="process_sankey();" checked="checked">
-<label for="include_values_in_nodes">Show values as part of node labels</label><br />
-
-<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
+<label for="include_values_in_nodes">Show values as part of node labels</label>
+<br />
+&nbsp; &nbsp; <input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
 <label for="display_full_precision">Always use full precision
 <small>(e.g. for currency: $DD.cc)</small></label>
 <br />
+<input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
+<label for="hide_labels">Hide labels</label> <small>(to apply your own text to the graph)</small><br />
 <br />
 <strong>Inner Margin</strong> (pixels):<br />
 <label for="top_margin">Top</label>
@@ -780,8 +779,8 @@ Far far away [3] Nearby #909
 0.0<input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();">1.0
 <br />
 <br />
-<input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
-<label for="hide_labels">Hide all labels</label><br />
+<input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
+<label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
 
 </td>
 </tr>
@@ -815,8 +814,7 @@ href="http://d3js.org/" target="_blank">D3.js</a>.
 </div>
 
 <script>
-// render whatever we can on page load:
-process_sankey();
+process_sankey(); // render on page load
 </script>
 
 </body></html>
