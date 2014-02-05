@@ -328,7 +328,7 @@ function process_sankey() {
                 if ( matches[2] ) {
                     opacity = matches[2];
                     // Make the hover opacity halfway between opacity and 1:
-                    opacity_on_hover = ( Number(opacity) + .9 ) / 2;
+                    opacity_on_hover = ( Number(opacity) + 1 ) / 2;
                 }
             }
             // Otherwise we just treat it as part of the nodename
@@ -382,10 +382,13 @@ function process_sankey() {
         max_places: max_places,
         display_full_precision: 0,
         include_values_in_nodes: 0,
+        hide_labels: 0,
         canvas_width: 700,
         canvas_height: 400,
         font_size: 12,
-        top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10
+        top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10,
+        default_flow_opacity: 0.3,
+        default_node_opacity: 0.9
     };
 
     // Plain strings:
@@ -407,9 +410,18 @@ function process_sankey() {
         }
     });
     // Checkboxes:
-    (["display_full_precision","include_values_in_nodes"]).forEach( function(field_name) {
+    (["display_full_precision","include_values_in_nodes",
+        "hide_labels"]).forEach( function(field_name) {
         approved_config[field_name] = document.getElementById(field_name).checked;
         // console.log(field_name, approved_config[field_name]);
+    });
+    // Decimal:
+    (["default_node_opacity","default_flow_opacity"]).forEach( function(field_name) {
+        var field_val = document.getElementById(field_name).value;
+        if ( field_val.match(/^\d(?:.\d+)?$/) ) {
+            approved_config[field_name] = field_val;
+        }
+        // console.log( field_name, field_val, approved_config[field_name] );
     });
 
     // Given the canvas size, adjust the size of the containing element:
@@ -456,7 +468,7 @@ function process_sankey() {
     // Are there any good flows at all? If not, offer help:
     if ( good_flows.length === 0 ) {
         add_message('okmessage',
-            'Enter a list of flows (one per line). See TKTKTK for examples.', 0);
+            'Enter a list of flows (one per line). See the Examples page.', 0);
         // No point in proceeding any further:
         return null;
     }
@@ -554,7 +566,6 @@ function render_sankey(nodes_in, flows_in, config_in) {
     svg = d3.select("#the_svg")
         .attr("width", total_width)
         .attr("height", total_height)
-        //.attr("fontSize", config_in.font_size + "px")
         .append("g")
         .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
 
@@ -587,20 +598,29 @@ function render_sankey(nodes_in, flows_in, config_in) {
                 : d.source.inherit_right ? d.source.color
                 : d.target.inherit_left ? d.target.color
                 : '#666'; })
-        .style("stroke-opacity", function (d) { return d.opacity || '0.3'; })
+        .style("stroke-opacity", function (d) {
+            return d.opacity || config_in.default_flow_opacity;
+            })
         // add hover behavior:
         .on('mouseover', function(d){
-            d3.select(this).style( "stroke-opacity", d.opacity_on_hover || '0.5' ); })
+            d3.select(this).style( "stroke-opacity",
+                d.opacity_on_hover
+                || ( ( Number(config_in.default_flow_opacity) + 1 ) / 2 ) );
+            })
         .on('mouseout', function(d){
-            d3.select(this).style( "stroke-opacity", d.opacity || '0.3' ); })
+            d3.select(this).style( "stroke-opacity",
+                d.opacity || config_in.default_flow_opacity );
+            })
         // sets the order of display, seems like:
         .sort(function (a, b) { return b.dy - a.dy; });
 
-    link.append("title") // Make tooltips for FLOWS
-        .text(function (d) {
-            return d.source.name + " → " + d.target.name + "\n"
-                + units_format(d.value);
-        });
+    if ( !config_in.hide_labels ) {
+        link.append("title") // Make tooltips for FLOWS
+            .text(function (d) {
+                return d.source.name + " → " + d.target.name + "\n"
+                    + units_format(d.value);
+            });
+    }
 
     // define drag function for use in node definitions
     function dragmove(d) {
@@ -636,9 +656,18 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .attr("width", node_width)
         // we made sure above there will be a color defined:
         .style("fill", function (d) { return d.color; })
+        .style("fill-opacity",
+            function (d) {
+                return d.opacity || config_in.default_node_opacity;
+            })
         .style("stroke", function (d) { return d3.rgb(d.color).darker(2); })
         .append("title")    // Add tooltips for NODES
-        .text(function (d) { return d.name + "\n" + units_format(d.value); });
+        .text(
+            function (d) {
+                return config_in.hide_labels
+                    ? ""
+                    : d.name + "\n" + units_format(d.value);
+            });
 
     // Put in NODE labels
     node.append("text")
@@ -648,11 +677,15 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .attr("dy", ".35em")
         .attr("text-anchor", "end")
         .attr("transform", null)
-        .text(function (d) {
-            return d.name
-                + ( config_in.include_values_in_nodes
-                    ? ": " + units_format(d.value)
-                    : "" ); })
+        .text(
+            function (d) {
+                return config_in.hide_labels
+                    ? ""
+                    : d.name
+                        + ( config_in.include_values_in_nodes
+                            ? ": " + units_format(d.value)
+                            : "" );
+            })
         // In the left half of the picture, place labels to the right of nodes:
         .filter(function (d) { return d.x < graph_width / 2; })
         .attr("x", 6 + node_width)
@@ -676,23 +709,31 @@ function render_sankey(nodes_in, flows_in, config_in) {
 </tr>
 <tr>
     <td id="flows_entry">
-    <textarea id="flows_in" rows="30" cols="40"># To make a diagram, type in a list of
-# 'flows' in this format:
+    <textarea id="flows_in" rows="30" cols="40" onchange="process_sankey();"># To make a diagram:
+# Type in a list of 'flows' in this format:
 #     Source [Amount] Target
-
 # Like these:
 
 Here [8] Everywhere
-Everywhere [6] Far far away
-Everywhere [5] Over there
 There [5.5] Everywhere
-Everywhere [2.5] Nearby
-Somewhere else [3] Nearby
+Everywhere [5] Over there
+Everywhere [6] Somewhere else
 
-# Then click Preview below to see them graphed.
+# To set a Color for a specific flow,
+# add an HTML color code to the end of its line:
+#     Source [Amount] Target #Color
+# Like this:
+
+Everywhere [2.5] Nearby #C00
+Far far away [3] Nearby #909
+
+# Click Preview below to update the graph
 
 # Once you have your flows set up, use the
-# options below to change the graph's style...
+# options below to further change the graph's
+# style.
+
+# To see even more options, visit "Examples"
 </textarea>
 <p style="margin: auto; text-align: center;"><button id="preview_graph" type="submit">Preview</button></p>
 </td>
@@ -701,41 +742,47 @@ Somewhere else [3] Nearby
 <tr>
 <td id="other_entry">
 <strong>Graph size:</strong>
-<label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="700">
-<label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="400">
+<label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="700" onchange="process_sankey();">
+<label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="400" onchange="process_sankey();">
 <br />
 <strong>Font size:</strong>
-<input type="text" id="font_size" size="2" maxlength="4" value="12"> <label for="font_size">px</label>
+<input type="text" id="font_size" size="2" maxlength="4" value="12" onchange="process_sankey();"> <label for="font_size">px</label>
 <br />
 <br />
 <strong>Units:</strong>
-<label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10">
-<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10"><br />
+<label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
+<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
 
-<input type="checkbox" id="include_values_in_nodes" value="1">
+<input type="checkbox" id="include_values_in_nodes" value="1" onchange="process_sankey();" checked="checked">
 <label for="include_values_in_nodes">Show values as part of node labels</label><br />
 
-<input type="checkbox" id="display_full_precision" value="1">
+<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
 <label for="display_full_precision">Always use full precision
 <small>(e.g. for currency: $DD.cc)</small></label>
 <br />
 <br />
 <strong>Inner Margin</strong> (pixels):<br />
-<label for="top_margin">Top</label> <input type="text" id="top_margin" size="3" maxlength="6" value="10">
-<label for="right_margin">Right</label> <input type="text" id="right_margin" size="3" maxlength="6" value="10">
-<label for="bottom_margin">Bottom</label> <input type="text" id="bottom_margin" size="3" maxlength="6" value="10">
-<label for="left_margin">Left</label> <input type="text" id="left_margin" size="3" maxlength="6" value="10">
+<label for="top_margin">Top</label>
+<input type="text" id="top_margin" size="3" maxlength="6" value="15" onchange="process_sankey();">
+<label for="right_margin">Right</label>
+<input type="text" id="right_margin" size="3" maxlength="6" value="15" onchange="process_sankey();">
+<label for="bottom_margin">Bottom</label>
+<input type="text" id="bottom_margin" size="3" maxlength="6" value="15" onchange="process_sankey();">
+<label for="left_margin">Left</label>
+<input type="text" id="left_margin" size="3" maxlength="6" value="15" onchange="process_sankey();">
 <br />
 <br />
-
-<!-- <input type="checkbox" name="live_validation" id="live_validation">
-<label for="live_validation"><s>Preview as I edit</s></label><br /> -->
-
-
-<!--
+<strong>Opacity for all...</strong><br />
+<label for="default_flow_opacity">Flows:</label>
+0.0<input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();">1.0
 <br />
-... width of nodes<br />
- -->
+<label for="default_node_opacity">Nodes:</label>
+0.0<input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();">1.0
+<br />
+<br />
+<input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
+<label for="hide_labels">Hide all labels</label><br />
+
 </td>
 </tr>
 </table>
@@ -748,7 +795,6 @@ Somewhere else [3] Nearby
 <tr><td id="messages_area"></td></tr>
 </table>
 
-
 <p id="chart">
 <svg id="the_svg" height="400" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
@@ -756,7 +802,7 @@ Somewhere else [3] Nearby
 </td></tr></table>
 
 <p id="questions" style="text-align: center;">
-Questions? Bugs? Suggestions? Contact <a href="https://twitter.com/sankeymatic" target="_blank">@SankeyMATIC</a> on Twitter.
+Questions? Bugs? Suggestions? Tell <a href="https://twitter.com/sankeymatic" target="_blank">@SankeyMATIC</a> on Twitter.
 </p>
 
 <p id="credits" style="text-align: center;">
@@ -767,8 +813,10 @@ href="http://d3js.org/" target="_blank">D3.js</a>.
 </p>
 
 </div>
+
 <script>
 // render whatever we can on page load:
 process_sankey();
 </script>
+
 </body></html>
