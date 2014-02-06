@@ -20,9 +20,9 @@ body {
 }
 
 .cautionmessage {
-    background-color: #FFFFAA;
-    color: #CC6600;
-    border: 1px solid darkorange;
+    background-color: #FFFF99;
+    color: darkred;
+    border: 1px solid darkred;
     padding: 4px;
     margin: -1px;
 }
@@ -147,14 +147,14 @@ function remove_zeroes(number_string) {
 function process_sankey() {
     "use strict";
     var source_lines = [], good_flows = [], good_node_lines = [],
-        bad_lines = [], node_order = [],
-        line_ix = 0, line_in = '',
-        unique_nodes = {}, matches = [], amount_in = 0;
+        bad_lines = [], node_order = [], line_ix = 0, line_in = '',
+        unique_nodes = {}, matches = [], amount_in = 0,
+        do_cross_checking = 1, cross_check_error_ct = 0,
+        approved_nodes = [], approved_flows = [], approved_config = {},
+        total_inflow = 0, total_outflow = 0, max_places = 0,
+        epsilon_difference = 0, status_message = '', total_difference = 0;
     var messages_el = document.getElementById('messages_area');
     var raw_flows_var = document.getElementById('flows_in').value;
-    var approved_nodes = [], approved_flows = [], approved_config = {};
-    var total_inflow = 0, total_outflow = 0, max_places = 0;
-    var status_message = '', total_difference = 0;
 
     // Define utility functions:
     // Put a message on the page using the specified class:
@@ -194,7 +194,7 @@ function process_sankey() {
         // Does this line match the basic format?
         line_in = source_lines[line_ix].trim();
         // Is it a comment? Skip it entirely:
-        if ( line_in.match(/^#/) ) {
+        if ( line_in.match(/^'/) ) {
             continue;
         }
         // Is it a node spec?
@@ -218,11 +218,11 @@ function process_sankey() {
                 bad_lines.push (
                     { 'value' : line_in,
                       'message' : 'The Amount is not a valid decimal number.' } );
-            } else if (amount_in < 0) {
-                // The Sankey library doesn't currently support negative numbers:
+            } else if (amount_in <= 0) {
+                // The Sankey library doesn't currently support negative numbers or 0:
                 bad_lines.push (
                     { 'value' : line_in,
-                      'message' : 'Amounts must be positive.' } );
+                      'message' : 'Amounts must be greater than 0.' } );
             } else {
                 // All seems well, save it as good (even if 0):
                 good_flows.push(
@@ -247,9 +247,10 @@ function process_sankey() {
         // else, the final case: a blank line. We just skip those silently, so
         // someone can separate their input lines with whitespace if desired.
     }
+    // We know max_places now, so we can derive the smallest important difference:
+    epsilon_difference = Math.pow( 10, -max_places - 1 );
 
     // TODO: Look for cycles and post errors about them
-    // TODO: Look for 0s and post errors about them
 
     // Mention the bad lines in the message area:
     bad_lines.forEach( function(parse_error) {
@@ -385,7 +386,9 @@ function process_sankey() {
         font_size: 12,
         top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10,
         default_flow_opacity: 0.3,
-        default_node_opacity: 0.9
+        default_node_opacity: 0.9,
+        node_width: 10,
+        node_padding: 10
     };
 
     // Plain strings:
@@ -421,6 +424,8 @@ function process_sankey() {
         // console.log( field_name, field_val, approved_config[field_name] );
     });
 
+    do_cross_checking = document.getElementById("flow_cross_check").checked;
+
     // Given the canvas size, adjust the size of the containing element:
     var chart_el = document.getElementById('chart');
     chart_el.style.height = approved_config.canvas_height + "px";
@@ -436,19 +441,20 @@ function process_sankey() {
             difference = this_node.to_sum - this_node.from_sum;
             // Is the difference great enough to matter? (i.e. bigger than 1/10
             // the smallest unit used?)
-            if ( Math.abs(difference) >=
-                Math.pow( 10,-max_places - 1 ) ) {
+            if ( do_cross_checking
+                && Math.abs(difference) >= epsilon_difference ) {
                 // Construct a hyper-informative error message about the
                 // imbalance.
                 // If we don't round the outputs to match the maximum precision
                 // of the inputs, we get uselessly long repeated decimals:
+                cross_check_error_ct++;
                 add_message( "cautionmessage",
                     "&quot;<b>" + escapeHtml(nodename) + "</b>&quot;: " +
-                    "The amount <strong>in</strong> (" +
+                    "The amount <strong>IN</strong> (" +
                     '<dfn title="' +
                     this_node.to_list.join(' + ') + '">' +
                     unit_fy(this_node.to_sum) +
-                    "</dfn>) does not match the amount <strong>out</strong> (" +
+                    "</dfn>) does not match the amount <strong>OUT</strong> (" +
                     '<dfn title="' +
                     this_node.from_list.join(' + ') + '">' +
                     unit_fy(this_node.from_sum) +
@@ -474,20 +480,34 @@ function process_sankey() {
         " flows</strong> between <strong>" + approved_nodes.length +
         " nodes</strong>.";
     total_difference = total_inflow - total_outflow;
-    if ( Math.abs(total_difference) < Math.pow( 10,-max_places - 1 ) ) {
+    if ( Math.abs(total_difference) < epsilon_difference ) {
         status_message +=
-            " Total <strong>In</strong> = Total <strong>Out</strong> = <strong>"
+            " Total IN = Total OUT = <strong>"
             + unit_fy(total_inflow) + "</strong>.";
-    } else {
+    } else if (do_cross_checking) {
         // Leave out the differing totals from the status message, issue a
         // Caution instead:
         add_message( "cautionmessage",
-            "The <strong>Total In</strong> (" +
+            "The <strong>Total IN</strong> (" +
             unit_fy(total_inflow) +
-            ") does not match the <strong>Total Out</strong> (" +
+            ") does not match the <strong>Total OUT</strong> (" +
             unit_fy(total_outflow) +
             "). &Delta; = <strong>" + unit_fy(total_difference) + "</strong>.",
             0 );
+    } else {
+        status_message +=
+            " Total <strong>IN</strong> = <strong>"
+            + unit_fy(total_inflow) + "</strong>. Total <strong>OUT</strong> = <strong>"
+            + unit_fy(total_outflow) + "</strong>.";
+    }
+    if (do_cross_checking) {
+        if ( cross_check_error_ct > 0 ) {
+            status_message += " Imbalances found:";
+        } else {
+            status_message += " No imbalances found.";
+        }
+    } else {
+        status_message += " Flow Cross-Check is <strong>OFF</strong>.";
     }
     add_message( "okmessage", status_message, 1 ); // always display main status line first
 
@@ -500,7 +520,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
     var graph_width, graph_height,
         units_format, d3_color_scale, svg, sankey, flow, link, node,
-        node_width = 15, node_padding = 10,
+        node_width    = config_in.node_width,
+        node_padding  = config_in.node_padding,
         total_width   = config_in.canvas_width,
         total_height  = config_in.canvas_height,
         margin_top    = config_in.top_margin,
@@ -706,32 +727,25 @@ function render_sankey(nodes_in, flows_in, config_in) {
 </tr>
 <tr>
     <td id="flows_entry">
-    <textarea id="flows_in" rows="25" cols="40" onchange="process_sankey();"># To make a diagram:
-# Type in a list of 'flows' in this format:
-#     Source [Amount] Target
-# Like these:
-
+    <textarea id="flows_in" rows="25" cols="40" onchange="process_sankey();">' To get started, type a list of "flows" like this:
+'     Source [Amount] Target
+' Examples:
 Here [8] Everywhere
 There [5.5] Everywhere
 Everywhere [5] Over there
 Everywhere [6] Somewhere else
 
-# To set a Color for a specific flow,
-# add an HTML color code to the end of its line:
-#     Source [Amount] Target #Color
-# Like this:
-
+' To set a Color for a specific flow, add an
+' HTML color code to the end:
+'     Source [Amount] Target #Color
+' Examples:
 Everywhere [2.5] Nearby #C00
 Far far away [3] Nearby #909
 
-# Click Preview below to update the graph
-
-# Once you have your flows set up, use the
-# options below to further change the graph's
-# style.
-
-# To see even more options, visit "Examples"
-</textarea>
+' Once you have your flows entered, use the
+' controls below to further change the graph's
+' style.
+' Want even more options? Visit "Examples"</textarea>
 <p style="margin: auto; text-align: center;"><button id="preview_graph" type="submit">Preview</button></p>
 </td>
 </tr>
@@ -753,7 +767,7 @@ Far far away [3] Nearby #909
 <input type="checkbox" id="include_values_in_nodes" value="1" onchange="process_sankey();" checked="checked">
 <label for="include_values_in_nodes">Show values as part of node labels</label>
 <br />
-&nbsp; &nbsp; <input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
+&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
 <label for="display_full_precision">Always use full precision
 <small>(e.g. for currency: $DD.cc)</small></label>
 <br />
@@ -772,10 +786,10 @@ Far far away [3] Nearby #909
 <br />
 <br />
 <strong>Opacity for all...</strong><br />
-<label for="default_flow_opacity">Flows:</label>
+&nbsp;&nbsp;&nbsp;&nbsp;<label for="default_flow_opacity">Flows:</label>
 0.0<input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();">1.0
 <br />
-<label for="default_node_opacity">Nodes:</label>
+&nbsp;&nbsp;&nbsp;&nbsp;<label for="default_node_opacity">Nodes:</label>
 0.0<input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();">1.0
 <br />
 <br />
