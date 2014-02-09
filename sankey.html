@@ -7,9 +7,12 @@
 
 body {
     font-family: sans-serif;
-    font-size: small;
+    font-size: 13px;
     background-color: #F8FDFF;
 }
+
+.smalllabel { font-size: 11px; }
+.narrowslider { width: 75px; }
 
 .errormessage {
     background-color: pink;
@@ -380,6 +383,7 @@ function process_sankey() {
         canvas_width: 700,
         canvas_height: 400,
         font_size: 12,
+        font_weight: 400,
         top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10,
         default_flow_opacity: 0.3,
         default_node_opacity: 0.9,
@@ -396,9 +400,9 @@ function process_sankey() {
         }
     });
     // Whole positive numbers:
-    (["canvas_width", "canvas_height", "font_size",
+    ([ "canvas_width", "canvas_height", "font_size",
         "top_margin","right_margin", "bottom_margin",
-        "left_margin"]).forEach( function(field_name) {
+        "left_margin", "font_weight" ]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
         // console.log(field_name, field_val);
         if (field_val.length < 10 && field_val.match(/^\d+$/)) {
@@ -667,12 +671,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
         d.x = Math.max(0, Math.min(graph_width - d.dx, d3.event.x));
         d.y = Math.max(0, Math.min(graph_height - d.dy, d3.event.y));
         d3.select(this).attr(
-            "transform",
-            "translate(" + d.x + "," + d.y + ")"
+            "transform", "translate(" + d.x + "," + d.y + ")"
         );
         // re-render:
         sankey.relayout();
-        // re-write new flow metadata?
+        // rewrite the flow's data:
         link.attr("d", flow);
     }
 
@@ -730,7 +733,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
             "font-size": config_in.font_size + "px",
             "font-family": "helvetica, sans-serif",
             "stroke-width": "0", // positive stroke-width makes letters fuzzy
-            "font-weight": "400",
+            "font-weight": config_in.font_weight,
             } )
         // In the left half of the picture, place labels to the right of nodes:
         .filter(function (d) { return d.x < graph_width / 2; })
@@ -789,13 +792,15 @@ Far far away [3] Nearby #909
 <label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="700" onchange="process_sankey();">
 <label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="400" onchange="process_sankey();">
 <br />
-<strong>Font size:</strong>
+<strong>Font:</strong> Size
 <input type="text" id="font_size" size="2" maxlength="4" value="12" onchange="process_sankey();"> <label for="font_size">px</label>
+
+&nbsp;&nbsp;&nbsp;<span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span>
 <br />
 <br />
 <strong>Labels:</strong>
 <label for="unit_prefix">Units Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
-<label for="unit_suffix">Units Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
+<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
 
 <input type="checkbox" id="include_values_in_nodes" value="1" onchange="process_sankey();" checked="checked">
 <label for="include_values_in_nodes">Show values as part of node labels</label>
@@ -820,10 +825,10 @@ Far far away [3] Nearby #909
 <br />
 <strong>Opacity for all...</strong><br />
 &nbsp;&nbsp;&nbsp;&nbsp;<label for="default_flow_opacity">Flows:</label>
-0.0<input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();">1.0
+<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 <br />
 &nbsp;&nbsp;&nbsp;&nbsp;<label for="default_node_opacity">Nodes:</label>
-0.0<input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();">1.0
+<span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 <br />
 <br />
 <input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
