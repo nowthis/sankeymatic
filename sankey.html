@@ -65,23 +65,17 @@ p#chart {
 
 .node rect {
   cursor: move;
-  fill-opacity: .9;
-  shape-rendering: crispEdges;
+  /* fill-opacity: .9;
+  shape-rendering: crispEdges; */
 }
 
 .node text {
   pointer-events: none;
 }
 
-/* GRAY links between nodes. fill should be nonexistent; stroke is all. */
-.link {
-  fill: none;
-  stroke: #666;
-  stroke-opacity: .3;
-}
-
-/* style for all of the svg label text: */
-svg { font: 12px sans-serif; }
+/* Note on how the links are drawn: A path is specified but no line ('fill') is drawn on it.
+   The 'stroke' is all we are seeing, so that is what gets colored.
+   The stroke styling is now done in the JS, not the overall CSS. */
 
 td { vertical-align: top; padding: 2px;}
 
@@ -119,6 +113,8 @@ td#flows_entry {
 <!-- script src="http://d3js.org/d3.v2.min.js?2.9.1"></script -->
 <script src="d3.v2.js"></script>
 <script src="sankey.js"></script>
+<script src="canvg.js"></script>
+<script src="rgbcolor.js"></script>
 <script>
 function isNumeric(n) {
     // borrowed from jquery:
@@ -310,7 +306,7 @@ function process_sankey() {
         matches = flow.target.match( /^(.+)\s+(\#\S+)$/ );
         if ( matches !== null ) {
             // IFF the # string matches the pattern, separate the nodename
-            // into parts. Assume a color will have at least 3 numbers (rgb).
+            // into parts. Assume a color will have at least 3 digits (rgb).
             possible_nodename = matches[1];
             possible_color    = matches[2];
             matches = possible_color.match(
@@ -511,8 +507,34 @@ function process_sankey() {
     }
     add_message( "okmessage", status_message, 1 ); // always display main status line first
 
-    // Finally, do the actual rendering:
-    return render_sankey( approved_nodes, approved_flows, approved_config );
+    // Do the actual rendering:
+    render_sankey( approved_nodes, approved_flows, approved_config );
+
+    var svg_el = document.getElementById("the_svg");
+        // Canvg requires trimmed content
+    var svg_content = svg_el.innerHTML,
+        canvas = document.getElementById("canvas");
+
+    // Draw svg on canvas
+    canvg(canvas, svg_content, {
+        ignoreMouse: true,
+        ignoreAnimation: true,
+        useCORS: true,
+        log: true
+        } );
+
+    // Change img be SVG representation
+    var png_of_the_svg = canvas.toDataURL('image/png');
+
+    var std_button_el = document.getElementById("download_standard");
+    std_button_el.setAttribute( "href",  png_of_the_svg );
+    std_button_el.setAttribute( "value", approved_config.canvas_height + "x" +
+        approved_config.canvas_width + " (this resolution)");
+    std_button_el.setAttribute( "download",
+        "sankey_" + approved_config.canvas_height + "x"
+            + approved_config.canvas_width + ".png" );
+
+    return null;
 }
 
 function render_sankey(nodes_in, flows_in, config_in) {
@@ -577,8 +599,6 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // Simply emptying the SVG tag didn't work well in Safari; we reset the whole tag here:
     document.getElementById('chart').innerHTML =
         '<svg id="the_svg" height="400" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
-    // Apply the font size setting now:
-    document.getElementById('the_svg').style.fontSize = config_in.font_size + "px";
 
     // Select the svg canvas, set the defined dimensions:
     svg = d3.select("#the_svg")
@@ -605,6 +625,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .append("path")
         .attr("class", "link")
         .attr("d", flow) // embed coordinates
+        .style("fill", "none") // ensure no line gets drawn, just stroke
         .style("stroke-width", function (d) { return Math.max(1, d.dy); })
         // custom stroke color; defaulting to gray if not specified:
         .style("stroke", function (d) {
@@ -678,6 +699,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
             function (d) {
                 return d.opacity || config_in.default_node_opacity;
             })
+        //.style( "stroke-width", "0" )
         .style("stroke", function (d) { return d3.rgb(d.color).darker(2); })
         .append("title")    // Add tooltips for NODES
         .text(
@@ -704,6 +726,12 @@ function render_sankey(nodes_in, flows_in, config_in) {
                             ? ": " + units_format(d.value)
                             : "" );
             })
+        .style( {   // be explicit about the font specs:
+            "font-size": config_in.font_size + "px",
+            "font-family": "helvetica, sans-serif",
+            "stroke-width": "0", // positive stroke-width makes letters fuzzy
+            "font-weight": "400",
+            } )
         // In the left half of the picture, place labels to the right of nodes:
         .filter(function (d) { return d.x < graph_width / 2; })
         .attr("x", 6 + node_width)
@@ -735,17 +763,22 @@ There [5.5] Everywhere
 Everywhere [5] Over there
 Everywhere [6] Somewhere else
 
-' To set a Color for a specific flow, add an
+' To set a color for a specific flow, add an
 ' HTML color code to the end:
 '     Source [Amount] Target #Color
 ' Examples:
 Everywhere [2.5] Nearby #C00
 Far far away [3] Nearby #909
 
-' Once you have your flows entered, use the
-' controls below to further change the graph's
-' style.
-' Want even more options? Visit "Examples"</textarea>
+' To set a node's color and make the flows in
+' (or out) adopt its color:
+'     :Nodename #Color &gt;&gt; &lt;&lt;
+' Example:
+:There #FC0 >>
+
+' Once you have your nodes &amp; flows, use the
+' controls below to further change the
+' graph's style.</textarea>
 <p style="margin: auto; text-align: center;"><button id="preview_graph" type="submit">Preview</button></p>
 </td>
 </tr>
@@ -811,7 +844,13 @@ Far far away [3] Nearby #909
 <p id="chart">
 <svg id="the_svg" height="400" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
-
+<canvas id="canvas" height="400" width="700" style="background: #FFF;"></canvas>
+<div id="chartfooter">
+<p>Once you are happy with your graph, you can <strong>export it as a .PNG image</strong>:&nbsp;
+<input id="download_standard" type="button" value="(this resolution)" />&nbsp;
+<input id="download_hi_res" type="button" value="(2x resolution)" /></p>
+</p>
+</div>
 </td></tr></table>
 
 <p id="questions" style="text-align: center;">
