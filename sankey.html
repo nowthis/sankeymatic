@@ -154,6 +154,7 @@ function process_sankey() {
         epsilon_difference = 0, status_message = '', total_difference = 0;
     var messages_el = document.getElementById('messages_area');
     var raw_flows_var = document.getElementById('flows_in').value;
+    var svg_content, canvas_el, svg_as_png_url, chart_el;
 
     // Define utility functions:
     // Put a message on the page using the specified class:
@@ -427,7 +428,7 @@ function process_sankey() {
     do_cross_checking = document.getElementById("flow_cross_check").checked;
 
     // Given the canvas size, adjust the size of the containing element:
-    var chart_el = document.getElementById('chart');
+    chart_el = document.getElementById('chart');
     chart_el.style.height = approved_config.canvas_height + "px";
     chart_el.style.width = approved_config.canvas_width + "px";
 
@@ -514,24 +515,27 @@ function process_sankey() {
     // Do the actual rendering:
     render_sankey( approved_nodes, approved_flows, approved_config );
 
-    var svg_el = document.getElementById("the_svg");
-        // Canvg requires trimmed content
-    var svg_content = svg_el.innerHTML,
-        canvas = document.getElementById("canvas");
+    // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
+    // does seem to in Firefox), we string together the node contents to submit
+    // to the canvas converter:
+    svg_content
+         = ( new XMLSerializer() ).serializeToString(
+            document.getElementById("the_svg") );
+    canvas_el = document.getElementById("png_preview");
 
-    // Draw svg on canvas
-    canvg(canvas, svg_content, {
+    // Draw the svg contents on the canvas:
+    canvg( canvas_el, svg_content, {
         ignoreMouse: true,
         ignoreAnimation: true,
         useCORS: true,
         log: true
         } );
 
-    // Change img be SVG representation
-    var png_of_the_svg = canvas.toDataURL('image/png');
+    // Make a PNG:
+    svg_as_png_url = canvas_el.toDataURL('image/png');
 
     var std_button_el = document.getElementById("download_standard");
-    std_button_el.setAttribute( "href",  png_of_the_svg );
+    std_button_el.setAttribute( "href",  svg_as_png_url );
     std_button_el.setAttribute( "value", approved_config.canvas_height + "x" +
         approved_config.canvas_width + " (this resolution)");
     std_button_el.setAttribute( "download",
@@ -702,8 +706,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
             function (d) {
                 return d.opacity || config_in.default_node_opacity;
             })
-        //.style( "stroke-width", "0" )
-        .style("stroke", function (d) { return d3.rgb(d.color).darker(2); })
+        .style( "stroke-width", "0" )
+        //.style("stroke", function (d) { return d3.rgb(d.color).darker(2); })
         .append("title")    // Add tooltips for NODES
         .text(
             function (d) {
@@ -771,7 +775,7 @@ Everywhere [6] Somewhere else
 '     Source [Amount] Target #Color
 ' Examples:
 Everywhere [2.5] Nearby #C00
-Far far away [3] Nearby #909
+Far far away [3] Nearby #0C0
 
 ' To set a node's color and make the flows in
 ' (or out) adopt its color:
@@ -848,7 +852,7 @@ Far far away [3] Nearby #909
 <p id="chart">
 <svg id="the_svg" height="400" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
-<canvas id="canvas" height="400" width="700" style="background: #FFF;"></canvas>
+<canvas id="png_preview" height="400" width="700" style="background: #FFF;"></canvas>
 <div id="chartfooter">
 <p>Once you are happy with your graph, you can <strong>export it as a .PNG image</strong>:&nbsp;
 <input id="download_standard" type="button" value="(this resolution)" />&nbsp;
