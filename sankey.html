@@ -151,10 +151,12 @@ function process_sankey() {
         do_cross_checking = 1, cross_check_error_ct = 0,
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
-        epsilon_difference = 0, status_message = '', total_difference = 0;
-    var messages_el = document.getElementById('messages_area');
-    var raw_flows_var = document.getElementById('flows_in').value;
-    var svg_content, canvas_el, svg_as_png_url, chart_el;
+        epsilon_difference = 0, status_message = '', total_difference = 0,
+        svg_content = '', canvas_el = '', svg_as_png_url = '', chart_el = '',
+        canvas_context = '', png_link_el = '', dimensions = '',
+        messages_el = document.getElementById('messages_area'),
+        png_link_el = document.getElementById("download_1x"),
+        raw_flows_var = document.getElementById('flows_in').value;
 
     // Define utility functions:
     // Put a message on the page using the specified class:
@@ -178,8 +180,9 @@ function process_sankey() {
             + approved_config.unit_suffix;
     }
 
-    // BEGIN by clearing all messages:
+    // BEGIN by resetting all messages:
     messages_el.innerHTML = '';
+    png_link_el.innerHTML = "...";
 
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
@@ -198,9 +201,9 @@ function process_sankey() {
             continue;
         }
         // Is it a node spec?
-        if ( ( matches = line_in.match(
-                /^:(.+) #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i ) )
-                !== null ) {
+        matches = line_in.match(
+                /^:(.+) #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i );
+        if ( matches !== null ) {
             good_node_lines.push(
                 { 'name' : matches[1].trim(),
                   'color' : matches[2],
@@ -212,7 +215,8 @@ function process_sankey() {
         }
         matches = line_in.match( /^(.+)\[([\d\.\s\+\-]+)\](.+)$/ );
         if ( matches !== null ) {
-            // The Amount looked like a number; is it really (after tossing out whitespace)?
+            // The Amount looked like a number; is it really (after tossing out
+            // whitespace)?
             amount_in = matches[2].replace(/\s/g,'');
             if ( !isNumeric(amount_in) ) {
                 bad_lines.push (
@@ -262,7 +266,7 @@ function process_sankey() {
     // save_node: Add a node to the unique list (if it's not there already):
     function save_node( nodename, nodeparams ) {
         // Have we NOT seen this node before? Then add it:
-        if ( !(nodename in unique_nodes) ) {
+        if ( !unique_nodes.hasOwnProperty(nodename) ) {
             // establish the hash:
             unique_nodes[nodename] = {
                 "from_sum": 0,   "to_sum": 0,
@@ -353,19 +357,19 @@ function process_sankey() {
 
     // Construct the approved_nodes structure:
     node_order.forEach( function (nodename) {
-        var this_node = unique_nodes[nodename];
-        var readynode = {
-            "name": nodename,
-            "index": this_node.index,
-            "color": this_node.color,
-            "opacity": this_node.opacity,
-            "inherit_right":
-                ( this_node.inherit1 === ">>"
-                    || this_node.inherit2 === ">>" ? 1 : 0 ),
-            "inherit_left":
-                ( this_node.inherit1 === "<<"
-                    || this_node.inherit2 === "<<" ? 1 : 0 )
-        };
+        var this_node = unique_nodes[nodename],
+            readynode = {
+                "name": nodename,
+                "index": this_node.index,
+                "color": this_node.color,
+                "opacity": this_node.opacity,
+                "inherit_right":
+                    ( this_node.inherit1 === ">>"
+                        || this_node.inherit2 === ">>" ? 1 : 0 ),
+                "inherit_left":
+                    ( this_node.inherit1 === "<<"
+                        || this_node.inherit2 === "<<" ? 1 : 0 )
+            };
 
         // approved_nodes = the real node list, formatted for the render routine:
         approved_nodes.push(readynode);
@@ -531,16 +535,23 @@ function process_sankey() {
         log: true
         } );
 
+    // set background = white by drawing rect on entire canvas
+    // credit to Mike Chambers (@mesh) for this approach:
+    canvas_context = canvas_el.getContext("2d");
+    canvas_context.globalCompositeOperation = "destination-over";
+    canvas_context.fillStyle = "#FFFFFF";
+    canvas_context.fillRect( 0, 0,
+        approved_config.canvas_width, approved_config.canvas_height);
+
     // Make a PNG:
     svg_as_png_url = canvas_el.toDataURL('image/png');
+    svg_as_png_url = svg_as_png_url.replace('image/png','image/octet-stream');
 
-    var std_button_el = document.getElementById("download_standard");
-    std_button_el.setAttribute( "href",  svg_as_png_url );
-    std_button_el.setAttribute( "value", approved_config.canvas_height + "x" +
-        approved_config.canvas_width + " (this resolution)");
-    std_button_el.setAttribute( "download",
-        "sankey_" + approved_config.canvas_height + "x"
-            + approved_config.canvas_width + ".png" );
+    dimensions
+        = approved_config.canvas_width + "x" + approved_config.canvas_height;
+    png_link_el.setAttribute( "href",  svg_as_png_url );
+    png_link_el.innerHTML = "Download " + dimensions + " PNG";
+    png_link_el.setAttribute( "download", "sankey_" + dimensions + ".png" );
 
     return null;
 }
@@ -852,11 +863,10 @@ Far far away [3] Nearby #0C0
 <p id="chart">
 <svg id="the_svg" height="400" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
-<canvas id="png_preview" height="400" width="700" style="background: #FFF;"></canvas>
+<canvas id="png_preview" height="400" width="700" style="background: #FFF; display:none;"></canvas>
 <div id="chartfooter">
 <p>Once you are happy with your graph, you can <strong>export it as a .PNG image</strong>:&nbsp;
-<input id="download_standard" type="button" value="(this resolution)" />&nbsp;
-<input id="download_hi_res" type="button" value="(2x resolution)" /></p>
+<a href="#" id="download_1x" download="sankey_1x.png">...</a>
 </p>
 </div>
 </td></tr></table>
