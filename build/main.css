@@ -1,0 +1,103 @@
+body {
+    font-family: sans-serif;
+    font-size: 13px;
+    background-color: #F8FDFF;
+}
+
+.smalllabel { font-size: 11px; }
+.narrowslider { width: 75px; }
+
+.errormessage {
+    background-color: pink;
+    color: #660000;
+    border: 1px solid red;
+    padding: 4px;
+    margin: -1px;
+}
+
+.cautionmessage {
+    background-color: #FFFF99;
+    color: darkred;
+    border: 1px solid darkred;
+    padding: 4px;
+    margin: -1px;
+}
+
+.okmessage {
+    text-align: center;
+    background-color: #DDEEFF;
+    color: #003366;
+    border: 1px solid #006699;
+    padding: 4px;
+    margin: -1px;
+}
+
+dfn {
+    font-style: normal;
+    border-bottom: 1px dotted;
+}
+
+#entirety, #inputs, #credits {
+/* centering, in 2014: */
+  margin: 0px auto;
+  display:table;
+}
+
+textarea#flows_in {
+	border: 1px solid #006699;
+    padding: 3px;
+    margin: 4px;
+	font-family: sans-serif;
+	font-size: small;
+}
+
+p#chart {
+    width: 700px;
+    height: 400px;
+    border: 1px dotted #666666;
+    margin: 10px auto;
+    background-color: white;
+}
+
+.node rect {
+  cursor: move;
+  /* fill-opacity: .9;
+  shape-rendering: crispEdges; */
+}
+
+.node text {
+  pointer-events: none;
+}
+
+/* Note on how the links are drawn: A path is specified but no line ('fill') is drawn on it.
+   The 'stroke' is all we are seeing, so that is what gets colored.
+   The stroke styling is now done in the JS, not the overall CSS. */
+
+td { vertical-align: top; padding: 2px;}
+
+td#other_entry {
+    padding: 2px;
+    background-color: #DDEEFF;
+}
+
+td#grapharea {
+    padding: 0px;
+    margin: 0px;
+}
+
+/* cellspacing 0 for all tables */
+table { border-collapse: collapse; border-spacing: 0; }
+
+th#title {
+    padding: 5px 10px;
+    background-color: #88BBCC;
+    font-size: large;
+}
+
+td#flows_entry {
+    padding: 2px;
+    background-color: #BBDDEE;
+    text-align: center;
+    padding: 5px;
+    vertical-align: middle;
+}

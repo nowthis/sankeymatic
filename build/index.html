@@ -3,113 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>SankeyMATIC &alpha;</title>
-<style>
-
-body {
-    font-family: sans-serif;
-    font-size: 13px;
-    background-color: #F8FDFF;
-}
-
-.smalllabel { font-size: 11px; }
-.narrowslider { width: 75px; }
-
-.errormessage {
-    background-color: pink;
-    color: #660000;
-    border: 1px solid red;
-    padding: 4px;
-    margin: -1px;
-}
-
-.cautionmessage {
-    background-color: #FFFF99;
-    color: darkred;
-    border: 1px solid darkred;
-    padding: 4px;
-    margin: -1px;
-}
-
-.okmessage {
-    text-align: center;
-    background-color: #DDEEFF;
-    color: #003366;
-    border: 1px solid #006699;
-    padding: 4px;
-    margin: -1px;
-}
-
-dfn {
-    font-style: normal;
-    border-bottom: 1px dotted;
-}
-
-#entirety, #inputs, #credits {
-/* centering, in 2014: */
-  margin: 0px auto;
-  display:table;
-}
-
-textarea#flows_in {
-	border: 1px solid #006699;
-    padding: 3px;
-    margin: 4px;
-	font-family: sans-serif;
-	font-size: small;
-}
-
-p#chart {
-    width: 700px;
-    height: 400px;
-    border: 1px dotted #666666;
-    margin: 10px auto;
-    background-color: white;
-}
-
-.node rect {
-  cursor: move;
-  /* fill-opacity: .9;
-  shape-rendering: crispEdges; */
-}
-
-.node text {
-  pointer-events: none;
-}
-
-/* Note on how the links are drawn: A path is specified but no line ('fill') is drawn on it.
-   The 'stroke' is all we are seeing, so that is what gets colored.
-   The stroke styling is now done in the JS, not the overall CSS. */
-
-td { vertical-align: top; padding: 2px;}
-
-td#other_entry {
-    padding: 2px;
-    background-color: #DDEEFF;
-}
-
-td#grapharea {
-    padding: 0px;
-    margin: 0px;
-}
-
-/* cellspacing 0 for all tables */
-table { border-collapse: collapse; border-spacing: 0; }
-
-th#title {
-    padding: 5px 10px;
-    background-color: #88BBCC;
-    font-size: large;
-}
-
-td#flows_entry {
-    padding: 2px;
-    background-color: #BBDDEE;
-    text-align: center;
-    padding: 5px;
-    vertical-align: middle;
-}
-
-</style>
+<link rel="stylesheet" href="main.css">
 </head>
 <body>
 
@@ -143,6 +37,40 @@ function remove_zeroes(number_string) {
         .replace( /\.$/, '');
 }
 
+function update_png() {
+    "use strict";
+    // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
+    // does seem to in Firefox), we string together the node contents to submit
+    // to the canvas converter:
+    var svg_content
+         = ( new XMLSerializer() ).serializeToString(
+            document.getElementById("the_svg") ),
+        canvas_context = '', svg_as_png_url = '',
+        canvas_el = document.getElementById("png_preview"),
+        png_link_el = document.getElementById("download_1x");
+
+    // Draw the svg contents on the canvas:
+    canvg( canvas_el, svg_content, {
+        ignoreMouse: true,
+        ignoreAnimation: true,
+        useCORS: true,
+        log: true
+        } );
+
+    // set background = white by drawing rect on entire canvas
+    // credit to Mike Chambers (@mesh) for this approach:
+    canvas_context = canvas_el.getContext("2d");
+    canvas_context.globalCompositeOperation = "destination-over";
+    canvas_context.fillStyle = "#FFFFFF";
+    canvas_context.fillRect( 0, 0, canvas_el.width, canvas_el.height);
+
+    // Convert canvas image to a PNG:
+    svg_as_png_url = canvas_el.toDataURL('image/png');
+    // make it downloadable
+    svg_as_png_url = svg_as_png_url.replace('image/png','image/octet-stream');
+    png_link_el.setAttribute( "href",  svg_as_png_url );
+}
+
 function process_sankey() {
     "use strict";
     var source_lines = [], good_flows = [], good_node_lines = [],
@@ -152,11 +80,11 @@ function process_sankey() {
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '', total_difference = 0,
-        svg_content = '', canvas_el = '', svg_as_png_url = '', chart_el = '',
-        canvas_context = '', png_link_el = '', dimensions = '',
-        messages_el = document.getElementById('messages_area'),
+        svg_content = '', canvas_el = '', chart_el = '',
+        png_link_el = '', dimensions = '',
+        messages_el = document.getElementById("messages_area"),
         png_link_el = document.getElementById("download_1x"),
-        raw_flows_var = document.getElementById('flows_in').value;
+        raw_flows_var = document.getElementById("flows_in").value;
 
     // Define utility functions:
     // Put a message on the page using the specified class:
@@ -519,37 +447,11 @@ function process_sankey() {
     // Do the actual rendering:
     render_sankey( approved_nodes, approved_flows, approved_config );
 
-    // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
-    // does seem to in Firefox), we string together the node contents to submit
-    // to the canvas converter:
-    svg_content
-         = ( new XMLSerializer() ).serializeToString(
-            document.getElementById("the_svg") );
-    canvas_el = document.getElementById("png_preview");
+    update_png();
 
-    // Draw the svg contents on the canvas:
-    canvg( canvas_el, svg_content, {
-        ignoreMouse: true,
-        ignoreAnimation: true,
-        useCORS: true,
-        log: true
-        } );
-
-    // set background = white by drawing rect on entire canvas
-    // credit to Mike Chambers (@mesh) for this approach:
-    canvas_context = canvas_el.getContext("2d");
-    canvas_context.globalCompositeOperation = "destination-over";
-    canvas_context.fillStyle = "#FFFFFF";
-    canvas_context.fillRect( 0, 0,
-        approved_config.canvas_width, approved_config.canvas_height);
-
-    // Make a PNG:
-    svg_as_png_url = canvas_el.toDataURL('image/png');
-    svg_as_png_url = svg_as_png_url.replace('image/png','image/octet-stream');
-
+    // update download link & filename with dimensions:
     dimensions
         = approved_config.canvas_width + "x" + approved_config.canvas_height;
-    png_link_el.setAttribute( "href",  svg_as_png_url );
     png_link_el.innerHTML = "Download " + dimensions + " PNG";
     png_link_el.setAttribute( "download", "sankey_" + dimensions + ".png" );
 
@@ -692,6 +594,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
         sankey.relayout();
         // rewrite the flow's data:
         link.attr("d", flow);
+        // regenerate the static version, incorporating the drag:
+        update_png();
     }
 
     // Set up NODE info, behaviors:
@@ -865,9 +769,9 @@ Far far away [3] Nearby #0C0
 </p>
 <canvas id="png_preview" height="400" width="700" style="background: #FFF; display:none;"></canvas>
 <div id="chartfooter">
-<p>Once you are happy with your graph, you can <strong>export it as a .PNG image</strong>:&nbsp;
-<a href="#" id="download_1x" download="sankey_1x.png">...</a>
-</p>
+<p>Note: you can drag nodes around if you want to make some small adjustments. (Changing any inputs will re-draw the graph, however.)</p>
+<p>Once you are satisfied with your graph, you can <strong>export it as a .PNG image</strong>:</p>
+<p><a href="#" id="download_1x" download="sankey_1x.png">...</a></p>
 </div>
 </td></tr></table>
 
