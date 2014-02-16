@@ -37,6 +37,13 @@ function remove_zeroes(number_string) {
         .replace( /\.$/, '');
 }
 
+function radio_value(radio_input_name) {
+    var i = 0, radios = document.getElementsByName(radio_input_name);
+    for (i = 0; i < radios.length; i++) {
+        if (radios[i].checked) { return radios[i].value; }
+    }
+}
+
 function update_png() {
     "use strict";
     // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
@@ -46,15 +53,26 @@ function update_png() {
          = ( new XMLSerializer() ).serializeToString(
             document.getElementById("the_svg") ),
         canvas_context = '', svg_as_png_url = '',
-        canvas_el = document.getElementById("png_preview"),
-        png_link_el = document.getElementById("download_1x");
+        canvas_el    = document.getElementById("png_preview"),
+        png_link_el  = document.getElementById("download_png"),
+        chart_el     = document.getElementById("chart"),
+        scale_factor = radio_value("scale_x") || 1,
+        h = 0, w = 0;
+
+    // Do any scaling necessary.
+    // This is a horrible way to get the original size of the chart:
+    w = Number( chart_el.style.width.replace(/px/,'') ) * scale_factor;
+    h = Number( chart_el.style.height.replace(/px/,'') ) * scale_factor;
+    canvas_el.width = w;
+    canvas_el.height = h;
 
     // Draw the svg contents on the canvas:
     canvg( canvas_el, svg_content, {
         ignoreMouse: true,
         ignoreAnimation: true,
-        useCORS: true,
-        log: true
+        ignoreDimensions: true, // DON'T make the canvas size match the svg's
+        scaleWidth: w,
+        scaleHeight: h
         } );
 
     // set background = white by drawing rect on entire canvas
@@ -62,13 +80,17 @@ function update_png() {
     canvas_context = canvas_el.getContext("2d");
     canvas_context.globalCompositeOperation = "destination-over";
     canvas_context.fillStyle = "#FFFFFF";
-    canvas_context.fillRect( 0, 0, canvas_el.width, canvas_el.height);
+    canvas_context.fillRect( 0, 0, w, h);
 
     // Convert canvas image to a PNG:
     svg_as_png_url = canvas_el.toDataURL('image/png');
     // make it downloadable
     svg_as_png_url = svg_as_png_url.replace('image/png','image/octet-stream');
-    png_link_el.setAttribute( "href",  svg_as_png_url );
+    png_link_el.setAttribute( "href", svg_as_png_url );
+
+    // update download link & filename with dimensions:
+    png_link_el.innerHTML = "Download " + w + " x " + h + " PNG";
+    png_link_el.setAttribute( "download", "sankey_" + w + "x" + h + ".png" );
 }
 
 function process_sankey() {
@@ -81,10 +103,11 @@ function process_sankey() {
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '', total_difference = 0,
         svg_content = '', canvas_el = '', chart_el = '',
-        png_link_el = '', dimensions = '',
+        png_link_el = '',
         messages_el = document.getElementById("messages_area"),
-        png_link_el = document.getElementById("download_1x"),
-        raw_flows_var = document.getElementById("flows_in").value;
+        png_link_el = document.getElementById("download_png"),
+        canvas_el   = document.getElementById("png_preview"),
+        raw_source  = document.getElementById("flows_in").value;
 
     // Define utility functions:
     // Put a message on the page using the specified class:
@@ -118,7 +141,7 @@ function process_sankey() {
     // Flows validation:
 
     // parse into structures: approved_nodes, approved_flows, approved_config
-    source_lines = raw_flows_var.split("\n");
+    source_lines = raw_source.split("\n");
 
     // parse all the input lines, storing good ones vs bad ones:
     for ( line_ix = 0; line_ix < source_lines.length; ++line_ix ) {
@@ -449,12 +472,6 @@ function process_sankey() {
 
     update_png();
 
-    // update download link & filename with dimensions:
-    dimensions
-        = approved_config.canvas_width + "x" + approved_config.canvas_height;
-    png_link_el.innerHTML = "Download " + dimensions + " PNG";
-    png_link_el.setAttribute( "download", "sankey_" + dimensions + ".png" );
-
     return null;
 }
 
@@ -701,7 +718,9 @@ Far far away [3] Nearby #0C0
 ' Once you have your nodes &amp; flows, use the
 ' controls below to further change the
 ' graph's style.</textarea>
-<p style="margin: auto; text-align: center;"><button id="preview_graph" type="submit">Preview</button></p>
+
+<p class="center_para"><button id="preview_graph" type="submit">Preview</button></p>
+
 </td>
 </tr>
 
@@ -751,6 +770,15 @@ Far far away [3] Nearby #0C0
 <br />
 <input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
 <label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
+<br />
+<hr />
+<p class="center_para">Once you are satisfied with your diagram, you can<br />
+<strong>export it as a .PNG image</strong>:</p>
+<p class="center_para"><strong>Scale:</strong>
+<input name="scale_x" type="radio" value="1" checked="checked" onchange="update_png();" />1x <small>(Web)</small>
+<input name="scale_x" type="radio" value="2" onchange="update_png();" />2x <small>(Retina)</small>
+<input name="scale_x" type="radio" value="4" onchange="update_png();" />4x <small>(Print)</small></p>
+<p class="center_para"><a href="#" id="download_png" download="sankey.png">...</a></p>
 
 </td>
 </tr>
@@ -769,17 +797,16 @@ Far far away [3] Nearby #0C0
 </p>
 <canvas id="png_preview" height="400" width="700" style="background: #FFF; display:none;"></canvas>
 <div id="chartfooter">
-<p>Note: you can drag nodes around if you want to make some small adjustments. (Changing any inputs will re-draw the graph, however.)</p>
-<p>Once you are satisfied with your graph, you can <strong>export it as a .PNG image</strong>:</p>
-<p><a href="#" id="download_1x" download="sankey_1x.png">...</a></p>
+<p>Note: you can drag nodes around if you want to make some small adjustments.</p>
+<p>(Changing any inputs will re-draw the diagram.)</p>
 </div>
 </td></tr></table>
 
-<p id="questions" style="text-align: center;">
+<p id="questions" class="center_para">
 Questions? Bugs? Suggestions? Tell <a href="https://twitter.com/sankeymatic" target="_blank">@SankeyMATIC</a> on Twitter.
 </p>
 
-<p id="credits" style="text-align: center;">
+<p id="credits" class="center_para">
 SankeyMATIC is produced by <a href="http://nowthis.com/" target="_blank">Steve Bogart</a> (<a href="https://twitter.com/nowthis" target="_blank">@nowthis</a>).
 It is built on top of the
 <a href="http://bost.ocks.org/mike/sankey/" target="_blank">Sankey library</a> of <a

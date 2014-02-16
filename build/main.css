@@ -38,9 +38,16 @@ dfn {
 }
 
 #entirety, #inputs, #credits {
-/* centering, in 2014: */
+/* centering, in 2014: :-\ */
   margin: 0px auto;
   display:table;
+}
+
+.center_para {
+  margin: 2px auto;
+  display:table;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 textarea#flows_in {
