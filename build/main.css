@@ -43,13 +43,8 @@ dfn {
     border-bottom: 1px dotted;
 }
 
-#entirety, #inputs, #credits {
-/* centering, in 2014: :-\ */
-  margin: 0px auto;
-  display:table;
-}
-
 .center_basic {
+/* centering, in 2014: :-\ */
     margin: 0px auto;
     display: table;
 }
