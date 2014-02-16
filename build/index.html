@@ -93,6 +93,14 @@ function update_png() {
     png_link_el.setAttribute( "download", "sankey_" + w + "x" + h + ".png" );
 }
 
+function toggle(el_id) {
+    var el = document.getElementById(el_id),
+        indicator_el = document.getElementById( el_id + "_indicator" ),
+        shown = ( el.style.display !== "none" );
+    el.style.display       = shown ? "none"   : "";
+    indicator_el.innerHTML = shown ? "&dArr;" : "&uArr;";
+}
+
 function process_sankey() {
     "use strict";
     var source_lines = [], good_flows = [], good_node_lines = [],
@@ -463,7 +471,7 @@ function process_sankey() {
             status_message += " No imbalances found.";
         }
     } else {
-        status_message += " Flow Cross-Check is <strong>OFF</strong>.";
+        status_message += ' <span class="importanttext">Flow Cross-Check is <strong>OFF</strong>.</span>';
     }
     add_message( "okmessage", status_message, 1 ); // always display main status line first
 
@@ -726,52 +734,76 @@ Far far away [3] Nearby #0C0
 
 <tr>
 <td id="other_entry">
-<strong>Graph size:</strong>
+
+<p class="ui_head" onclick="toggle('diagram_options');"><span id="diagram_options_indicator" class="indicator">&uArr;</span> Diagram options</p>
+
+<div id="diagram_options" class="form_chunk">
+<p class="form_elements"><strong>Size</strong> (pixels):
 <label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="700" onchange="process_sankey();">
 <label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="400" onchange="process_sankey();">
-<br />
-<span style="line-height: 0;"><strong>Font:</strong> Size</span>
+</p>
+
+<p class="form_elements"><span style="line-height: 0;"><strong>Font:</strong> Size</span>
 <input type="text" id="font_size" size="2" maxlength="4" value="12" onchange="process_sankey();"> <label for="font_size">px</label>
 
 &nbsp;&nbsp;&nbsp;<span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span>
-<br />
+</p>
+
+<p class="form_elements">
+<input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
+<label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
+</p>
+</div>
+
+<p class="ui_head" onclick="toggle('node_options');"><span id="node_options_indicator" class="indicator">&dArr;</span> Node options</p>
+
+<div id="node_options" class="form_chunk" style="display: none;">
+<p class="form_elements">
 <strong>Labels:</strong>
 <label for="unit_prefix">Units Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
 <label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
 
-<input type="checkbox" id="include_values_in_nodes" value="1" onchange="process_sankey();" checked="checked">
+&nbsp; <input type="checkbox" id="include_values_in_nodes" value="1" onchange="process_sankey();" checked="checked">
 <label for="include_values_in_nodes">Show values as part of node labels</label>
 <br />
-&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
 <label for="display_full_precision">Always use full precision
 <small>(e.g. for currency: $DD.cc)</small></label>
 <br />
-<input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
-<label for="hide_labels">Hide labels</label> <small>(to apply your own text to the graph)</small><br />
-<br />
-<strong>Inner Margin</strong> (pixels):<br />
-<label for="top_margin">Top</label>
-<input type="text" id="top_margin" size="3" maxlength="6" value="15" onchange="process_sankey();">
-<label for="right_margin">Right</label>
-<input type="text" id="right_margin" size="3" maxlength="6" value="15" onchange="process_sankey();">
-<label for="bottom_margin">Bottom</label>
-<input type="text" id="bottom_margin" size="3" maxlength="6" value="15" onchange="process_sankey();">
-<label for="left_margin">Left</label>
-<input type="text" id="left_margin" size="3" maxlength="6" value="15" onchange="process_sankey();">
-<br />
-<br />
-<strong>Opacity for all...</strong><br />
-&nbsp;&nbsp;&nbsp;&nbsp;<label for="default_flow_opacity">Flows:</label>
-<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
-<br />
-&nbsp;&nbsp;&nbsp;&nbsp;<label for="default_node_opacity">Nodes:</label>
+&nbsp; <input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
+<label for="hide_labels">Hide labels</label> <small>(to apply your own text to the graph)</small>
+</p>
+
+<label for="default_node_opacity"><strong>Default Opacity:</strong></label>
 <span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
-<br />
-<br />
-<input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
-<label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
-<br />
-<hr />
+</div>
+
+<p class="ui_head" onclick="toggle('flow_options');"><span id="flow_options_indicator" class="indicator">&dArr;</span> Flow options</p>
+
+<div id="flow_options" class="form_chunk" style="display: none;">
+<label for="default_flow_opacity"><strong>Default Opacity:</strong></label>
+<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
+</div>
+
+<p class="ui_head" onclick="toggle('advanced_options');"><span id="advanced_options_indicator" class="indicator">&dArr;</span> Advanced Formatting</p>
+
+<div id="advanced_options" class="form_chunk" style="display: none;">
+<p class="form_elements">
+<strong>Inner Margin</strong> (pixels):<br />
+&nbsp;&nbsp; <label for="top_margin">Top</label>
+<input type="text" id="top_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
+<label for="right_margin">Right</label>
+<input type="text" id="right_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
+<label for="bottom_margin">Bottom</label>
+<input type="text" id="bottom_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
+<label for="left_margin">Left</label>
+<input type="text" id="left_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
+</p>
+</div>
+
+<p class="ui_head" onclick="toggle('export_options');"><span id="export_options_indicator" class="indicator">&uArr;</span> Export options</p>
+
+<div id="export_options" class="form_chunk">
 <p class="center_para">Once you are satisfied with your diagram, you can<br />
 <strong>export it as a .PNG image</strong>:</p>
 <p class="center_para"><strong>Scale:</strong>
@@ -779,6 +811,7 @@ Far far away [3] Nearby #0C0
 <input name="scale_x" type="radio" value="2" onchange="update_png();" />2x <small>(Retina)</small>
 <input name="scale_x" type="radio" value="4" onchange="update_png();" />4x <small>(Print)</small></p>
 <p class="center_para"><a href="#" id="download_png" download="sankey.png">...</a></p>
+</div>
 
 </td>
 </tr>

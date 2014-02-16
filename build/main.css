@@ -32,6 +32,12 @@ body {
     margin: -1px;
 }
 
+.importanttext {
+    color: darkred;
+    background-color: inherit;
+    text-decoration: underline;
+}
+
 dfn {
     font-style: normal;
     border-bottom: 1px dotted;
@@ -44,10 +50,14 @@ dfn {
 }
 
 .center_para {
-  margin: 2px auto;
-  display:table;
-  padding-top: 4px;
-  padding-bottom: 4px;
+    margin: 0px auto 4px auto;
+    display: table;
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
+
+.indicator {
+    float: right;
 }
 
 textarea#flows_in {
@@ -56,6 +66,28 @@ textarea#flows_in {
     margin: 4px;
 	font-family: sans-serif;
 	font-size: small;
+}
+
+.form_elements {
+    margin: 1px 0px 3px;
+}
+
+.ui_head {
+    font-size: 14px;
+    padding: 3px 6px 2px;
+    margin: 2px 0px 0px;
+    background-color: #004477;
+    color: white;
+}
+
+.form_chunk {
+    color: #002244;
+    background-color: #FBFEFF;
+    margin: 0px 3px 6px;
+    padding: 0px 2px 2px;
+    border-width: 0px 1px 1px 1px;
+    border-color: #9AC;
+    border-style: solid;
 }
 
 p#chart {
@@ -84,7 +116,7 @@ td { vertical-align: top; padding: 2px;}
 
 td#other_entry {
     padding: 2px;
-    background-color: #DDEEFF;
+    background-color: #CCE8FF;
 }
 
 td#grapharea {
