@@ -703,28 +703,28 @@ function render_sankey(nodes_in, flows_in, config_in) {
 </tr>
 <tr>
     <td id="flows_entry">
-    <textarea id="flows_in" rows="25" cols="40" onchange="process_sankey();">' To get started, type a list of "flows" like this:
+    <textarea id="flows_in" rows="25" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
 '     Source [Amount] Target
 ' Examples:
 Here [8] Everywhere
 There [5.5] Everywhere
-Everywhere [5] Over there
-Everywhere [6] Somewhere else
+Everywhere [6] Over there
+Everywhere [5] Somewhere else
 
-' To set a color for a specific flow, add an
+' To set a Node's color and make the flows in
+' (or out) adopt its color:
+'     :Nodename #Color >> <<
+' Example:
+:There #FC0 >>
+
+' To set a color for a specific Flow, add an
 ' HTML color code to the end:
 '     Source [Amount] Target #Color
 ' Examples:
 Everywhere [2.5] Nearby #C00
 Far far away [3] Nearby #0C0
 
-' To set a node's color and make the flows in
-' (or out) adopt its color:
-'     :Nodename #Color &gt;&gt; &lt;&lt;
-' Example:
-:There #FC0 >>
-
-' Once you have your nodes &amp; flows, use the
+' Once you have your Nodes & Flows, use the
 ' controls below to further change the
 ' graph's style.</textarea>
 
