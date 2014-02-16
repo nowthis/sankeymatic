@@ -49,6 +49,11 @@ dfn {
   display:table;
 }
 
+.center_basic {
+    margin: 0px auto;
+    display: table;
+}
+
 .center_para {
     margin: 0px auto 4px auto;
     display: table;
@@ -69,7 +74,7 @@ textarea#flows_in {
 }
 
 .form_elements {
-    margin: 1px 0px 3px;
+    margin: 1px 3px 3px;
 }
 
 .ui_head {
@@ -84,7 +89,7 @@ textarea#flows_in {
     color: #002244;
     background-color: #FBFEFF;
     margin: 0px 3px 6px;
-    padding: 0px 2px 2px;
+    padding: 2px 2px 2px;
     border-width: 0px 1px 1px 1px;
     border-color: #9AC;
     border-style: solid;
@@ -139,4 +144,8 @@ td#flows_entry {
     text-align: center;
     padding: 5px;
     vertical-align: middle;
+}
+
+#download_link {
+    margin-top: 6px;
 }

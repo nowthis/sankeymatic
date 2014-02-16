@@ -727,7 +727,7 @@ Far far away [3] Nearby #0C0
 ' controls below to further change the
 ' graph's style.</textarea>
 
-<p class="center_para"><button id="preview_graph" type="submit">Preview</button></p>
+<p class="center_basic"><button id="preview_graph" type="submit">Preview</button></p>
 
 </td>
 </tr>
@@ -799,18 +799,20 @@ Far far away [3] Nearby #0C0
 <label for="left_margin">Left</label>
 <input type="text" id="left_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
 </p>
+<p><strong>Note:</strong> You can drag nodes around.</p>
+<p>(However, changing any inputs will re-draw the whole diagram.)</p>
 </div>
 
 <p class="ui_head" onclick="toggle('export_options');"><span id="export_options_indicator" class="indicator">&uArr;</span> Export options</p>
 
 <div id="export_options" class="form_chunk">
-<p class="center_para">Once you are satisfied with your diagram, you can<br />
+<p class="form_elements">Once you are satisfied with your diagram, you can<br />
 <strong>export it as a .PNG image</strong>:</p>
 <p class="center_para"><strong>Scale:</strong>
-<input name="scale_x" type="radio" value="1" checked="checked" onchange="update_png();" />1x <small>(Web)</small>
-<input name="scale_x" type="radio" value="2" onchange="update_png();" />2x <small>(Retina)</small>
-<input name="scale_x" type="radio" value="4" onchange="update_png();" />4x <small>(Print)</small></p>
-<p class="center_para"><a href="#" id="download_png" download="sankey.png">...</a></p>
+<input name="scale_x" type="radio" value="1" checked="checked" onchange="update_png();" />1x (Web)
+<input name="scale_x" type="radio" value="2" onchange="update_png();" />2x (Retina)
+<input name="scale_x" type="radio" value="4" onchange="update_png();" />4x (Print)</p>
+<p class="center_para" id="download_link"><a href="#" id="download_png" download="sankey.png">...</a></p>
 </div>
 
 </td>
@@ -830,8 +832,6 @@ Far far away [3] Nearby #0C0
 </p>
 <canvas id="png_preview" height="400" width="700" style="background: #FFF; display:none;"></canvas>
 <div id="chartfooter">
-<p>Note: you can drag nodes around if you want to make some small adjustments.</p>
-<p>(Changing any inputs will re-draw the diagram.)</p>
 </div>
 </td></tr></table>
 
