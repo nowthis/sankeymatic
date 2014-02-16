@@ -366,11 +366,12 @@ function process_sankey() {
     // Whole positive numbers:
     ([ "canvas_width", "canvas_height", "font_size",
         "top_margin","right_margin", "bottom_margin",
-        "left_margin", "font_weight" ]).forEach( function(field_name) {
+        "left_margin", "font_weight", "node_width",
+        "node_padding" ]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
-        // console.log(field_name, field_val);
+        // console.log(field_name, field_val, typeof field_val);
         if (field_val.length < 10 && field_val.match(/^\d+$/)) {
-            approved_config[field_name] = field_val;
+            approved_config[field_name] = Number(field_val);
         }
     });
     // Checkboxes:
@@ -772,6 +773,16 @@ Far far away [3] Nearby #0C0
 <br />
 &nbsp; <input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
 <label for="hide_labels">Hide labels</label> <small>(to apply your own text to the graph)</small>
+</p>
+
+<p class="form_elements">
+<label for="node_width"><strong>Width:</strong></label>
+<input type="text" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
+
+&nbsp; &nbsp; 
+
+<label for="node_padding"><strong>Space between:</strong></label>
+<input type="text" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px
 </p>
 
 <label for="default_node_opacity"><strong>Default Opacity:</strong></label>
