@@ -61,7 +61,8 @@ Far far away [3] Nearby #0C0
 <tr>
 <td id="other_entry">
 
-<p class="ui_head" onclick="toggle('diagram_options');"><span id="diagram_options_indicator" class="indicator">&uArr;</span> Diagram options</p>
+<p class="ui_head" onclick="toggle('diagram_options');"><span id="diagram_options_indicator" class="indicator">&uArr;</span>
+Diagram options<span id="diagram_options_hint">:</span></p>
 
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements"><strong>Size</strong> (pixels):
@@ -81,7 +82,8 @@ Far far away [3] Nearby #0C0
 </p>
 </div>
 
-<p class="ui_head" onclick="toggle('node_options');"><span id="node_options_indicator" class="indicator">&dArr;</span> Node options</p>
+<p class="ui_head" onclick="toggle('node_options');"><span id="node_options_indicator" class="indicator">&dArr;</span>
+Node options<span id="node_options_hint">...</span></p>
 
 <div id="node_options" class="form_chunk" style="display: none;">
 <p class="form_elements">
@@ -110,18 +112,32 @@ Far far away [3] Nearby #0C0
 <input type="text" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px
 </p>
 
-<label for="default_node_opacity"><strong>Default Opacity:</strong></label>
+<p class="form_elements">
+<label for="node_border"><strong>Border:</strong></label>
+<select id="node_border" onchange="process_sankey();">
+<option value="0" selected="selected">0px</option>
+<option value="1">1px</option>
+<option value="2">2px</option>
+<option value="3">3px</option>
+<option value="4">4px</option>
+<option value="5">5px</option>
+</select>
+</p>
+
+<label for="default_node_opacity"><strong>Opacity:</strong></label>
 <span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 </div>
 
-<p class="ui_head" onclick="toggle('flow_options');"><span id="flow_options_indicator" class="indicator">&dArr;</span> Flow options</p>
+<p class="ui_head" onclick="toggle('flow_options');"><span id="flow_options_indicator" class="indicator">&dArr;</span>
+Flow options<span id="flow_options_hint">...</span></p>
 
 <div id="flow_options" class="form_chunk" style="display: none;">
 <label for="default_flow_opacity"><strong>Default Opacity:</strong></label>
 <span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 </div>
 
-<p class="ui_head" onclick="toggle('advanced_options');"><span id="advanced_options_indicator" class="indicator">&dArr;</span> Advanced Formatting</p>
+<p class="ui_head" onclick="toggle('advanced_options');"><span id="advanced_options_indicator" class="indicator">&dArr;</span>
+Advanced Formatting<span id="advanced_options_hint">...</span></p>
 
 <div id="advanced_options" class="form_chunk" style="display: none;">
 <p class="form_elements">
@@ -139,7 +155,8 @@ Far far away [3] Nearby #0C0
 <p>(However, changing any inputs will re-draw the whole diagram.)</p>
 </div>
 
-<p class="ui_head" onclick="toggle('export_options');"><span id="export_options_indicator" class="indicator">&uArr;</span> Export options</p>
+<p class="ui_head" onclick="toggle('export_options');"><span id="export_options_indicator" class="indicator">&uArr;</span>
+Export options<span id="export_options_hint">:</span></p>
 
 <div id="export_options" class="form_chunk">
 <p class="form_elements">Once you are satisfied with your diagram, you can<br />

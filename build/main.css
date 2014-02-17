@@ -100,8 +100,8 @@ p#chart {
 
 .node rect {
   cursor: move;
-  /* fill-opacity: .9;
-  shape-rendering: crispEdges; */
+  shape-rendering: crispEdges;
+  /* fill-opacity: .9; */
 }
 
 .node text {
