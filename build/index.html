@@ -91,8 +91,8 @@ Node options<span id="node_options_hint">...</span></p>
 <label for="unit_prefix">Units Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
 <label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
 
-&nbsp; <input type="checkbox" id="include_values_in_nodes" value="1" onchange="process_sankey();" checked="checked">
-<label for="include_values_in_nodes">Show values as part of node labels</label>
+&nbsp; <input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
+<label for="include_values_in_node_labels">Show values as part of node labels</label>
 <br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
 <label for="display_full_precision">Always use full precision
@@ -106,7 +106,7 @@ Node options<span id="node_options_hint">...</span></p>
 <label for="node_width"><strong>Width:</strong></label>
 <input type="text" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
 
-&nbsp; &nbsp; 
+&nbsp; &nbsp;
 
 <label for="node_padding"><strong>Space between:</strong></label>
 <input type="text" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px
@@ -153,6 +153,11 @@ Advanced Formatting<span id="advanced_options_hint">...</span></p>
 </p>
 <p><strong>Note:</strong> You can drag nodes around.</p>
 <p>(However, changing any inputs will re-draw the whole diagram.)</p>
+
+<p class="form_elements">
+<input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">
+<label for="reverse_graph"><strong>Reverse the graph</strong> (flow right-to-left)</label>
+</p>
 </div>
 
 <p class="ui_head" onclick="toggle('export_options');"><span id="export_options_indicator" class="indicator">&uArr;</span>

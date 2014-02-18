@@ -104,7 +104,7 @@ function process_sankey() {
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '', total_difference = 0,
         svg_content = '', canvas_el = '', chart_el = '',
-        png_link_el = '',
+        png_link_el = '', reverse_the_graph = 0,
         messages_el = document.getElementById("messages_area"),
         png_link_el = document.getElementById("download_png"),
         canvas_el   = document.getElementById("png_preview"),
@@ -252,11 +252,12 @@ function process_sankey() {
     } );
 
     // Given good_flows, make the lists of nodes and flows
+    reverse_the_graph = document.getElementById("reverse_graph").checked;
     good_flows.forEach( function(flow) {
         // Look for extra content about this flow on the target-node end of the
         // string:
-        var possible_color, possible_nodename, flow_color = "",
-            opacity = "", opacity_on_hover = "";
+        var possible_color, possible_nodename, flow_color = "", tmp = "",
+            opacity = "", opacity_on_hover = "", flow_struct = {};
         // Try to parse; there may be extra info that isn't actually the name:
         // Format of the Target node can be:
         // TODO: Target node ["Custom name for flow"] [#color[.opacity]]
@@ -291,15 +292,21 @@ function process_sankey() {
         save_node(flow.target);
 
         // Add the encoded flow to the list of approved flows:
-        approved_flows.push({
+        flow_struct = {
             "source": unique_nodes[flow.source].index,
             "target": unique_nodes[flow.target].index,
             "value": flow.amount,
             "color": flow_color,
             "opacity": opacity,
             "opacity_on_hover": opacity_on_hover
-            }
-        );
+        };
+        if (reverse_the_graph) {
+            tmp = flow_struct.source;
+            flow_struct.source = flow_struct.target;
+            flow_struct.target = tmp;
+        }
+        approved_flows.push(flow_struct);
+
         // Save useful information for the flow cross-check:
         unique_nodes[flow.source].from_sum += Number(flow.amount);
         unique_nodes[flow.source].from_list.push(flow.amount);
@@ -310,18 +317,26 @@ function process_sankey() {
     // Construct the approved_nodes structure:
     node_order.forEach( function (nodename) {
         var this_node = unique_nodes[nodename],
-            readynode = {
-                "name": nodename,
-                "index": this_node.index,
-                "color": this_node.color,
-                "opacity": this_node.opacity,
-                "inherit_right":
-                    ( this_node.inherit1 === ">>"
-                        || this_node.inherit2 === ">>" ? 1 : 0 ),
-                "inherit_left":
-                    ( this_node.inherit1 === "<<"
-                        || this_node.inherit2 === "<<" ? 1 : 0 )
-            };
+            readynode = {}, inherit_left = 0, inherit_right = 0;
+
+        // Right & left here correspond to >> and <<. These will have to be
+        // swapped if the graph is reversed.
+        inherit_left =
+            ( this_node.inherit1 === "<<" || this_node.inherit2 === "<<" )
+            ? 1
+            : 0;
+        inherit_right =
+            ( this_node.inherit1 === ">>" || this_node.inherit2 === ">>" )
+            ? 1
+            : 0;
+        readynode = {
+            "name": nodename,
+            "index": this_node.index,
+            "color": this_node.color,
+            "opacity": this_node.opacity,
+            "inherit_right": reverse_the_graph ? inherit_left : inherit_right,
+            "inherit_left": reverse_the_graph ? inherit_right : inherit_left
+        };
 
         // approved_nodes = the real node list, formatted for the render routine:
         approved_nodes.push(readynode);
@@ -335,7 +350,7 @@ function process_sankey() {
         unit_suffix: "",
         max_places: max_places,
         display_full_precision: 0,
-        include_values_in_nodes: 0,
+        include_values_in_node_labels: 0,
         hide_labels: 0,
         canvas_width: 700,
         canvas_height: 400,
@@ -346,7 +361,8 @@ function process_sankey() {
         default_node_opacity: 0.9,
         node_width: 10,
         node_padding: 10,
-        node_border: 0
+        node_border: 0,
+        reverse_graph: 0
     };
 
     // Plain strings:
@@ -369,7 +385,7 @@ function process_sankey() {
         }
     });
     // Checkboxes:
-    (["display_full_precision","include_values_in_nodes",
+    (["display_full_precision", "include_values_in_node_labels",
         "hide_labels"]).forEach( function(field_name) {
         approved_config[field_name] = document.getElementById(field_name).checked;
         // console.log(field_name, approved_config[field_name]);
@@ -665,7 +681,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
                 return config_in.hide_labels
                     ? ""
                     : d.name
-                        + ( config_in.include_values_in_nodes
+                        + ( config_in.include_values_in_node_labels
                             ? ": " + units_format(d.value)
                             : "" );
             })
