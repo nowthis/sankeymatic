@@ -105,6 +105,7 @@ function process_sankey() {
         epsilon_difference = 0, status_message = '', total_difference = 0,
         svg_content = '', canvas_el = '', chart_el = '',
         png_link_el = '', reverse_the_graph = 0,
+        max_node_index = 0, max_node_val = 0,
         messages_el = document.getElementById("messages_area"),
         png_link_el = document.getElementById("download_png"),
         canvas_el   = document.getElementById("png_preview"),
@@ -122,9 +123,11 @@ function process_sankey() {
     }
 
     // Format a value as it will be in the graph. Uses approved_config and
-    // max_places
-    function unit_fy(number_in) {
-        var number_portion = d3.format( ",." + max_places + "f" )(number_in);
+    // max_places (or a separately submitted 'places' param)
+    function unit_fy(number_in, places) {
+        var number_portion;
+        places = places || max_places;
+        number_portion = d3.format( ",." + places + "f" )(number_in);
         return approved_config.unit_prefix
             + ( approved_config.display_full_precision
                 ? number_portion
@@ -316,8 +319,8 @@ function process_sankey() {
 
     // Construct the approved_nodes structure:
     node_order.forEach( function (nodename) {
-        var this_node = unique_nodes[nodename],
-            readynode = {}, inherit_left = 0, inherit_right = 0;
+        var this_node = unique_nodes[nodename], readynode = {},
+            inherit_left = 0, inherit_right = 0, node_total = 0;
 
         // Right & left here correspond to >> and <<. These will have to be
         // swapped if the graph is reversed.
@@ -338,6 +341,12 @@ function process_sankey() {
             "inherit_left": reverse_the_graph ? inherit_right : inherit_left
         };
 
+        // Is this a new maximum node?
+        node_total = Math.max( this_node.from_sum, this_node.to_sum );
+        if (node_total > max_node_val) {
+            max_node_index = this_node.index;
+            max_node_val   = node_total;
+        }
         // approved_nodes = the real node list, formatted for the render routine:
         approved_nodes.push(readynode);
     });
@@ -488,6 +497,15 @@ function process_sankey() {
 
     // Do the actual rendering:
     render_sankey( approved_nodes, approved_flows, approved_config );
+
+    // Figure out this diagram's scale:
+    var tallest_node_height
+        = parseFloat( document.getElementById( "r" + max_node_index ).getAttributeNS( null,"height" ) );
+    // Use a high precision for the scale output:
+    var scale_report = unit_fy(max_node_val) + " / " +
+        d3.format(",.2f")(tallest_node_height) + "px = <strong>" +
+        unit_fy( max_node_val / tallest_node_height, 6 ) + "/px</strong>";
+    document.getElementById("scale_figures").innerHTML = scale_report;
 
     update_png();
 
@@ -652,6 +670,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
     node.append("rect")
         .attr("height", function (d) { return d.dy; })
         .attr("width", node_width)
+        // Give a unique ID to each rect that we can reference (for scale calc)
+        .attr("id", function(d) { return "r" + d.index; })
         // we made sure above there will be a color defined:
         .style("fill", function (d) { return d.color; })
         .style("fill-opacity",

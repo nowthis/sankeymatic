@@ -69,7 +69,17 @@ textarea#flows_in {
 }
 
 .form_elements {
-    margin: 1px 3px 3px;
+    margin: 2px 3px 5px;
+}
+.form_elements1 {
+    background-color: inherit;
+    margin: 2px 3px 5px;
+    padding: 2px 3px;
+}
+.form_elements2 {
+    background-color: #DDF0FF;
+    margin: 2px 3px 5px;
+    padding: 2px 3px;
 }
 
 .ui_head {
