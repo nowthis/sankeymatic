@@ -250,6 +250,7 @@ function process_sankey() {
     // First go through the Node list and set up any extra parameters we have:
     good_node_lines.forEach( function(node) {
         // If there's a color and it's a color CODE, put back the #:
+        // TODO: honor or translate color names?
         if ( node.color && node.color.match( /[0-9A-F]{3,6}/i ) ) {
             node.color = '#' + node.color;
         }
@@ -375,8 +376,9 @@ function process_sankey() {
         node_border: 0,
         reverse_graph: 0,
         default_flow_inherit: "source",
-        default_flow_color: "#666",
-        background_color: "#FFF"
+        default_flow_color: "#666666",
+        background_color: "#FFFFFF",
+        font_color: "#000000"
     };
 
     // Plain strings:
@@ -422,6 +424,11 @@ function process_sankey() {
         // console.log(field_name, field_val, typeof field_val);
         if ( field_val.match( /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
             approved_config[field_name] = field_val;
+        } else if ( field_val.match( /^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
+            // Forgive colors with missing #:
+            field_val = '#' + field_val;
+            approved_config[field_name] = field_val;
+            field_el.value = field_val;
         } else {
             // If it's not a match, use the default & reset the field's value:
             field_val = approved_config[field_name];
@@ -430,6 +437,7 @@ function process_sankey() {
     }
     get_color_input("default_flow_color");
     get_color_input("background_color");
+    get_color_input("font_color");
 
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
@@ -748,10 +756,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
                             : "" );
             })
         .style( {   // be explicit about the font specs:
-            "font-size": config_in.font_size + "px",
             "font-family": "helvetica, sans-serif",
             "stroke-width": "0", // positive stroke-width makes letters fuzzy
+            "font-size":   config_in.font_size + "px",
             "font-weight": config_in.font_weight,
+            "fill":        config_in.font_color
             } )
         // In the left half of the picture, place labels to the right of nodes:
         .filter(function (d) { return d.x < graph_width / 2; })

@@ -82,12 +82,18 @@ textarea#flows_in {
     padding: 2px 3px;
 }
 
+/* label which needs leftward breathing room:*/
+.spaced_label { margin-left: 15px; }
+
 .ui_head {
     font-size: 14px;
     padding: 3px 6px 2px;
     margin: 2px 0px 0px;
     background-color: #004477;
     color: white;
+}
+.ui_head:hover {
+    background-color: #006699;
 }
 
 .form_chunk {

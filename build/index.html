@@ -40,13 +40,13 @@ Far far away [3] Nearby
 ' To set a specific Node's color, type:
 '     :NODENAME #COLOR
 ' Example:
-:There #FC0
+:There #FFCC00
 
 ' To set a color for one specific Flow, add
 ' an HTML color code to the end of the line:
 '     SOURCE [AMOUNT] TARGET #COLOR
 ' Example:
-Everywhere [2.5] Nearby #F00
+Everywhere [2.5] Nearby #FF0000
 
 ' Once your Nodes &amp; Flows are entered, use
 ' the controls below to further change the
@@ -70,7 +70,7 @@ Diagram options<span id="diagram_options_hint">:</span></p>
 </p>
 
 <p class="form_elements2">
-<strong>Background color:</strong> <input type="text" id="background_color" size="7" maxlength="7" value="#FFF" onchange="process_sankey();">
+<label for="background_color"><strong>Background color:</strong></label> <input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
 </p>
 
 <p class="form_elements1">
@@ -83,10 +83,14 @@ Diagram options<span id="diagram_options_hint">:</span></p>
 Label options<span id="label_options_hint">...</span></p>
 
 <div id="label_options" class="form_chunk" style="display: none;">
-<p class="form_elements1"><span style="line-height: 0;"><strong>Font:</strong> Size</span>
+<p class="form_elements1">
+<label for="font_size"><strong>Size:</strong></label>
 <input type="text" id="font_size" size="2" maxlength="4" value="13" onchange="process_sankey();"> <label for="font_size">px</label>
+<label for="font_color" class="spaced_label"><strong>Color:</strong></label>
+<input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
+<br />
 
-&nbsp;&nbsp;&nbsp;<span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span>
+<label for="font_weight"><strong>Weight:</strong></label> <span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span>
 </p>
 
 <p class="form_elements2">
@@ -114,7 +118,7 @@ Flow options<span id="flow_options_hint">...</span></p>
 <input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" checked="checked" onchange="process_sankey();" /><label for="flow_inherit_from_source">Inherit
 from Source node's color</label><br />
 <input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">Use color:</label> 
-<input type="text" id="default_flow_color" size="7" maxlength="7" value="#666" onchange="process_sankey();"><br />
+<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();"><br />
 <input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Inherit
 from Target node's color</label>
 </p>
@@ -133,9 +137,7 @@ Node options<span id="node_options_hint">...</span></p>
 <label for="node_width"><strong>Width:</strong></label>
 <input type="text" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
 
-&nbsp; &nbsp;
-
-<label for="node_padding"><strong>Space between:</strong></label>
+<label for="node_padding" class="spaced_label"><strong>Space between:</strong></label>
 <input type="text" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px
 </p>
 
@@ -218,7 +220,7 @@ Export options<span id="export_options_hint">:</span></p>
 <p id="chart">
 <svg id="the_svg" height="400" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
-<canvas id="png_preview" height="400" width="700" style="background: #FFF; display:none;"></canvas>
+<canvas id="png_preview" height="400" width="700" style="background: #FFFFFF; display:none;"></canvas>
 <div id="chartfooter">
 </div>
 </td></tr></table>
