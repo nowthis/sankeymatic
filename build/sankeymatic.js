@@ -105,7 +105,7 @@ function process_sankey() {
         epsilon_difference = 0, status_message = '', total_difference = 0,
         svg_content = '', canvas_el = '', chart_el = '',
         png_link_el = '', reverse_the_graph = 0,
-        max_node_index = 0, max_node_val = 0,
+        max_node_index = 0, max_node_val = 0, flow_inherit = '',
         messages_el = document.getElementById("messages_area"),
         png_link_el = document.getElementById("download_png"),
         canvas_el   = document.getElementById("png_preview"),
@@ -371,7 +371,9 @@ function process_sankey() {
         node_width: 10,
         node_padding: 10,
         node_border: 0,
-        reverse_graph: 0
+        reverse_graph: 0,
+        default_flow_inherit: "source",
+        default_flow_color: "#666"
     };
 
     // Plain strings:
@@ -393,6 +395,38 @@ function process_sankey() {
             approved_config[field_name] = Number(field_val);
         }
     });
+
+    // Direction of flow color inheritance:
+    // Allowed values = source|target|none
+    flow_inherit = radio_value("default_flow_inherit");
+    if (reverse_the_graph) {
+        if ( flow_inherit === "source" ) {
+            flow_inherit = "target";
+        } else if ( flow_inherit === "target" ) {
+            flow_inherit = "source";
+        } else {
+            flow_inherit = "none";
+        }
+    }
+    if ( flow_inherit.match( /^(?:source|target|none)$/ ) ) {
+        approved_config.default_flow_inherit = flow_inherit;
+    } // otherwise just use the default
+
+    // General HTML color inputs handler:
+    function get_color_input( field_name, default_color ) {
+        var field_el  = document.getElementById(field_name),
+            field_val = field_el.value;
+        // console.log(field_name, field_val, typeof field_val);
+        if ( field_val.match( /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
+            approved_config[field_name] = field_val;
+        } else {
+            // If it's not a match, use the default & reset the field's value:
+            field_val = approved_config[field_name];
+            field_el.value = field_val;
+        }
+    }
+    get_color_input("default_flow_color");
+
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
         "hide_labels"]).forEach( function(field_name) {
@@ -607,12 +641,15 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .style("stroke", function (d) {
             // Priority order:
             // 1. color defined specifically for the flow
-            // 2. inherit-from-source
-            // 3. inherit-from-target
+            // 2. single-inherit-from-source (or target)
+            // 3. all-inherit-from-source (or target)
+            // 4. default flow color
             return d.color ? d.color
                 : d.source.inherit_right ? d.source.color
-                : d.target.inherit_left ? d.target.color
-                : '#666'; })
+                : d.target.inherit_left  ? d.target.color
+                : config_in.default_flow_inherit === "source" ? d.source.color
+                : config_in.default_flow_inherit === "target" ? d.target.color
+                : config_in.default_flow_color; })
         .style("stroke-opacity", function (d) {
             return d.opacity || config_in.default_flow_opacity;
             })

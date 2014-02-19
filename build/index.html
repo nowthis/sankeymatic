@@ -29,28 +29,27 @@
 <tr>
     <td id="flows_entry">
     <textarea id="flows_in" rows="25" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
-'     Source [Amount] Target
+'     SOURCE [AMOUNT] TARGET
 ' Examples:
 Here [8] Everywhere
 There [5.5] Everywhere
 Everywhere [6] Over there
 Everywhere [5] Somewhere else
+Far far away [3] Nearby
 
-' To set a Node's color and make the flows in
-' (or out) adopt its color:
-'     :Nodename #Color &gt;&gt; &lt;&lt;
+' To set a specific Node's color, type:
+'     :NODENAME #COLOR
 ' Example:
-:There #FC0 >>
+:There #FC0
 
-' To set a color for a specific Flow, add an
-' HTML color code to the end:
-'     Source [Amount] Target #Color
-' Examples:
-Everywhere [2.5] Nearby #C00
-Far far away [3] Nearby #0C0
+' To set a color for one specific Flow, add
+' an HTML color code to the end of the line:
+'     SOURCE [AMOUNT] TARGET #COLOR
+' Example:
+Everywhere [2.5] Nearby #F00
 
-' Once you have your Nodes &amp; Flows, use the
-' controls below to further change the
+' Once your Nodes &amp; Flows are entered, use
+' the controls below to further change the
 ' graph's style.</textarea>
 
 <p class="center_basic"><button id="preview_graph" type="submit">Preview</button></p>
@@ -79,6 +78,26 @@ Diagram options<span id="diagram_options_hint">:</span></p>
 <p class="form_elements1">
 <input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
 <label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
+</p>
+</div>
+
+<p class="ui_head" onclick="toggle('flow_options');"><span id="flow_options_indicator" class="indicator">&dArr;</span>
+Flow options<span id="flow_options_hint">...</span></p>
+
+<div id="flow_options" class="form_chunk" style="display: none;">
+<p class="form_elements1">
+<strong>Default Flow colors:</strong><br />
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" checked="checked" onchange="process_sankey();" /><label for="flow_inherit_from_source">Inherit
+from Source node's color</label><br />
+<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">Use color:</label> 
+<input type="text" id="default_flow_color" size="7" maxlength="7" value="#666" onchange="process_sankey();"><br />
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Inherit
+from Target node's color</label>
+</p>
+
+<p class="form_elements2">
+<label for="default_flow_opacity"><strong>Default Flow Opacity:</strong></label>
+<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 </p>
 </div>
 
@@ -127,16 +146,6 @@ Node options<span id="node_options_hint">...</span></p>
 <p class="form_elements2">
 <label for="default_node_opacity"><strong>Opacity:</strong></label>
 <span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
-</p>
-</div>
-
-<p class="ui_head" onclick="toggle('flow_options');"><span id="flow_options_indicator" class="indicator">&dArr;</span>
-Flow options<span id="flow_options_hint">...</span></p>
-
-<div id="flow_options" class="form_chunk" style="display: none;">
-<p class="form_elements1">
-<label for="default_flow_opacity"><strong>Default Opacity:</strong></label>
-<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.3" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 </p>
 </div>
 
