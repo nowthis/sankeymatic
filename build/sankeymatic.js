@@ -70,7 +70,9 @@ function update_png() {
     // credit to Mike Chambers (@mesh) for this approach:
     canvas_context = canvas_el.getContext("2d");
     canvas_context.globalCompositeOperation = "destination-over";
-    canvas_context.fillStyle = "#FFFFFF";
+    // Why trust this value? Because we vetted it or replaced it moments ago:
+    canvas_context.fillStyle
+        = document.getElementById("background_color").value;
     canvas_context.fillRect( 0, 0, w, h);
 
     // Convert canvas image to a PNG:
@@ -363,7 +365,7 @@ function process_sankey() {
         hide_labels: 0,
         canvas_width: 700,
         canvas_height: 400,
-        font_size: 12,
+        font_size: 13,
         font_weight: 400,
         top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10,
         default_flow_opacity: 0.3,
@@ -373,7 +375,8 @@ function process_sankey() {
         node_border: 0,
         reverse_graph: 0,
         default_flow_inherit: "source",
-        default_flow_color: "#666"
+        default_flow_color: "#666",
+        background_color: "#FFF"
     };
 
     // Plain strings:
@@ -426,6 +429,7 @@ function process_sankey() {
         }
     }
     get_color_input("default_flow_color");
+    get_color_input("background_color");
 
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
@@ -614,6 +618,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
     svg = d3.select("#the_svg")
         .attr("width", total_width)
         .attr("height", total_height)
+        .attr("style", "background-color: " + config_in.background_color )
         .append("g")
         .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
 

@@ -28,7 +28,7 @@
 </tr>
 <tr>
     <td id="flows_entry">
-    <textarea id="flows_in" rows="25" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
+    <textarea id="flows_in" rows="24" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
 '     SOURCE [AMOUNT] TARGET
 ' Examples:
 Here [8] Everywhere
@@ -69,15 +69,39 @@ Diagram options<span id="diagram_options_hint">:</span></p>
 <label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="400" onchange="process_sankey();">
 </p>
 
-<p class="form_elements2"><span style="line-height: 0;"><strong>Font:</strong> Size</span>
-<input type="text" id="font_size" size="2" maxlength="4" value="12" onchange="process_sankey();"> <label for="font_size">px</label>
-
-&nbsp;&nbsp;&nbsp;<span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span>
+<p class="form_elements2">
+<strong>Background color:</strong> <input type="text" id="background_color" size="7" maxlength="7" value="#FFF" onchange="process_sankey();">
 </p>
 
 <p class="form_elements1">
 <input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
 <label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
+</p>
+</div>
+
+<p class="ui_head" onclick="toggle('label_options');"><span id="label_options_indicator" class="indicator">&dArr;</span>
+Label options<span id="label_options_hint">...</span></p>
+
+<div id="label_options" class="form_chunk" style="display: none;">
+<p class="form_elements1"><span style="line-height: 0;"><strong>Font:</strong> Size</span>
+<input type="text" id="font_size" size="2" maxlength="4" value="13" onchange="process_sankey();"> <label for="font_size">px</label>
+
+&nbsp;&nbsp;&nbsp;<span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span>
+</p>
+
+<p class="form_elements2">
+<strong>Units:</strong> <label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
+<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
+
+&nbsp; <input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
+<label for="include_values_in_node_labels">Show values as part of labels</label>
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
+<label for="display_full_precision">Always use full precision
+<small>(e.g. for currency: $DD.cc)</small></label>
+<br />
+&nbsp; <input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
+<label for="hide_labels">Hide labels</label> <small>(to apply your own text to the graph)</small>
 </p>
 </div>
 
@@ -106,22 +130,6 @@ Node options<span id="node_options_hint">...</span></p>
 
 <div id="node_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
-<strong>Labels:</strong>
-<label for="unit_prefix">Units Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
-<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
-
-&nbsp; <input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
-<label for="include_values_in_node_labels">Show values as part of node labels</label>
-<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
-<label for="display_full_precision">Always use full precision
-<small>(e.g. for currency: $DD.cc)</small></label>
-<br />
-&nbsp; <input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
-<label for="hide_labels">Hide labels</label> <small>(to apply your own text to the graph)</small>
-</p>
-
-<p class="form_elements2">
 <label for="node_width"><strong>Width:</strong></label>
 <input type="text" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
 
@@ -131,7 +139,7 @@ Node options<span id="node_options_hint">...</span></p>
 <input type="text" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px
 </p>
 
-<p class="form_elements1">
+<p class="form_elements2">
 <label for="node_border"><strong>Border:</strong></label>
 <select id="node_border" onchange="process_sankey();">
 <option value="0" selected="selected">0px</option>
@@ -143,7 +151,7 @@ Node options<span id="node_options_hint">...</span></p>
 </select>
 </p>
 
-<p class="form_elements2">
+<p class="form_elements1">
 <label for="default_node_opacity"><strong>Opacity:</strong></label>
 <span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 </p>
