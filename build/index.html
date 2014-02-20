@@ -28,16 +28,16 @@
 </tr>
 <tr>
     <td id="flows_entry">
-    <textarea id="flows_in" rows="24" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
+    <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
 '     SOURCE [AMOUNT] TARGET
 
 ' To set a color for one specific Flow, add
 ' an HTML color code to the end of the line:
 '     SOURCE [AMOUNT] TARGET #COLOR
 
-' Once your Flows are entered, use
-' the controls below to further change the
-' graph's style.
+' After all your Flows are entered, use
+' the controls below to customize the
+' diagram's design.
 
 ' Examples:
 
@@ -111,12 +111,12 @@ Flow options<span id="flow_options_hint">...</span></p>
 <div id="flow_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
 <strong>Default Flow colors:</strong><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" checked="checked" onchange="process_sankey();" /><label for="flow_inherit_from_source">Inherit
-from Source node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">Use color:</label> 
-<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();"><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Inherit
-from Target node's color</label>
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" checked="checked" onchange="process_sankey();" /><label for="flow_inherit_from_source">Use
+the Source node's color</label><br />
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Use
+the Target node's color</label><br />
+<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">Use one color:</label> 
+<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();">
 </p>
 
 <p class="form_elements2">
@@ -131,12 +131,12 @@ Node options<span id="node_options_hint">...</span></p>
 <div id="node_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
 <strong>Colors:</strong>
-<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use one color:</label> 
-<input type="color" id="default_node_color" size="7" maxlength="7" value="#006699" onchange="process_sankey();"><br />
-Use colors from assortment:
+Use from assortment:
 <input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" /><label for="node_use_set_a">A</label>
 <input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" checked="checked" /><label for="node_use_set_b">B</label>
-<input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" /><label for="node_use_set_c">C</label>
+<input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" /><label for="node_use_set_c">C</label><br />
+<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use one color:</label> 
+<input type="color" id="default_node_color" size="7" maxlength="7" value="#006699" onchange="process_sankey();"><br />
 
 </p>
 <p class="form_elements2">
@@ -144,7 +144,7 @@ Use colors from assortment:
 <input type="text" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
 
 <label for="node_padding" class="spaced_label"><strong>Space between:</strong></label>
-<input type="text" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px
+<input type="text" id="node_padding" size="2" maxlength="4" value="12" onchange="process_sankey();"> px
 </p>
 
 <p class="form_elements1">
@@ -157,10 +157,8 @@ Use colors from assortment:
 <option value="4">4px</option>
 <option value="5">5px</option>
 </select>
-</p>
 
-<p class="form_elements2">
-<label for="default_node_opacity"><strong>Opacity:</strong></label>
+<label for="default_node_opacity" class="spaced_label"><strong>Opacity:</strong></label>
 <span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 </p>
 </div>
@@ -178,17 +176,19 @@ Units and Scale match as closely as possible.)
 <p class="form_elements2">
 <strong>Inner Margin</strong> (pixels):<br />
 &nbsp;&nbsp; <label for="top_margin">Top</label>
-<input type="text" id="top_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
+<input type="text" id="top_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
 <label for="right_margin">Right</label>
-<input type="text" id="right_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
+<input type="text" id="right_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
 <label for="bottom_margin">Bottom</label>
-<input type="text" id="bottom_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
+<input type="text" id="bottom_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
 <label for="left_margin">Left</label>
-<input type="text" id="left_margin" size="2" maxlength="4" value="15" onchange="process_sankey();">
+<input type="text" id="left_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
 </p>
 
-<p class="form_elements1"><strong>Note:</strong> You can drag nodes around. (However, changing<br />
-any inputs will re-draw the whole diagram.)</p>
+<p class="form_elements1">
+<strong>Note:</strong> You can <u>drag</u> nodes around to reposition them<br />
+before export. (However, changing any inputs will<br />
+re-draw/reset the whole diagram.)</p>
 
 <p class="form_elements2">
 <input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">

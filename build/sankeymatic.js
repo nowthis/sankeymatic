@@ -248,6 +248,12 @@ function process_sankey() {
         }
     }
 
+    function reset_field(field_name) {
+        // We got bad input, so reset the form field to the default value:
+        document.getElementById(field_name).value
+            = approved_config[field_name];
+    }
+
     // First go through the Node list and set up any extra parameters we have:
     good_node_lines.forEach( function(node) {
         // If there's a color and it's a color CODE, put back the #:
@@ -369,11 +375,11 @@ function process_sankey() {
         canvas_height: 400,
         font_size: 13,
         font_weight: 400,
-        top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10,
+        top_margin: 12, right_margin: 12, bottom_margin: 12, left_margin: 12,
         default_flow_opacity: 0.4,
         default_node_opacity: 0.9,
         node_width: 10,
-        node_padding: 10,
+        node_padding: 12,
         node_border: 0,
         reverse_graph: 0,
         default_flow_inherit: "source",
@@ -387,38 +393,38 @@ function process_sankey() {
     // Plain strings:
     (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
-        // console.log(field_name, field_val);
-        if (field_val.length < 10) {
+        if (field_val.length <= 10) {
             approved_config[field_name] = field_val;
+        } else {
+            reset_field(field_name);
         }
     });
+
     // Whole positive numbers:
     ([ "canvas_width", "canvas_height", "font_size",
         "top_margin",  "right_margin",  "bottom_margin",
         "left_margin", "font_weight",   "node_padding",
         "node_width",  "node_border" ]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
-        // console.log(field_name, field_val, typeof field_val);
         if (field_val.length < 10 && field_val.match(/^\d+$/)) {
             approved_config[field_name] = Number(field_val);
+        } else {
+            reset_field(field_name);
         }
     });
 
     // Direction of flow color inheritance:
     // Allowed values = source|target|none
     flow_inherit = radio_value("default_flow_inherit");
-    if (reverse_the_graph) {
-        if ( flow_inherit === "source" ) {
-            flow_inherit = "target";
-        } else if ( flow_inherit === "target" ) {
-            flow_inherit = "source";
-        } else {
-            flow_inherit = "none";
-        }
-    }
     if ( flow_inherit.match( /^(?:source|target|none)$/ ) ) {
+        if (reverse_the_graph) {
+            flow_inherit
+                = flow_inherit === "source" ? "target"
+                : flow_inherit === "target" ? "source"
+                : "none";
+        }
         approved_config.default_flow_inherit = flow_inherit;
-    } // otherwise just use the default
+    } // otherwise skip & use the default
 
     // General HTML color inputs handler:
     function get_color_input( field_name, default_color ) {
@@ -433,9 +439,7 @@ function process_sankey() {
             approved_config[field_name] = field_val;
             field_el.value = field_val;
         } else {
-            // If it's not a match, use the default & reset the field's value:
-            field_val = approved_config[field_name];
-            field_el.value = field_val;
+            reset_field(field_name);
         }
     }
     (["default_flow_color", "background_color", "font_color",
@@ -444,22 +448,24 @@ function process_sankey() {
     });
 
     colorset = radio_value("default_node_colorset");
-    approved_config.default_node_colorset
-        = colorset.match( /^[ABC]$/ ) ? colorset : "none";
+    if ( colorset.match( /^(?:[ABC]|none)$/ ) ) {
+        approved_config.default_node_colorset = colorset;
+    }
 
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
         "hide_labels"]).forEach( function(field_name) {
         approved_config[field_name] = document.getElementById(field_name).checked;
-        // console.log(field_name, approved_config[field_name]);
     });
+
     // Decimal:
     (["default_node_opacity","default_flow_opacity"]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
         if ( field_val.match(/^\d(?:.\d+)?$/) ) {
             approved_config[field_name] = field_val;
+        } else {
+            reset_field(field_name);
         }
-        // console.log( field_name, field_val, approved_config[field_name] );
     });
 
     do_cross_checking = document.getElementById("flow_cross_check").checked;
