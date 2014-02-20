@@ -9,7 +9,7 @@ function isNumeric(n) {
     /* "parseFloat NaNs numeric-cast false positives (null|true|false|"")
        ...but misinterprets leading-number strings, particularly hex literals ("0x...")
        subtraction forces infinities to NaN" */
-    return n - parseFloat( n ) >= 0;
+    return n - parseFloat(n) >= 0;
 }
 
 function escapeHtml(unsafe) {
@@ -108,6 +108,7 @@ function process_sankey() {
         svg_content = '', canvas_el = '', chart_el = '',
         png_link_el = '', reverse_the_graph = 0,
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
+        colorset = '',
         messages_el = document.getElementById("messages_area"),
         png_link_el = document.getElementById("download_png"),
         canvas_el   = document.getElementById("png_preview"),
@@ -369,7 +370,7 @@ function process_sankey() {
         font_size: 13,
         font_weight: 400,
         top_margin: 10, right_margin: 10, bottom_margin: 10, left_margin: 10,
-        default_flow_opacity: 0.3,
+        default_flow_opacity: 0.4,
         default_node_opacity: 0.9,
         node_width: 10,
         node_padding: 10,
@@ -377,8 +378,10 @@ function process_sankey() {
         reverse_graph: 0,
         default_flow_inherit: "source",
         default_flow_color: "#666666",
-        background_color: "#FFFFFF",
-        font_color: "#000000"
+        background_color:   "#FFFFFF",
+        font_color:         "#000000",
+        default_node_color: "#006699",
+        default_node_colorset: "B"
     };
 
     // Plain strings:
@@ -435,9 +438,14 @@ function process_sankey() {
             field_el.value = field_val;
         }
     }
-    get_color_input("default_flow_color");
-    get_color_input("background_color");
-    get_color_input("font_color");
+    (["default_flow_color", "background_color", "font_color",
+        "default_node_color" ]).forEach( function(field_name) {
+        get_color_input(field_name);
+    });
+
+    colorset = radio_value("default_node_colorset");
+    approved_config.default_node_colorset
+        = colorset.match( /^[ABC]$/ ) ? colorset : "none";
 
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
@@ -561,7 +569,7 @@ function process_sankey() {
 function render_sankey(nodes_in, flows_in, config_in) {
     "use strict";
 
-    var graph_width, graph_height,
+    var graph_width, graph_height, colorset,
         units_format, d3_color_scale, svg, sankey, flow, link, node,
         node_width    = config_in.node_width,
         node_padding  = config_in.node_padding,
@@ -583,18 +591,26 @@ function render_sankey(nodes_in, flows_in, config_in) {
             ? "" : config_in.unit_suffix;
 
     // Establish a list of 20 compatible colors to choose from:
-    d3_color_scale = d3.scale.category20();
+    colorset = config_in.default_node_colorset;
+    d3_color_scale
+        = colorset === "A" ? d3.scale.category20()
+        : colorset === "B" ? d3.scale.category20b()
+        : d3.scale.category20c();
 
-    // Fill in any missing node colors up front so they can be inherited from:
+    // Fill in any un-set node colors up front so they can be inherited from:
     nodes_in.forEach( function(node) {
         if (typeof node.color === 'undefined' || node.color === '') {
-            // Use the first word of the label as the basis for
-            // finding an already-used color or picking a new one (case
-            // sensitive).
-            // If there are no 'word' characters, substitute a word-ish value
-            // (rather than crash):
-            var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
-            node.color = d3_color_scale(first_word);
+            if (colorset === "none") {
+                node.color = config_in.default_node_color;
+            } else {
+                // Use the first word of the label as the basis for
+                // finding an already-used color or picking a new one (case
+                // sensitive).
+                // If there are no 'word' characters, substitute a word-ish value
+                // (rather than crash):
+                var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
+                node.color = d3_color_scale(first_word);
+            }
         }
     });
 
