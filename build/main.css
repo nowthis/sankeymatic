@@ -83,7 +83,7 @@ textarea#flows_in {
 }
 
 /* label which needs leftward breathing room:*/
-.spaced_label { margin-left: 15px; }
+.spaced_label { margin-left: 12px; }
 
 .ui_head {
     font-size: 14px;
@@ -91,6 +91,7 @@ textarea#flows_in {
     margin: 2px 0px 0px;
     background-color: #004477;
     color: white;
+    text-align: left;
 }
 .ui_head:hover {
     background-color: #006699;
@@ -107,8 +108,8 @@ textarea#flows_in {
 }
 
 p#chart {
-    width: 700px;
-    height: 400px;
+    width: 600px;
+    height: 500px;
     border: 1px dotted #666666;
     margin: 10px auto;
     background-color: white;
@@ -131,8 +132,9 @@ p#chart {
 td { vertical-align: top; padding: 2px;}
 
 td#other_entry {
-    padding: 2px;
+    padding: 0px 2px;
     background-color: #CCE8FF;
+    vertical-align: middle;
 }
 
 td#grapharea {
@@ -149,11 +151,14 @@ th#title {
     font-size: large;
 }
 
+div#input_options {
+    text-align: center;
+}
+
 td#flows_entry {
-    padding: 2px;
+    padding: 0px 2px;
     background-color: #BBDDEE;
     text-align: center;
-    padding: 5px;
     vertical-align: middle;
 }
 

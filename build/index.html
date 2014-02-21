@@ -27,13 +27,14 @@
     </th>
 </tr>
 <tr>
-    <td id="flows_entry">
+    <td id="other_entry">
+
+<p class="ui_head" onclick="toggle('input_options');"><span id="input_options_indicator" class="indicator">&dArr;</span>
+Inputs<span id="input_options_hint">:</span></p>
+
+<div id="input_options">
     <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
 '     SOURCE [AMOUNT] TARGET
-
-' To set a color for one specific Flow, add
-' an HTML color code to the end of the line:
-'     SOURCE [AMOUNT] TARGET #COLOR
 
 ' After all your Flows are entered, use
 ' the controls below to customize the
@@ -41,28 +42,28 @@
 
 ' Examples:
 
-Here [8] Everywhere
-There [5.5] Everywhere
-Everywhere [6] Over there
-Everywhere [5] Somewhere else
-Far far away [3] Nearby
-Everywhere [2.5] Nearby #55FF00</textarea>
+Wages [2000] Budget
+Interest [5] Budget
+Budget [500] Taxes
+Budget [400] Housing
+Budget [300] Food
+Budget [205] Transportation
+Budget [400] Health Care
+Budget [200] Other Necessities
+
+' For even finer control over presentation,
+' go to the Manual.</textarea>
 
 <p class="center_basic"><button id="preview_graph" type="submit">Preview</button></p>
-
-</td>
-</tr>
-
-<tr>
-<td id="other_entry">
+</div>
 
 <p class="ui_head" onclick="toggle('diagram_options');"><span id="diagram_options_indicator" class="indicator">&uArr;</span>
 Diagram options<span id="diagram_options_hint">:</span></p>
 
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1"><strong>Size</strong> (pixels):
-<label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="700" onchange="process_sankey();">
-<label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="400" onchange="process_sankey();">
+<label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();">
+<label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="500" onchange="process_sankey();">
 </p>
 
 <p class="form_elements2">
@@ -82,15 +83,23 @@ Label options<span id="label_options_hint">...</span></p>
 <p class="form_elements1">
 <label for="font_size"><strong>Size:</strong></label>
 <input type="text" id="font_size" size="2" maxlength="4" value="13" onchange="process_sankey();"> <label for="font_size">px</label>
-<label for="font_color" class="spaced_label"><strong>Color:</strong></label>
-<input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
-<br />
 
-<label for="font_weight"><strong>Weight:</strong></label> <span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span>
+<strong class="spaced_label">Face:</strong>
+<input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" style="font-family: sans-serif;">sans</label>
+<input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" style="font-family: serif;">serif</label>
+<input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" style="font-family: monospace;">mono</label>
 </p>
 
 <p class="form_elements2">
-<strong>Units:</strong> <label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
+<label for="font_color"><strong>Color:</strong></label>
+<input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
+
+<label for="font_weight" class="spaced_label"><strong>Weight:</strong></label>
+<span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span><br />
+</p>
+
+<p class="form_elements1">
+<strong>Units:</strong> <label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" value="$" onchange="process_sankey();">
 <label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
 
 &nbsp; <input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
@@ -120,7 +129,7 @@ the Target node's color</label><br />
 </p>
 
 <p class="form_elements2">
-<label for="default_flow_opacity"><strong>Default Flow Opacity:</strong></label>
+<label for="default_flow_opacity"><strong>Default Opacity:</strong></label>
 <span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.4" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 </p>
 </div>
@@ -132,8 +141,8 @@ Node options<span id="node_options_hint">...</span></p>
 <p class="form_elements1">
 <strong>Colors:</strong>
 Use from assortment:
-<input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" /><label for="node_use_set_a">A</label>
-<input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" checked="checked" /><label for="node_use_set_b">B</label>
+<input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" checked="checked" /><label for="node_use_set_a">A</label>
+<input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" /><label for="node_use_set_b">B</label>
 <input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" /><label for="node_use_set_c">C</label><br />
 <input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use one color:</label> 
 <input type="color" id="default_node_color" size="7" maxlength="7" value="#006699" onchange="process_sankey();"><br />
@@ -224,9 +233,9 @@ Export options<span id="export_options_hint">:</span></p>
 </table>
 
 <p id="chart">
-<svg id="the_svg" height="400" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
+<svg id="the_svg" height="500" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
-<canvas id="png_preview" height="400" width="700" style="background: #FFFFFF; display:none;"></canvas>
+<canvas id="png_preview" height="500" width="600" style="background: #FFFFFF; display:none;"></canvas>
 <div id="chartfooter">
 </div>
 </td></tr></table>

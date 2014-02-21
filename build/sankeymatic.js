@@ -108,7 +108,7 @@ function process_sankey() {
         svg_content = '', canvas_el = '', chart_el = '',
         png_link_el = '', reverse_the_graph = 0,
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
-        colorset = '',
+        colorset_in = '', fontface_in = '',
         messages_el = document.getElementById("messages_area"),
         png_link_el = document.getElementById("download_png"),
         canvas_el   = document.getElementById("png_preview"),
@@ -371,8 +371,8 @@ function process_sankey() {
         display_full_precision: 0,
         include_values_in_node_labels: 0,
         hide_labels: 0,
-        canvas_width: 700,
-        canvas_height: 400,
+        canvas_width: 600,
+        canvas_height: 500,
         font_size: 13,
         font_weight: 400,
         top_margin: 12, right_margin: 12, bottom_margin: 12, left_margin: 12,
@@ -387,7 +387,8 @@ function process_sankey() {
         background_color:   "#FFFFFF",
         font_color:         "#000000",
         default_node_color: "#006699",
-        default_node_colorset: "B"
+        default_node_colorset: "A",
+        font_face: "sans-serif"
     };
 
     // Plain strings:
@@ -447,9 +448,13 @@ function process_sankey() {
         get_color_input(field_name);
     });
 
-    colorset = radio_value("default_node_colorset");
-    if ( colorset.match( /^(?:[ABC]|none)$/ ) ) {
-        approved_config.default_node_colorset = colorset;
+    colorset_in = radio_value("default_node_colorset");
+    if ( colorset_in.match( /^(?:[ABC]|none)$/ ) ) {
+        approved_config.default_node_colorset = colorset_in;
+    }
+    fontface_in = radio_value("font_face");
+    if ( fontface_in.match( /^(?:serif|sans\-serif|monospace)$/ ) ) {
+        approved_config.font_face = fontface_in;
     }
 
     // Checkboxes:
@@ -642,7 +647,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // clear out any old contents:
     // Simply emptying the SVG tag didn't work well in Safari; we reset the whole tag here:
     document.getElementById('chart').innerHTML =
-        '<svg id="the_svg" height="400" width="700" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
+        '<svg id="the_svg" height="500" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
 
     // Select the svg canvas, set the defined dimensions:
     svg = d3.select("#the_svg")
@@ -779,8 +784,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
                             : "" );
             })
         .style( {   // be explicit about the font specs:
-            "font-family": "helvetica, sans-serif",
             "stroke-width": "0", // positive stroke-width makes letters fuzzy
+            "font-family": config_in.font_face,
             "font-size":   config_in.font_size + "px",
             "font-weight": config_in.font_weight,
             "fill":        config_in.font_color
