@@ -116,7 +116,7 @@ p#chart {
 
 .node rect {
   cursor: move;
-  shape-rendering: crispEdges;
+  /* shape-rendering: crispEdges; */
   /* fill-opacity: .9; */
 }
 

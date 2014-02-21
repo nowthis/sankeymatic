@@ -746,6 +746,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .attr("id", function(d) { return "r" + d.index; })
         // we made sure above there will be a color defined:
         .style("fill", function (d) { return d.color; })
+        .attr( "shape-rendering", "crispEdges" )
         .style("fill-opacity",
             function (d) {
                 return d.opacity || config_in.default_node_opacity;
