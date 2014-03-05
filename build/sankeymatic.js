@@ -83,7 +83,7 @@ function update_png() {
 
     // update download link & filename with dimensions:
     png_link_el.innerHTML = "Download " + w + " x " + h + " PNG";
-    png_link_el.setAttribute( "download", "sankey_" + w + "x" + h + ".png" );
+    png_link_el.setAttribute( "download", "sankeymatic_" + w + "x" + h + ".png" );
 }
 
 function toggle(el_id) {
