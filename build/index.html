@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>SankeyMATIC &alpha;</title>
-<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="build.css">
 </head>
 <body>
 
@@ -64,11 +64,11 @@ Budget [150] Other Necessities
 Size &amp; Spacing<span id="diagram_options_hint">:</span></h2>
 
 <div id="diagram_options" class="form_chunk">
-<p class="form_elements1"><strong>Size</strong> (pixels):
-<label for="canvas_width">Width</label>
-<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();">
-<label for="canvas_height">Height</label>
-<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="500" onchange="process_sankey();">
+<p class="form_elements1">
+<label for="canvas_width"><strong>Diagram Width:</strong></label>
+<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();">px
+<label for="canvas_height" class="spaced_label"><strong>Height:</strong></label>
+<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="500" onchange="process_sankey();">px
 </p>
 
 <p class="form_elements2">
@@ -229,9 +229,9 @@ Export<span id="export_options_hint">:</span></h2>
 <p class="form_elements">Once you are satisfied with your diagram, you can<br />
 <strong>export it as a .PNG image</strong>:</p>
 <p class="center_para"><strong>Scale:</strong>
-<input name="scale_x" type="radio" value="1" id="scale_1x" checked="checked" onchange="update_png();" /><label for="scale_1x">1x (Web)</label>
-<input name="scale_x" type="radio" value="2" id="scale_2x" onchange="update_png();" /><label for="scale_2x">2x (Retina)</label>
-<input name="scale_x" type="radio" value="4" id="scale_4x" onchange="update_png();" /><label for="scale_4x">4x (Print)</label></p>
+<input name="scale_x" type="radio" value="1" id="scale_1x" checked="checked" onchange="update_png();" class="spaced_label" /><label for="scale_1x">1x (Web)</label>
+<input name="scale_x" type="radio" value="2" id="scale_2x" onchange="update_png();" class="spaced_label" /><label for="scale_2x">2x (Retina)</label>
+<input name="scale_x" type="radio" value="4" id="scale_4x" onchange="update_png();" class="spaced_label" /><label for="scale_4x">4x (Print)</label></p>
 <p class="center_para" id="download_link"><a href="#" id="download_png" download="sankey.png">...</a></p>
 </div>
 </div>
