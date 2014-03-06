@@ -29,68 +29,140 @@
 <tr>
     <td id="other_entry">
 
-<p class="ui_head" onclick="toggle('input_options');"><span id="input_options_indicator" class="indicator">&dArr;</span>
-Inputs<span id="input_options_hint">:</span></p>
+<h2 class="ui_head" onclick="toggle('input_options');">
+<span id="input_options_indicator" class="indicator">&dArr;</span>
+Inputs<span id="input_options_hint">:</span></h2>
 
 <div id="input_options">
     <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
 '     SOURCE [AMOUNT] TARGET
-
-' After all your Flows are entered, use
-' the controls below to customize the
-' diagram's design.
-
 ' Examples:
 
 Wages [2000] Budget
 Interest [5] Budget
 Budget [500] Taxes
-Budget [400] Housing
+Budget [450] Housing
 Budget [300] Food
 Budget [205] Transportation
 Budget [400] Health Care
-Budget [200] Other Necessities
+Budget [150] Other Necessities
+
+' After all your Flows are entered, use
+' the controls below to customize the
+' diagram's appearance.
 
 ' For even finer control over presentation,
-' go to the Manual.</textarea>
+' see the Manual.</textarea>
 
 <p class="center_basic"><button id="preview_graph" type="submit">Preview</button></p>
 </div>
 
-<p class="ui_head" onclick="toggle('diagram_options');"><span id="diagram_options_indicator" class="indicator">&uArr;</span>
-Diagram options<span id="diagram_options_hint">:</span></p>
+<!-- SIZE & SPACING -->
+
+<h2 class="ui_head" onclick="toggle('diagram_options');">
+<span id="diagram_options_indicator" class="indicator">&uArr;</span>
+Size &amp; Spacing<span id="diagram_options_hint">:</span></h2>
 
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1"><strong>Size</strong> (pixels):
-<label for="canvas_width">Width =</label> <input type="text" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();">
-<label for="canvas_height">Height =</label> <input type="text" id="canvas_height" size="5" maxlength="6" value="500" onchange="process_sankey();">
+<label for="canvas_width">Width</label>
+<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();">
+<label for="canvas_height">Height</label>
+<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="500" onchange="process_sankey();">
 </p>
 
 <p class="form_elements2">
-<label for="background_color"><strong>Background color:</strong></label> <input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
+<label for="node_padding"><strong>Space between Nodes:</strong></label>
+<input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="12" onchange="process_sankey();"> px
 </p>
 
 <p class="form_elements1">
-<input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
-<label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
+<label for="node_width"><strong>Node Width:</strong></label>
+<input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
+</p>
+
+<p class="form_elements2">
+<strong>Margin</strong>:
+<label for="top_margin">Top</label>
+<input type="text" class="wholenumber" id="top_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
+<label for="bottom_margin">Bot</label>
+<input type="text" class="wholenumber" id="bottom_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
+<label for="left_margin">L</label>
+<input type="text" class="wholenumber" id="left_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
+<label for="right_margin">R</label>
+<input type="text" class="wholenumber" id="right_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
+</p>
+
+</div>
+
+<!-- COLORS -->
+
+<h2 class="ui_head" onclick="toggle('color_options');">
+<span id="color_options_indicator" class="indicator">&dArr;</span>
+Colors<span id="color_options_hint">...</span></h2>
+
+<div id="color_options" class="form_chunk" style="display: none;">
+<p class="form_elements2">
+<label for="background_color"><strong>Background Color:</strong></label> <input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
+</p>
+
+<p class="form_elements1">
+<strong>Node Colors:</strong>
+Use theme:
+<input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" checked="checked" /><label for="node_use_set_a">A</label>
+<input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" /><label for="node_use_set_b">B</label>
+<input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" /><label for="node_use_set_c">C</label><br />
+<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use a single color:</label> 
+<input type="color" id="default_node_color" size="7" maxlength="7" value="#006699" onchange="process_sankey();"><br />
+</p>
+
+<p class="form_elements2">
+<strong>Flow Colors:</strong><br />
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" checked="checked" onchange="process_sankey();" /><label for="flow_inherit_from_source">Use
+the Source node's color</label><br />
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Use
+the Target node's color</label><br />
+<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">Use a single color:</label> 
+<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();">
+</p>
+
+<p class="form_elements1">
+<label for="default_flow_opacity"><strong>Flow Opacity:</strong></label>
+<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.4" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
 </p>
 </div>
 
-<p class="ui_head" onclick="toggle('label_options');"><span id="label_options_indicator" class="indicator">&dArr;</span>
-Label options<span id="label_options_hint">...</span></p>
+<!-- LABELS -->
+
+<h2 class="ui_head" onclick="toggle('label_options');">
+<span id="label_options_indicator" class="indicator">&dArr;</span>
+Labels &amp; Units<span id="label_options_hint">...</span></h2>
 
 <div id="label_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
-<label for="font_size"><strong>Size:</strong></label>
-<input type="text" id="font_size" size="2" maxlength="4" value="13" onchange="process_sankey();"> <label for="font_size">px</label>
+<input type="checkbox" id="show_labels" value="1" onchange="process_sankey();" checked="checked">
+<label for="show_labels">Show labels</label> <small>(hide to apply your own text to the graph)</small><br />
 
-<strong class="spaced_label">Face:</strong>
-<input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" style="font-family: sans-serif;">sans</label>
-<input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" style="font-family: serif;">serif</label>
-<input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" style="font-family: monospace;">mono</label>
+<input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
+<label for="include_values_in_node_labels">Show node totals as part of labels</label>
+<br />
+<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();" checked="checked" class="spaced_label">
+<label for="display_full_precision">Always use full precision
+<small>(good for $dollars.cents)</small></label>
+<br />
 </p>
 
 <p class="form_elements2">
+<strong>Face:</strong>
+<input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" style="font-family: sans-serif;">sans</label>
+<input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" style="font-family: serif;">serif</label>
+<input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" style="font-family: monospace;">mono</label>
+
+<label for="font_size" class="spaced_label"><strong>Size:</strong></label>
+<input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="13" onchange="process_sankey();"> <label for="font_size">px</label>
+</p>
+
+<p class="form_elements1">
 <label for="font_color"><strong>Color:</strong></label>
 <input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
 
@@ -98,100 +170,28 @@ Label options<span id="label_options_hint">...</span></p>
 <span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span><br />
 </p>
 
-<p class="form_elements1">
+<p class="form_elements2">
 <strong>Units:</strong> <label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" value="$" onchange="process_sankey();">
-<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"><br />
-
-&nbsp; <input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
-<label for="include_values_in_node_labels">Show values as part of labels</label>
-<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();">
-<label for="display_full_precision">Always use full precision
-<small>(e.g. for currency: $DD.cc)</small></label>
-<br />
-&nbsp; <input type="checkbox" id="hide_labels" value="1" onchange="process_sankey();">
-<label for="hide_labels">Hide labels</label> <small>(to apply your own text to the graph)</small>
+<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();">
 </p>
 </div>
 
-<p class="ui_head" onclick="toggle('flow_options');"><span id="flow_options_indicator" class="indicator">&dArr;</span>
-Flow options<span id="flow_options_hint">...</span></p>
+<!-- ADVANCED -->
 
-<div id="flow_options" class="form_chunk" style="display: none;">
-<p class="form_elements1">
-<strong>Default Flow colors:</strong><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" checked="checked" onchange="process_sankey();" /><label for="flow_inherit_from_source">Use
-the Source node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Use
-the Target node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">Use one color:</label> 
-<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();">
-</p>
-
-<p class="form_elements2">
-<label for="default_flow_opacity"><strong>Default Opacity:</strong></label>
-<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.4" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
-</p>
-</div>
-
-<p class="ui_head" onclick="toggle('node_options');"><span id="node_options_indicator" class="indicator">&dArr;</span>
-Node options<span id="node_options_hint">...</span></p>
-
-<div id="node_options" class="form_chunk" style="display: none;">
-<p class="form_elements1">
-<strong>Colors:</strong>
-Use from assortment:
-<input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" checked="checked" /><label for="node_use_set_a">A</label>
-<input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" /><label for="node_use_set_b">B</label>
-<input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" /><label for="node_use_set_c">C</label><br />
-<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use one color:</label> 
-<input type="color" id="default_node_color" size="7" maxlength="7" value="#006699" onchange="process_sankey();"><br />
-
-</p>
-<p class="form_elements2">
-<label for="node_width"><strong>Width:</strong></label>
-<input type="text" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
-
-<label for="node_padding" class="spaced_label"><strong>Space between:</strong></label>
-<input type="text" id="node_padding" size="2" maxlength="4" value="12" onchange="process_sankey();"> px
-</p>
-
-<p class="form_elements1">
-<label for="node_border"><strong>Border:</strong></label>
-<select id="node_border" onchange="process_sankey();">
-<option value="0" selected="selected">0px</option>
-<option value="1">1px</option>
-<option value="2">2px</option>
-<option value="3">3px</option>
-<option value="4">4px</option>
-<option value="5">5px</option>
-</select>
-
-<label for="default_node_opacity" class="spaced_label"><strong>Opacity:</strong></label>
-<span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
-</p>
-</div>
-
-<p class="ui_head" onclick="toggle('advanced_options');"><span id="advanced_options_indicator" class="indicator">&dArr;</span>
-Advanced Formatting<span id="advanced_options_hint">...</span></p>
+<h2 class="ui_head" onclick="toggle('advanced_options');">
+<span id="advanced_options_indicator" class="indicator">&dArr;</span>
+Advanced<span id="advanced_options_hint">...</span></h2>
 
 <div id="advanced_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
-<strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
-(For fair comparisons between diagrams, make their<br />
-Units and Scale match as closely as possible.)
+<input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
+<label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
 </p>
 
 <p class="form_elements2">
-<strong>Inner Margin</strong> (pixels):<br />
-&nbsp;&nbsp; <label for="top_margin">Top</label>
-<input type="text" id="top_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
-<label for="right_margin">Right</label>
-<input type="text" id="right_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
-<label for="bottom_margin">Bottom</label>
-<input type="text" id="bottom_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
-<label for="left_margin">Left</label>
-<input type="text" id="left_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
+<strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
+(For fair comparisons between diagrams, make their<br />
+Units and Scale match as closely as possible.)
 </p>
 
 <p class="form_elements1">
@@ -200,13 +200,29 @@ before export. (However, changing any inputs will<br />
 re-draw/reset the whole diagram.)</p>
 
 <p class="form_elements2">
+<label for="default_node_opacity"><strong>Node Opacity:</strong></label>
+<span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
+
+<label for="node_border" class="spaced_label"><strong>Border:</strong></label>
+<select id="node_border" onchange="process_sankey();">
+<option value="0" selected="selected">0px</option>
+<option value="1">1px</option>
+<option value="2">2px</option>
+<option value="3">3px</option>
+<option value="4">4px</option>
+<option value="5">5px</option>
+</select>
+</p>
+
+<p class="form_elements1">
 <input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">
 <label for="reverse_graph"><strong>Reverse the graph</strong> (flow right-to-left)</label>
 </p>
 </div>
 
-<p class="ui_head" onclick="toggle('export_options');"><span id="export_options_indicator" class="indicator">&uArr;</span>
-Export options<span id="export_options_hint">:</span></p>
+<h2 class="ui_head" onclick="toggle('export_options');">
+<span id="export_options_indicator" class="indicator">&uArr;</span>
+Export<span id="export_options_hint">:</span></h2>
 
 <div id="export_options" class="form_chunk">
 <div class="form_elements1">

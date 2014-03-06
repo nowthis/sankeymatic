@@ -212,6 +212,7 @@ function process_sankey() {
     // We know max_places now, so we can derive the smallest important difference:
     epsilon_difference = Math.pow( 10, -max_places - 1 );
 
+    // TODO: Disable useless precision checkbox if max_places === 0
     // TODO: Look for cycles and post errors about them
 
     // Mention the bad lines in the message area:
@@ -368,9 +369,9 @@ function process_sankey() {
         unit_prefix: "",
         unit_suffix: "",
         max_places: max_places,
-        display_full_precision: 0,
+        display_full_precision: 1,
         include_values_in_node_labels: 0,
-        hide_labels: 0,
+        show_labels: 1,
         canvas_width: 600,
         canvas_height: 500,
         font_size: 13,
@@ -459,7 +460,7 @@ function process_sankey() {
 
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
-        "hide_labels"]).forEach( function(field_name) {
+        "show_labels"]).forEach( function(field_name) {
         approved_config[field_name] = document.getElementById(field_name).checked;
     });
 
@@ -706,7 +707,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         // sets the order of display, seems like:
         .sort(function (a, b) { return b.dy - a.dy; });
 
-    if ( !config_in.hide_labels ) {
+    if ( config_in.show_labels ) {
         link.append("title") // Make tooltips for FLOWS
             .text(function (d) {
                 return d.source.name + " → " + d.target.name + "\n"
@@ -761,9 +762,9 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .append("title")    // Add tooltips for NODES
         .text(
             function (d) {
-                return config_in.hide_labels
-                    ? ""
-                    : d.name + "\n" + units_format(d.value);
+                return config_in.show_labels
+                    ? d.name + "\n" + units_format(d.value)
+                    : "";
             });
 
     // Put in NODE labels
@@ -776,12 +777,12 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .attr("transform", null)
         .text(
             function (d) {
-                return config_in.hide_labels
-                    ? ""
-                    : d.name
+                return config_in.show_labels
+                    ? d.name
                         + ( config_in.include_values_in_node_labels
                             ? ": " + units_format(d.value)
-                            : "" );
+                            : "" )
+                    : "";
             })
         .style( {   // be explicit about the font specs:
             "stroke-width": "0", // positive stroke-width makes letters fuzzy

@@ -85,7 +85,7 @@ textarea#flows_in {
 /* label which needs leftward breathing room:*/
 .spaced_label { margin-left: 12px; }
 
-.ui_head {
+h2.ui_head {
     font-size: 14px;
     padding: 3px 6px 2px;
     margin: 2px 0px 0px;
@@ -164,4 +164,8 @@ td#flows_entry {
 
 #download_link {
     margin-top: 6px;
+}
+
+input.wholenumber {
+    text-align: right;
 }
