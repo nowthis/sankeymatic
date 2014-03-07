@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <title>SankeyMATIC &alpha;</title>
 <link rel="stylesheet" href="build.css">
+<link rel="stylesheet" href="../main.css">
 </head>
 <body>
 
@@ -14,6 +15,17 @@
 <script src="rgbcolor.js"></script>
 <script src="sankeymatic.js"></script>
 
+<header>
+<table id="nav">
+<tr>
+<td><strong><a title="SankeyMATIC home page" href="/">SankeyMATIC</a></strong></td>
+<td class="active_tab"><strong><a class="button" title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></strong></td>
+<td>Manual</td>
+<td><a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></td>
+<td>Weblog</td>
+<td>FAQ</td>
+</tr></table>
+</header>
 <div class="center_basic">
 
 <table><tr><td>
@@ -21,11 +33,6 @@
 <form onsubmit="process_sankey(); return false;">
 
 <table class="center_basic">
-<tr>
-    <th id="title">SankeyMATIC
-    <span style="margin:0; font-weight: normal; font-size:normal; font-style: italic;">alpha</span>
-    </th>
-</tr>
 <tr>
     <td id="other_entry">
 
@@ -66,9 +73,9 @@ Size &amp; Spacing<span id="diagram_options_hint">:</span></h2>
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1">
 <label for="canvas_width"><strong>Diagram Width:</strong></label>
-<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();">px
+<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"> px
 <label for="canvas_height" class="spaced_label"><strong>Height:</strong></label>
-<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="500" onchange="process_sankey();">px
+<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="500" onchange="process_sankey();"> px
 </p>
 
 <p class="form_elements2">

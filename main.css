@@ -1,0 +1,37 @@
+body { 
+    font-family: sans-serif;
+    background-color: #FBFDFF;
+    margin: 0px;
+}
+
+p#buildlink { font-size: larger; padding-top: 20px;}
+
+div#main, p#buildlink, .center {
+  margin: 0px auto;
+  display:table;
+}
+
+/* cellspacing=0 for all tables */
+table { border-collapse: collapse; border-spacing: 0; }
+td { vertical-align: top; padding: 2px;}
+
+#nav {
+    font-size: 12px;
+}
+header {
+    width: 100%;
+    background-color: #006699;
+    color: white;
+    padding: 3px 5px;
+    border-bottom: #000 1px dotted;
+}
+header a { color: white; }
+header td {
+    padding: 0.3em 1em;
+}
+header td.active_tab { 
+    background-color: #AADDFF;
+    border-bottom: #069 1px dotted;
+}
+header td.leftmost { padding-left: 0.2em; }
+header td.active_tab a { color: #036; }

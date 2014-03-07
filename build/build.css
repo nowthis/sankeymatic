@@ -1,8 +1,4 @@
-body {
-    font-family: sans-serif;
-    font-size: 13px;
-    background-color: #F8FDFF;
-}
+body { font-size: 13px; }
 
 .smalllabel { font-size: 11px; }
 .narrowslider { width: 75px; }
@@ -129,8 +125,6 @@ p#chart {
    The 'stroke' is all we are seeing, so that is what gets colored.
    The stroke styling is now done in the JS, not the overall CSS. */
 
-td { vertical-align: top; padding: 2px;}
-
 td#other_entry {
     padding: 0px 2px;
     background-color: #CCE8FF;
@@ -141,9 +135,6 @@ td#grapharea {
     padding: 0px;
     margin: 0px;
 }
-
-/* cellspacing 0 for all tables */
-table { border-collapse: collapse; border-spacing: 0; }
 
 th#title {
     padding: 5px 10px;
