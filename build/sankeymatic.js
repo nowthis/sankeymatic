@@ -138,9 +138,16 @@ function process_sankey() {
             + approved_config.unit_suffix;
     }
 
-    function show_diff(diff) {
-        // Better to show an explicit sign outside the units, for this purpose
-        return ( diff >= 0 ? "+" : "-") + unit_fy( Math.abs(diff) );
+    function show_delta(diff) {
+        // Returns a complete html string of "Δ = difference-with-units"
+        // Shows an explicit +/- sign, then the units (looks cleaner)
+        // Only emphasize values > the smallest possible diff in the data:
+        var big_diff = ( Math.abs(diff) > (11 * epsilon_difference) );
+        return "&Delta; = "
+            + ( big_diff ? "<strong>" : "" )
+            + ( diff >= 0 ? "+" : "-")  // explicit sign
+            + unit_fy( Math.abs(diff) ) // produces no sign
+            + ( big_diff ? "</strong>" : "" );
     }
 
     // BEGIN by resetting all messages:
@@ -214,7 +221,9 @@ function process_sankey() {
         // else, the final case: a blank line. We just skip those silently, so
         // someone can separate their input lines with whitespace if desired.
     }
-    // We know max_places now, so we can derive the smallest important difference:
+    // We know max_places now, so we can derive the smallest important difference.
+    // Defining it as smallest-input-decimal/10; lets us work around various
+    // binary/decimal math issues.
     epsilon_difference = Math.pow( 10, -max_places - 1 );
 
     // TODO: Disable useless precision checkbox if max_places === 0
@@ -508,16 +517,15 @@ function process_sankey() {
                 cross_check_error_ct++;
                 add_message( "cautionmessage",
                     "&quot;<b>" + escapeHtml(nodename) + "</b>&quot;: " +
-                    "Amount <strong>IN</strong> (" +
+                    "Amount IN (" +
                     '<dfn title="' +
                     this_node.to_list.join(' + ') + '">' +
                     unit_fy(this_node.to_sum) +
-                    "</dfn>) &ne; <strong>OUT</strong> (" +
+                    "</dfn>) &ne; OUT (" +
                     '<dfn title="' +
                     this_node.from_list.join(' + ') + '">' +
                     unit_fy(this_node.from_sum) +
-                    "</dfn>). &Delta; = <strong>" +
-                    show_diff(difference) + "</strong>", 0 );
+                    "</dfn>). " + show_delta(difference), 0 );
             }
         } else {
             // One of these values will be 0 every time, but so what...
@@ -549,8 +557,7 @@ function process_sankey() {
             "<strong>Diagram Total IN</strong> (" +
             unit_fy(total_inflow) +
             ") &ne; <strong>Total OUT</strong> (" +
-            unit_fy(total_outflow) +
-            "). &Delta; = <strong>" + show_diff(total_difference) + "</strong>",
+            unit_fy(total_outflow) + "). " + show_delta(total_difference),
             0 );
     } else {
         status_message +=
