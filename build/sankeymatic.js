@@ -116,9 +116,9 @@ function process_sankey() {
 
     // Define utility functions:
     // Put a message on the page using the specified class:
-    function add_message( msg_class, msg_html, at_beginning ) {
+    function add_message( msg_class, msg_html, put_at_beginning ) {
         var new_msg = '<p class="' + msg_class + '">' + msg_html + '</p>';
-        if (at_beginning) {
+        if (put_at_beginning) {
             messages_el.innerHTML = new_msg + messages_el.innerHTML;
         } else {
             messages_el.innerHTML = messages_el.innerHTML + new_msg;
@@ -139,15 +139,23 @@ function process_sankey() {
     }
 
     function show_delta(diff) {
-        // Returns a complete html string of "Δ = difference-with-units"
+        // Returns an html string of "Δ = difference-with-units"
         // Shows an explicit +/- sign, then the units (looks cleaner)
-        // Only emphasize values > the smallest possible diff in the data:
-        var big_diff = ( Math.abs(diff) > (11 * epsilon_difference) );
+        // Only emphasize values > the smallest possible diff in the input:
+        var diff_is_big = ( Math.abs(diff) > (11 * epsilon_difference) );
         return "&Delta; = "
-            + ( big_diff ? "<strong>" : "" )
+            + ( diff_is_big ? "<strong>" : "" )
             + ( diff >= 0 ? "+" : "-")  // explicit sign
             + unit_fy( Math.abs(diff) ) // produces no sign
-            + ( big_diff ? "</strong>" : "" );
+            + ( diff_is_big ? "</strong>" : "" );
+    }
+
+    function explain_sum( amount, components ) {
+        // Returns an html string showing the amounts used in a sum,
+        // as a <dfn> tag with a tooltip title
+        return '(<dfn title="' + components.join(' + ') + '">'
+            + unit_fy(amount)
+            + "</dfn>)";
     }
 
     // BEGIN by resetting all messages:
@@ -233,7 +241,8 @@ function process_sankey() {
     bad_lines.forEach( function(parse_error) {
         add_message('errormessage',
             '&quot;<b>' + escapeHtml(parse_error.value) + '</b>&quot;: ' +
-             parse_error.message, 0);
+             parse_error.message,
+             false );
     });
 
     // save_node: Add a node to the unique list (if it's not there already):
@@ -512,20 +521,19 @@ function process_sankey() {
                 // If we don't round the outputs to match the maximum precision
                 // of the inputs, we get uselessly long repeated decimals:
                 if ( cross_check_error_ct === 0 ) {
-                    add_message( "cautionmessage", "<strong>Imbalances found:</strong>");
+                    add_message( "cautionmessage",
+                        "<strong>Imbalances found:</strong>",
+                        false );
                 }
                 cross_check_error_ct++;
                 add_message( "cautionmessage",
                     "&quot;<b>" + escapeHtml(nodename) + "</b>&quot;: " +
-                    "Amount IN (" +
-                    '<dfn title="' +
-                    this_node.to_list.join(' + ') + '">' +
-                    unit_fy(this_node.to_sum) +
-                    "</dfn>) &ne; OUT (" +
-                    '<dfn title="' +
-                    this_node.from_list.join(' + ') + '">' +
-                    unit_fy(this_node.from_sum) +
-                    "</dfn>). " + show_delta(difference), 0 );
+                    "Amount IN "
+                    + explain_sum( this_node.to_sum, this_node.to_list )
+                    + " &ne; OUT "
+                    + explain_sum( this_node.from_sum, this_node.from_list )
+                    + ". " + show_delta(difference),
+                    false );
             }
         } else {
             // One of these values will be 0 every time, but so what...
@@ -537,7 +545,8 @@ function process_sankey() {
     // Are there any good flows at all? If not, offer help:
     if ( good_flows.length === 0 ) {
         add_message('okmessage',
-            'Enter a list of flows (one per line). See the Examples page.', 0);
+            'Enter a list of flows (one per line). See the Examples page.',
+            false );
         // No point in proceeding any further:
         return null;
     }
@@ -558,7 +567,7 @@ function process_sankey() {
             unit_fy(total_inflow) +
             ") &ne; <strong>Total OUT</strong> (" +
             unit_fy(total_outflow) + "). " + show_delta(total_difference),
-            0 );
+            false );
     } else {
         status_message +=
             " Diagram Total <strong>IN</strong> = <strong>"
@@ -572,7 +581,7 @@ function process_sankey() {
     } else {
         status_message += ' <span class="importanttext">Flow Cross-Check is <strong>OFF</strong>.</span>';
     }
-    add_message( "okmessage", status_message, 1 ); // always display main status line first
+    add_message( "okmessage", status_message, true ); // always display main status line first
 
     // Do the actual rendering:
     render_sankey( approved_nodes, approved_flows, approved_config );
