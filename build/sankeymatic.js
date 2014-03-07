@@ -138,6 +138,11 @@ function process_sankey() {
             + approved_config.unit_suffix;
     }
 
+    function show_diff(diff) {
+        // Better to show an explicit sign outside the units, for this purpose
+        return ( diff >= 0 ? "+" : "-") + unit_fy( Math.abs(diff) );
+    }
+
     // BEGIN by resetting all messages:
     messages_el.innerHTML = '';
     png_link_el.innerHTML = "...";
@@ -497,19 +502,22 @@ function process_sankey() {
                 // imbalance.
                 // If we don't round the outputs to match the maximum precision
                 // of the inputs, we get uselessly long repeated decimals:
+                if ( cross_check_error_ct === 0 ) {
+                    add_message( "cautionmessage", "<strong>Imbalances found:</strong>");
+                }
                 cross_check_error_ct++;
                 add_message( "cautionmessage",
                     "&quot;<b>" + escapeHtml(nodename) + "</b>&quot;: " +
-                    "The amount <strong>IN</strong> (" +
+                    "Amount <strong>IN</strong> (" +
                     '<dfn title="' +
                     this_node.to_list.join(' + ') + '">' +
                     unit_fy(this_node.to_sum) +
-                    "</dfn>) does not match the amount <strong>OUT</strong> (" +
+                    "</dfn>) &ne; <strong>OUT</strong> (" +
                     '<dfn title="' +
                     this_node.from_list.join(' + ') + '">' +
                     unit_fy(this_node.from_sum) +
                     "</dfn>). &Delta; = <strong>" +
-                    unit_fy(difference) + "</strong>.", 0 );
+                    show_diff(difference) + "</strong>", 0 );
             }
         } else {
             // One of these values will be 0 every time, but so what...
@@ -532,28 +540,26 @@ function process_sankey() {
     total_difference = total_inflow - total_outflow;
     if ( Math.abs(total_difference) < epsilon_difference ) {
         status_message +=
-            " Total IN = Total OUT = <strong>"
+            " Diagram Total IN = Total OUT = <strong>"
             + unit_fy(total_inflow) + "</strong>.";
     } else if (do_cross_checking) {
         // Leave out the differing totals from the status message, issue a
         // Caution instead:
         add_message( "cautionmessage",
-            "The <strong>Total IN</strong> (" +
+            "<strong>Diagram Total IN</strong> (" +
             unit_fy(total_inflow) +
-            ") does not match the <strong>Total OUT</strong> (" +
+            ") &ne; <strong>Total OUT</strong> (" +
             unit_fy(total_outflow) +
-            "). &Delta; = <strong>" + unit_fy(total_difference) + "</strong>.",
+            "). &Delta; = <strong>" + show_diff(total_difference) + "</strong>",
             0 );
     } else {
         status_message +=
-            " Total <strong>IN</strong> = <strong>"
+            " Diagram Total <strong>IN</strong> = <strong>"
             + unit_fy(total_inflow) + "</strong>. Total <strong>OUT</strong> = <strong>"
             + unit_fy(total_outflow) + "</strong>.";
     }
     if (do_cross_checking) {
-        if ( cross_check_error_ct > 0 ) {
-            status_message += " Imbalances found:";
-        } else {
+        if ( cross_check_error_ct === 0 ) {
             status_message += " No imbalances found.";
         }
     } else {
