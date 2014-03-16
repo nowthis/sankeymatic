@@ -406,7 +406,7 @@ function process_sankey() {
         node_padding: 12,
         node_border: 0,
         reverse_graph: 0,
-        default_flow_inherit: "source",
+        default_flow_inherit: "none",
         default_flow_color: "#666666",
         background_color:   "#FFFFFF",
         font_color:         "#000000",
@@ -657,7 +657,6 @@ function render_sankey(nodes_in, flows_in, config_in) {
     graph_width = total_width - margin_left - margin_right;
     graph_height = total_height - margin_top - margin_bottom;
 
-    // *&*&*&* TODO: Does this function really need to be assigned to a variable?
     units_format = function (d) {
         var number_portion = d3.format( ",." + config_in.max_places + "f" )(d);
         return config_in.unit_prefix

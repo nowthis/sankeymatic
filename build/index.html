@@ -119,17 +119,17 @@ Use theme:
 <input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" checked="checked" /><label for="node_use_set_a">A</label>
 <input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" /><label for="node_use_set_b">B</label>
 <input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" /><label for="node_use_set_c">C</label><br />
-<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use a single color:</label> 
+<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use a single color:</label>
 <input type="color" id="default_node_color" size="7" maxlength="7" value="#006699" onchange="process_sankey();"><br />
 </p>
 
 <p class="form_elements2">
 <strong>Flow Colors:</strong><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" checked="checked" onchange="process_sankey();" /><label for="flow_inherit_from_source">Use
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label for="flow_inherit_from_source">Use
 the Source node's color</label><br />
 <input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Use
 the Target node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">Use a single color:</label> 
+<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" checked="checked" /><label for="flow_use_color">Use a single color:</label>
 <input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();">
 </p>
 
@@ -236,8 +236,8 @@ Export<span id="export_options_hint">:</span></h2>
 <p class="form_elements">Once you are satisfied with your diagram, you can<br />
 <strong>export it as a .PNG image</strong>:</p>
 <p class="center_para"><strong>Scale:</strong>
-<input name="scale_x" type="radio" value="1" id="scale_1x" checked="checked" onchange="update_png();" class="spaced_label" /><label for="scale_1x">1x (Web)</label>
-<input name="scale_x" type="radio" value="2" id="scale_2x" onchange="update_png();" class="spaced_label" /><label for="scale_2x">2x (Retina)</label>
+<input name="scale_x" type="radio" value="1" id="scale_1x" onchange="update_png();" /><label for="scale_1x">1x (Basic)</label>
+<input name="scale_x" type="radio" value="2" id="scale_2x" onchange="update_png();" class="spaced_label" checked="checked" /><label for="scale_2x">2x (Retina)</label>
 <input name="scale_x" type="radio" value="4" id="scale_4x" onchange="update_png();" class="spaced_label" /><label for="scale_4x">4x (Print)</label></p>
 <p class="center_para" id="download_link"><a href="#" id="download_png" download="sankey.png">...</a></p>
 </div>
