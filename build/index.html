@@ -2,9 +2,9 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>SankeyMATIC &beta;</title>
+<title>SankeyMATIC (BETA): Build a diagram</title>
 <link rel="stylesheet" href="build.css">
-<link rel="stylesheet" href="../main.css">
+<link rel="stylesheet" href="http://www.sankeymatic.com/main.css">
 </head>
 <body>
 
@@ -19,10 +19,9 @@
 <table id="nav">
 <tr>
 <td><strong><a title="SankeyMATIC home page" href="/">SankeyMATIC (BETA)</a></strong></td>
-<td class="active_tab"><strong><a class="button" title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></strong></td>
+<td class="active_tab"><strong>Build a Sankey Diagram</strong></td>
 <td><a class="button" title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></td>
 <td><a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></td>
-<td><a class="button" title="News &amp; Updates" href="/news/">Weblog</a></td>
 <td><a class="button" title="Frequently Asked Questions" href="/faq/">FAQ</a></td>
 </tr></table>
 </header>
@@ -126,9 +125,9 @@ Use theme:
 <p class="form_elements2">
 <strong>Flow Colors:</strong><br />
 <input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label for="flow_inherit_from_source">Use
-the Source node's color</label><br />
+the Source Node's color</label><br />
 <input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Use
-the Target node's color</label><br />
+the Target Node's color</label><br />
 <input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" checked="checked" /><label for="flow_use_color">Use a single color:</label>
 <input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();">
 </p>
@@ -151,7 +150,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <label for="show_labels">Show labels</label> <small>(hide to apply your own text to the graph)</small><br />
 
 <input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
-<label for="include_values_in_node_labels">Show node totals as part of labels</label>
+<label for="include_values_in_node_labels">Show Node totals as part of labels</label>
 <br />
 <input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();" checked="checked" class="spaced_label">
 <label for="display_full_precision">Always show full precision
@@ -178,7 +177,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 </p>
 
 <p class="form_elements2">
-<strong>Units:</strong> <label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" value="$" onchange="process_sankey();">
+<strong>Units:</strong> <label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
 <label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();">
 </p>
 </div>
@@ -202,7 +201,7 @@ Units and Scale match as closely as possible.)
 </p>
 
 <p class="form_elements1">
-<strong>Note:</strong> You can <u>drag</u> nodes around to reposition them<br />
+<strong>Note:</strong> You can <u>drag</u> Nodes around to reposition them<br />
 before export. (However, changing any inputs will<br />
 re-draw/reset the whole diagram.)</p>
 
@@ -239,7 +238,7 @@ Export<span id="export_options_hint">:</span></h2>
 <input name="scale_x" type="radio" value="1" id="scale_1x" onchange="update_png();" /><label for="scale_1x">1x (Basic)</label>
 <input name="scale_x" type="radio" value="2" id="scale_2x" onchange="update_png();" class="spaced_label" checked="checked" /><label for="scale_2x">2x (Retina)</label>
 <input name="scale_x" type="radio" value="4" id="scale_4x" onchange="update_png();" class="spaced_label" /><label for="scale_4x">4x (Print)</label></p>
-<p class="center_para" id="download_link"><a href="#" id="download_png" download="sankey.png">...</a></p>
+<p class="center_para" id="download_link"><a href="#" id="download_png_link" download="sankey.png">...</a></p>
 </div>
 </div>
 
@@ -270,11 +269,10 @@ Export<span id="export_options_hint">:</span></h2>
 <div id="footer-content">
 <p>
 <strong><a title="SankeyMATIC home page" href="/">SankeyMATIC</a></strong> |
-<strong><a class="button" title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></strong> |
+<strong>Build a Sankey Diagram</strong> |
 
 <a class="button" title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a> |
 <a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a> |
-<a class="button" title="News &amp; Updates" href="/news/">Weblog</a> |
 <a class="button" title="Frequently Asked Questions" href="/faq/">FAQ</a>
 </p>
 

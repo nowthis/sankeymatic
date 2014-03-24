@@ -34,6 +34,7 @@ header td {
 }
 header td.active_tab { 
     background-color: #AADDFF;
+    color: #036;
     border-bottom: #069 1px dotted;
 }
 header td.leftmost { padding-left: 0.2em; }

@@ -45,7 +45,7 @@ function update_png() {
             document.getElementById("the_svg") ),
         canvas_context = '', svg_as_png_url = '',
         canvas_el    = document.getElementById("png_preview"),
-        png_link_el  = document.getElementById("download_png"),
+        png_link_el  = document.getElementById("download_png_link"),
         chart_el     = document.getElementById("chart"),
         scale_factor = radio_value("scale_x") || 1,
         h = 0, w = 0;
@@ -77,7 +77,7 @@ function update_png() {
 
     // Convert canvas image to a PNG:
     svg_as_png_url = canvas_el.toDataURL('image/png');
-    // make it downloadable
+    // make it downloadable (Firefox, Chrome)
     svg_as_png_url = svg_as_png_url.replace('image/png','image/octet-stream');
     png_link_el.setAttribute( "href", svg_as_png_url );
 
@@ -110,7 +110,7 @@ function process_sankey() {
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
         colorset_in = '', fontface_in = '',
         messages_el = document.getElementById("messages_area"),
-        png_link_el = document.getElementById("download_png"),
+        png_link_el = document.getElementById("download_png_link"),
         canvas_el   = document.getElementById("png_preview"),
         raw_source  = document.getElementById("flows_in").value;
 
@@ -545,15 +545,15 @@ function process_sankey() {
     // Are there any good flows at all? If not, offer help:
     if ( good_flows.length === 0 ) {
         add_message('okmessage',
-            'Enter a list of flows (one per line). See the Examples page.',
+            'Enter a list of Flows (one per line). See the <a href="/manual/" target="_blank">Manual</a> for more help.',
             false );
         // No point in proceeding any further:
         return null;
     }
 
     status_message = "Showing: <strong>" + approved_flows.length +
-        " flows</strong> between <strong>" + approved_nodes.length +
-        " nodes</strong>.";
+        " Flows</strong> between <strong>" + approved_nodes.length +
+        " Nodes</strong>.";
     total_difference = total_inflow - total_outflow;
     if ( Math.abs(total_difference) < epsilon_difference ) {
         status_message +=
