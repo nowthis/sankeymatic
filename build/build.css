@@ -154,7 +154,12 @@ td#flows_entry {
 }
 
 #download_link {
-    margin-top: 6px;
+    margin-top: 8px;
+}
+#download_link a {
+    background-color: #acf;
+    border: 1px dotted #069;
+    padding: 5px 8px;
 }
 
 #img_tag_hint {
