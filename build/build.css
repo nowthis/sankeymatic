@@ -157,6 +157,13 @@ td#flows_entry {
     margin-top: 6px;
 }
 
+#img_tag_hint {
+    background-color: white;
+    padding: 3px;
+    margin: 3px;
+    border: 1px dotted #999;
+}
+
 input.wholenumber {
     text-align: right;
 }

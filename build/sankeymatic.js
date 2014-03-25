@@ -47,13 +47,16 @@ function update_png() {
         canvas_el    = document.getElementById("png_preview"),
         png_link_el  = document.getElementById("download_png_link"),
         chart_el     = document.getElementById("chart"),
+        img_tag_el   = document.getElementById("img_tag_hint"),
         scale_factor = radio_value("scale_x") || 1,
-        h = 0, w = 0;
+        orig_h = 0, h = 0, orig_w = 0, w = 0;
 
     // Do any scaling necessary.
     // This is a horrible way to get the original size of the chart:
-    w = Number( chart_el.style.width.replace(/px/,'') ) * scale_factor;
-    h = Number( chart_el.style.height.replace(/px/,'') ) * scale_factor;
+    orig_w = Number( chart_el.style.width.replace(/px/,'') );
+    orig_h = Number( chart_el.style.height.replace(/px/,'') );
+    w = orig_w * scale_factor;
+    h = orig_h * scale_factor;
     canvas_el.width = w;
     canvas_el.height = h;
 
@@ -78,12 +81,19 @@ function update_png() {
     // Convert canvas image to a PNG:
     svg_as_png_url = canvas_el.toDataURL('image/png');
     // make it downloadable (Firefox, Chrome)
-    svg_as_png_url = svg_as_png_url.replace('image/png','image/octet-stream');
+    // svg_as_png_url = svg_as_png_url.replace('image/png','image/octet-stream');
     png_link_el.setAttribute( "href", svg_as_png_url );
+    png_link_el.setAttribute( "target", "_blank" );
 
     // update download link & filename with dimensions:
-    png_link_el.innerHTML = "Download " + w + " x " + h + " PNG";
+    png_link_el.innerHTML = "Export " + w + " x " + h + " PNG";
     png_link_el.setAttribute( "download", "sankeymatic_" + w + "x" + h + ".png" );
+
+    // update img tag hint
+    img_tag_el.innerHTML =
+        "<code>&lt;img width=&quot;<strong>" + orig_w
+        + "</strong>&quot; height=&quot;<strong>" + orig_h
+        + "</strong>&quot; ... /&gt;</code>";
 }
 
 function toggle(el_id) {
