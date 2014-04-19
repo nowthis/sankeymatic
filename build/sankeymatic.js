@@ -532,7 +532,7 @@ function process_sankey() {
                 // of the inputs, we get uselessly long repeated decimals:
                 if ( cross_check_error_ct === 0 ) {
                     add_message( "cautionmessage",
-                        "<strong>Imbalances found:</strong>",
+                        "The Flow Cross-Checker found some <strong>Imbalances:</strong>",
                         false );
                 }
                 cross_check_error_ct++;
@@ -823,7 +823,14 @@ function render_sankey(nodes_in, flows_in, config_in) {
             "fill":        config_in.font_color
             } )
         // In the left half of the picture, place labels to the right of nodes:
-        .filter(function (d) { return d.x < graph_width / 2; })
+        .filter( function (d) {
+            // If the x-coordinate of the data point is less than half the width
+            // of the graph, relocate the label to begin to the right of the
+            // node.
+            // Adjusted x by a node_width to bias the very middle of the graph
+            // to put labels on the left.
+            return ( d.x + node_width ) < ( graph_width / 2 );
+            })
         .attr("x", 6 + node_width)
         .attr("text-anchor", "start");
 }
