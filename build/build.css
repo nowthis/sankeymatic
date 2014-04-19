@@ -158,7 +158,7 @@ td#flows_entry {
 }
 #download_link a {
     background-color: #acf;
-    border: 1px dotted #069;
+    border: 1px solid #069;
     padding: 5px 8px;
 }
 
@@ -169,6 +169,6 @@ td#flows_entry {
     border: 1px dotted #999;
 }
 
-input.wholenumber {
+/* input.wholenumber {
     text-align: right;
-}
+}*/
