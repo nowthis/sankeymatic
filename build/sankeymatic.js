@@ -116,6 +116,231 @@ function toggle_panel(el_id) {
     indicator_el.innerHTML = hiding_now ? "&dArr;" : "&uArr;";
 }
 
+// render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
+function render_sankey(nodes_in, flows_in, config_in) {
+    "use strict";
+
+    var graph_width, graph_height, colorset,
+        units_format, d3_color_scale, svg, sankey, flow, link, node,
+        node_width    = config_in.node_width,
+        node_padding  = config_in.node_padding,
+        total_width   = config_in.canvas_width,
+        total_height  = config_in.canvas_height,
+        margin_top    = config_in.top_margin,
+        margin_bottom = config_in.bottom_margin,
+        margin_left   = config_in.left_margin,
+        margin_right  = config_in.right_margin;
+
+    config_in.unit_prefix =
+        ( typeof config_in.unit_prefix === "undefined"
+            || config_in.unit_prefix === null )
+            ? "" : config_in.unit_prefix;
+    config_in.unit_suffix =
+        ( typeof config_in.unit_suffix === "undefined"
+            || config_in.unit_suffix === null)
+            ? "" : config_in.unit_suffix;
+
+    // Establish a list of 20 compatible colors to choose from:
+    colorset = config_in.default_node_colorset;
+    d3_color_scale
+        = colorset === "A" ? d3.scale.category20()
+        : colorset === "B" ? d3.scale.category20b()
+        : d3.scale.category20c();
+
+    // Fill in any un-set node colors up front so they can be inherited from:
+    nodes_in.forEach( function(node) {
+        if (typeof node.color === 'undefined' || node.color === '') {
+            if (colorset === "none") {
+                node.color = config_in.default_node_color;
+            } else {
+                // Use the first word of the label as the basis for
+                // finding an already-used color or picking a new one (case
+                // sensitive).
+                // If there are no 'word' characters, substitute a word-ish value
+                // (rather than crash):
+                var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
+                node.color = d3_color_scale(first_word);
+            }
+        }
+    });
+
+    var the_clean_json = {
+        "nodes": nodes_in,
+        "links": flows_in
+    };
+
+    // Set the dimensions of the space:
+    graph_width = total_width - margin_left - margin_right;
+    graph_height = total_height - margin_top - margin_bottom;
+
+    units_format = function (d) {
+        var number_portion = d3.format( ",." + config_in.max_places + "f" )(d);
+        return config_in.unit_prefix
+            + ( config_in.display_full_precision
+                ? number_portion
+                : remove_zeroes(number_portion) )
+            + config_in.unit_suffix;
+    };
+
+    // clear out any old contents:
+    // Simply emptying the SVG tag didn't work well in Safari; we reset the whole tag here:
+    document.getElementById('chart').innerHTML =
+        '<svg id="the_svg" height="500" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
+
+    // Select the svg canvas, set the defined dimensions:
+    svg = d3.select("#the_svg")
+        .attr("width", total_width)
+        .attr("height", total_height)
+        .attr("style", "background-color: " + config_in.background_color )
+        .append("g")
+        .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
+
+    // create a sankey object & its properties..
+    sankey = d3.sankey()
+        .nodeWidth(node_width)
+        .nodePadding(node_padding)
+        .size([graph_width, graph_height])
+        .nodes(the_clean_json.nodes)
+        .links(the_clean_json.links)
+        .layout(32);
+
+    // flow is a function returning coordinates and specs for each flow area
+    flow = sankey.link();
+
+    link = svg.append("g").selectAll(".link")
+        .data(the_clean_json.links)
+        .enter()
+        .append("path")
+        .attr("class", "link")
+        .attr("d", flow) // embed coordinates
+        .style("fill", "none") // ensure no line gets drawn, just stroke
+        .style("stroke-width", function (d) { return Math.max(1, d.dy); })
+        // custom stroke color; defaulting to gray if not specified:
+        .style("stroke", function (d) {
+            // Priority order:
+            // 1. color defined specifically for the flow
+            // 2. single-inherit-from-source (or target)
+            // 3. all-inherit-from-source (or target)
+            // 4. default flow color
+            return d.color ? d.color
+                : d.source.inherit_right ? d.source.color
+                : d.target.inherit_left  ? d.target.color
+                : config_in.default_flow_inherit === "source" ? d.source.color
+                : config_in.default_flow_inherit === "target" ? d.target.color
+                : config_in.default_flow_color; })
+        .style("stroke-opacity", function (d) {
+            return d.opacity || config_in.default_flow_opacity;
+            })
+        // add hover behavior:
+        .on('mouseover', function(d){
+            d3.select(this).style( "stroke-opacity",
+                d.opacity_on_hover
+                || ( ( Number(config_in.default_flow_opacity) + 1 ) / 2 ) );
+            })
+        .on('mouseout', function(d){
+            d3.select(this).style( "stroke-opacity",
+                d.opacity || config_in.default_flow_opacity );
+            })
+        // sets the order of display, seems like:
+        .sort(function (a, b) { return b.dy - a.dy; });
+
+    if ( config_in.show_labels ) {
+        link.append("title") // Make tooltips for FLOWS
+            .text(function (d) {
+                return d.source.name + " → " + d.target.name + "\n"
+                    + units_format(d.value);
+            });
+    }
+
+    // define drag function for use in node definitions
+    function dragmove(d) {
+        // Calculate new position:
+        d.x = Math.max(0, Math.min(graph_width - d.dx, d3.event.x));
+        d.y = Math.max(0, Math.min(graph_height - d.dy, d3.event.y));
+        d3.select(this).attr(
+            "transform", "translate(" + d.x + "," + d.y + ")"
+        );
+        // re-render:
+        sankey.relayout();
+        // rewrite the flow's data:
+        link.attr("d", flow);
+        // regenerate the static version, incorporating the drag:
+        render_updated_png();
+    }
+
+    // Set up NODE info, behaviors:
+    node = svg.append("g").selectAll(".node")
+        .data(the_clean_json.nodes)
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", function (d) { return "translate(" + d.x + "," + d.y + ")"; })
+        .call(d3.behavior.drag()
+            .origin(function (d) { return d; })
+            .on("dragstart", function () { this.parentNode.appendChild(this); })
+            .on("drag", dragmove)
+            );
+
+    // Construct actual rectangles for NODEs:
+    node.append("rect")
+        .attr("height", function (d) { return d.dy; })
+        .attr("width", node_width)
+        // Give a unique ID to each rect that we can reference (for scale calc)
+        .attr("id", function(d) { return "r" + d.index; })
+        // we made sure above there will be a color defined:
+        .style("fill", function (d) { return d.color; })
+        .attr( "shape-rendering", "crispEdges" )
+        .style("fill-opacity",
+            function (d) {
+                return d.opacity || config_in.default_node_opacity;
+            })
+        .style( "stroke-width", config_in.node_border || 0 )
+        .style( "stroke", function (d) { return d3.rgb(d.color).darker(2); } )
+        .append("title")    // Add tooltips for NODES
+        .text(
+            function (d) {
+                return config_in.show_labels
+                    ? d.name + "\n" + units_format(d.value)
+                    : "";
+            });
+
+    // Put in NODE labels
+    node.append("text")
+        // x,y = offsets relative to the node rectangle
+        .attr("x", -6)
+        .attr("y", function (d) { return d.dy / 2; })
+        .attr("dy", ".35em")
+        .attr("text-anchor", "end")
+        .attr("transform", null)
+        .text(
+            function (d) {
+                return config_in.show_labels
+                    ? d.name
+                        + ( config_in.include_values_in_node_labels
+                            ? ": " + units_format(d.value)
+                            : "" )
+                    : "";
+            })
+        .style( {   // be explicit about the font specs:
+            "stroke-width": "0", // positive stroke-width makes letters fuzzy
+            "font-family": config_in.font_face,
+            "font-size":   config_in.font_size + "px",
+            "font-weight": config_in.font_weight,
+            "fill":        config_in.font_color
+            } )
+        // In the left half of the picture, place labels to the right of nodes:
+        .filter( function (d) {
+            // If the x-coordinate of the data point is less than half the width
+            // of the graph, relocate the label to begin to the right of the
+            // node.
+            // Adjusted x by a node_width to bias the very middle of the graph
+            // to put labels on the left.
+            return ( d.x + node_width ) < ( graph_width / 2 );
+            })
+        .attr("x", 6 + node_width)
+        .attr("text-anchor", "start");
+}
+
 // MAIN FUNCTION:
 // Gather inputs from user; validate them; render updated diagram
 function process_sankey() {
@@ -632,229 +857,4 @@ function process_sankey() {
 
     // all clear; give control back to the browser:
     return null;
-}
-
-// render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
-function render_sankey(nodes_in, flows_in, config_in) {
-    "use strict";
-
-    var graph_width, graph_height, colorset,
-        units_format, d3_color_scale, svg, sankey, flow, link, node,
-        node_width    = config_in.node_width,
-        node_padding  = config_in.node_padding,
-        total_width   = config_in.canvas_width,
-        total_height  = config_in.canvas_height,
-        margin_top    = config_in.top_margin,
-        margin_bottom = config_in.bottom_margin,
-        margin_left   = config_in.left_margin,
-        margin_right  = config_in.right_margin;
-
-    config_in.unit_prefix =
-        ( typeof config_in.unit_prefix === "undefined"
-            || config_in.unit_prefix === null )
-            ? "" : config_in.unit_prefix;
-    config_in.unit_suffix =
-        ( typeof config_in.unit_suffix === "undefined"
-            || config_in.unit_suffix === null)
-            ? "" : config_in.unit_suffix;
-
-    // Establish a list of 20 compatible colors to choose from:
-    colorset = config_in.default_node_colorset;
-    d3_color_scale
-        = colorset === "A" ? d3.scale.category20()
-        : colorset === "B" ? d3.scale.category20b()
-        : d3.scale.category20c();
-
-    // Fill in any un-set node colors up front so they can be inherited from:
-    nodes_in.forEach( function(node) {
-        if (typeof node.color === 'undefined' || node.color === '') {
-            if (colorset === "none") {
-                node.color = config_in.default_node_color;
-            } else {
-                // Use the first word of the label as the basis for
-                // finding an already-used color or picking a new one (case
-                // sensitive).
-                // If there are no 'word' characters, substitute a word-ish value
-                // (rather than crash):
-                var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
-                node.color = d3_color_scale(first_word);
-            }
-        }
-    });
-
-    var the_clean_json = {
-        "nodes": nodes_in,
-        "links": flows_in
-    };
-
-    // Set the dimensions of the space:
-    graph_width = total_width - margin_left - margin_right;
-    graph_height = total_height - margin_top - margin_bottom;
-
-    units_format = function (d) {
-        var number_portion = d3.format( ",." + config_in.max_places + "f" )(d);
-        return config_in.unit_prefix
-            + ( config_in.display_full_precision
-                ? number_portion
-                : remove_zeroes(number_portion) )
-            + config_in.unit_suffix;
-    };
-
-    // clear out any old contents:
-    // Simply emptying the SVG tag didn't work well in Safari; we reset the whole tag here:
-    document.getElementById('chart').innerHTML =
-        '<svg id="the_svg" height="500" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
-
-    // Select the svg canvas, set the defined dimensions:
-    svg = d3.select("#the_svg")
-        .attr("width", total_width)
-        .attr("height", total_height)
-        .attr("style", "background-color: " + config_in.background_color )
-        .append("g")
-        .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
-
-    // create a sankey object & its properties..
-    sankey = d3.sankey()
-        .nodeWidth(node_width)
-        .nodePadding(node_padding)
-        .size([graph_width, graph_height])
-        .nodes(the_clean_json.nodes)
-        .links(the_clean_json.links)
-        .layout(32);
-
-    // flow is a function returning coordinates and specs for each flow area
-    flow = sankey.link();
-
-    link = svg.append("g").selectAll(".link")
-        .data(the_clean_json.links)
-        .enter()
-        .append("path")
-        .attr("class", "link")
-        .attr("d", flow) // embed coordinates
-        .style("fill", "none") // ensure no line gets drawn, just stroke
-        .style("stroke-width", function (d) { return Math.max(1, d.dy); })
-        // custom stroke color; defaulting to gray if not specified:
-        .style("stroke", function (d) {
-            // Priority order:
-            // 1. color defined specifically for the flow
-            // 2. single-inherit-from-source (or target)
-            // 3. all-inherit-from-source (or target)
-            // 4. default flow color
-            return d.color ? d.color
-                : d.source.inherit_right ? d.source.color
-                : d.target.inherit_left  ? d.target.color
-                : config_in.default_flow_inherit === "source" ? d.source.color
-                : config_in.default_flow_inherit === "target" ? d.target.color
-                : config_in.default_flow_color; })
-        .style("stroke-opacity", function (d) {
-            return d.opacity || config_in.default_flow_opacity;
-            })
-        // add hover behavior:
-        .on('mouseover', function(d){
-            d3.select(this).style( "stroke-opacity",
-                d.opacity_on_hover
-                || ( ( Number(config_in.default_flow_opacity) + 1 ) / 2 ) );
-            })
-        .on('mouseout', function(d){
-            d3.select(this).style( "stroke-opacity",
-                d.opacity || config_in.default_flow_opacity );
-            })
-        // sets the order of display, seems like:
-        .sort(function (a, b) { return b.dy - a.dy; });
-
-    if ( config_in.show_labels ) {
-        link.append("title") // Make tooltips for FLOWS
-            .text(function (d) {
-                return d.source.name + " → " + d.target.name + "\n"
-                    + units_format(d.value);
-            });
-    }
-
-    // define drag function for use in node definitions
-    function dragmove(d) {
-        // Calculate new position:
-        d.x = Math.max(0, Math.min(graph_width - d.dx, d3.event.x));
-        d.y = Math.max(0, Math.min(graph_height - d.dy, d3.event.y));
-        d3.select(this).attr(
-            "transform", "translate(" + d.x + "," + d.y + ")"
-        );
-        // re-render:
-        sankey.relayout();
-        // rewrite the flow's data:
-        link.attr("d", flow);
-        // regenerate the static version, incorporating the drag:
-        render_updated_png();
-    }
-
-    // Set up NODE info, behaviors:
-    node = svg.append("g").selectAll(".node")
-        .data(the_clean_json.nodes)
-        .enter()
-        .append("g")
-        .attr("class", "node")
-        .attr("transform", function (d) { return "translate(" + d.x + "," + d.y + ")"; })
-        .call(d3.behavior.drag()
-            .origin(function (d) { return d; })
-            .on("dragstart", function () { this.parentNode.appendChild(this); })
-            .on("drag", dragmove)
-            );
-
-    // Construct actual rectangles for NODEs:
-    node.append("rect")
-        .attr("height", function (d) { return d.dy; })
-        .attr("width", node_width)
-        // Give a unique ID to each rect that we can reference (for scale calc)
-        .attr("id", function(d) { return "r" + d.index; })
-        // we made sure above there will be a color defined:
-        .style("fill", function (d) { return d.color; })
-        .attr( "shape-rendering", "crispEdges" )
-        .style("fill-opacity",
-            function (d) {
-                return d.opacity || config_in.default_node_opacity;
-            })
-        .style( "stroke-width", config_in.node_border || 0 )
-        .style( "stroke", function (d) { return d3.rgb(d.color).darker(2); } )
-        .append("title")    // Add tooltips for NODES
-        .text(
-            function (d) {
-                return config_in.show_labels
-                    ? d.name + "\n" + units_format(d.value)
-                    : "";
-            });
-
-    // Put in NODE labels
-    node.append("text")
-        // x,y = offsets relative to the node rectangle
-        .attr("x", -6)
-        .attr("y", function (d) { return d.dy / 2; })
-        .attr("dy", ".35em")
-        .attr("text-anchor", "end")
-        .attr("transform", null)
-        .text(
-            function (d) {
-                return config_in.show_labels
-                    ? d.name
-                        + ( config_in.include_values_in_node_labels
-                            ? ": " + units_format(d.value)
-                            : "" )
-                    : "";
-            })
-        .style( {   // be explicit about the font specs:
-            "stroke-width": "0", // positive stroke-width makes letters fuzzy
-            "font-family": config_in.font_face,
-            "font-size":   config_in.font_size + "px",
-            "font-weight": config_in.font_weight,
-            "fill":        config_in.font_color
-            } )
-        // In the left half of the picture, place labels to the right of nodes:
-        .filter( function (d) {
-            // If the x-coordinate of the data point is less than half the width
-            // of the graph, relocate the label to begin to the right of the
-            // node.
-            // Adjusted x by a node_width to bias the very middle of the graph
-            // to put labels on the left.
-            return ( d.x + node_width ) < ( graph_width / 2 );
-            })
-        .attr("x", 6 + node_width)
-        .attr("text-anchor", "start");
 }
