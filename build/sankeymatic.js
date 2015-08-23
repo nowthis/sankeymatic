@@ -35,7 +35,7 @@ function radio_value(radio_input_name) {
     }
 }
 
-function update_png() {
+function render_updated_png() {
     "use strict";
     // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
     // does seem to in Firefox), we string together the node contents to submit
@@ -96,7 +96,7 @@ function update_png() {
         + "</strong>&quot; ... /&gt;</code>";
 }
 
-function toggle(el_id) {
+function toggle_panel(el_id) {
     var el = document.getElementById(el_id),
         indicator_el = document.getElementById( el_id + "_indicator" ),
         hint_el      = document.getElementById( el_id + "_hint" ),
@@ -605,7 +605,7 @@ function process_sankey() {
         unit_fy( max_node_val / tallest_node_height, 6 ) + "/px</strong>";
     document.getElementById("scale_figures").innerHTML = scale_report;
 
-    update_png();
+    render_updated_png();
 
     return null;
 }
@@ -759,7 +759,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         // rewrite the flow's data:
         link.attr("d", flow);
         // regenerate the static version, incorporating the drag:
-        update_png();
+        render_updated_png();
     }
 
     // Set up NODE info, behaviors:
