@@ -1,19 +1,22 @@
-/* sankeymatic.js */
-/* Requires:
-    D3
-    canvg
+/* sankeymatic.js
+A Sankey diagram builder for everyone
+by Steve Bogart (@nowthis)
+
+Requires:
+    D3.js
+    canvg.js
 */
 
+// isNumeric: borrowed from jquery
 function isNumeric(n) {
-    // borrowed from jquery:
     /* "parseFloat NaNs numeric-cast false positives (null|true|false|"")
        ...but misinterprets leading-number strings, particularly hex literals ("0x...")
        subtraction forces infinities to NaN" */
     return n - parseFloat(n) >= 0;
 }
 
-function escapeHtml(unsafe) {
-    return unsafe
+function escapeHtml(unsafe_string) {
+    return unsafe_string
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
          .replace(/>/g, "&gt;")
@@ -21,20 +24,26 @@ function escapeHtml(unsafe) {
          .replace(/'/g, "&#039;");
 }
 
+// remove_zeroes: Strip off zeros from after any decimal.
 function remove_zeroes(number_string) {
-    // Strip off zeros from after any decimal.
     // If no digits remain, remove the '.' as well.
-    return number_string.replace( /(\.\d*?)0+$/, '$1' )
+    return number_string
+        .replace( /(\.\d*?)0+$/, '$1' )
         .replace( /\.$/, '');
 }
 
+// radio_value: given a field name, get the value of the checked radio button
 function radio_value(radio_input_name) {
-    var i = 0, radios = document.getElementsByName(radio_input_name);
-    for (i = 0; i < radios.length; i++) {
-        if (radios[i].checked) { return radios[i].value; }
-    }
+    var radio_result='';
+    // Loop over all radio input elements; copy the 'checked' one's value.
+    Array.prototype.slice.call(document.getElementsByName(radio_input_name))
+        .forEach( function(radio_option) {
+            if (radio_option.checked) { radio_result = radio_option.value; }
+        });
+    return radio_result;
 }
 
+// render_updated_png: After the SVG is updated, re-render the static image
 function render_updated_png() {
     "use strict";
     // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
@@ -96,6 +105,7 @@ function render_updated_png() {
         + "</strong>&quot; ... /&gt;</code>";
 }
 
+// toggle_panel: hide or show one of the interface panels, by name
 function toggle_panel(el_id) {
     var el = document.getElementById(el_id),
         indicator_el = document.getElementById( el_id + "_indicator" ),
@@ -106,6 +116,8 @@ function toggle_panel(el_id) {
     indicator_el.innerHTML = hiding_now ? "&dArr;" : "&uArr;";
 }
 
+// MAIN FUNCTION:
+// Gather inputs from user; validate them; render updated diagram
 function process_sankey() {
     "use strict";
     var source_lines = [], good_flows = [], good_node_lines = [],
@@ -115,28 +127,27 @@ function process_sankey() {
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '', total_difference = 0,
-        svg_content = '', canvas_el = '', chart_el = '',
-        png_link_el = '', reverse_the_graph = 0,
+        chart_el = '', reverse_the_graph = 0,
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
         colorset_in = '', fontface_in = '',
         messages_el = document.getElementById("messages_area"),
         png_link_el = document.getElementById("download_png_link"),
-        canvas_el   = document.getElementById("png_preview"),
         raw_source  = document.getElementById("flows_in").value;
 
     // Define utility functions:
-    // Put a message on the page using the specified class:
+
+    // add_message: Put a message on the page using the specified class:
     function add_message( msg_class, msg_html, put_at_beginning ) {
         var new_msg = '<p class="' + msg_class + '">' + msg_html + '</p>';
-        if (put_at_beginning) {
-            messages_el.innerHTML = new_msg + messages_el.innerHTML;
-        } else {
-            messages_el.innerHTML = messages_el.innerHTML + new_msg;
-        }
+        messages_el.innerHTML
+            = put_at_beginning
+                ? (new_msg + messages_el.innerHTML)
+                : (messages_el.innerHTML + new_msg);
     }
 
-    // Format a value as it will be in the graph. Uses approved_config and
-    // max_places (or a separately submitted 'places' param)
+    // unit_fy: Format a value as it will be in the graph.
+    // Uses approved_config and max_places (or a separately submitted
+    // 'places' param)
     function unit_fy(number_in, places) {
         var number_portion;
         places = places || max_places;
@@ -148,8 +159,8 @@ function process_sankey() {
             + approved_config.unit_suffix;
     }
 
+    // show_delta: Returns an html string of "(Delta symbol) = difference-with-units"
     function show_delta(diff) {
-        // Returns an html string of "Δ = difference-with-units"
         // Shows an explicit +/- sign, then the units (looks cleaner)
         // Only emphasize values > the smallest possible diff in the input:
         var diff_is_big = ( Math.abs(diff) > (11 * epsilon_difference) );
@@ -160,9 +171,10 @@ function process_sankey() {
             + ( diff_is_big ? "</strong>" : "" );
     }
 
+
+    // explain_sum: Returns an html string showing the amounts used
+    // in a sum, as a <dfn> tag with a tooltip title
     function explain_sum( amount, components ) {
-        // Returns an html string showing the amounts used in a sum,
-        // as a <dfn> tag with a tooltip title
         return '(<dfn title="' + components.join(' + ') + '">'
             + unit_fy(amount)
             + "</dfn>)";
@@ -181,16 +193,16 @@ function process_sankey() {
     source_lines = raw_source.split("\n");
 
     // parse all the input lines, storing good ones vs bad ones:
-    for ( line_ix = 0; line_ix < source_lines.length; ++line_ix ) {
+    for ( line_ix = 0; line_ix < source_lines.length; line_ix += 1 ) {
         // Does this line match the basic format?
         line_in = source_lines[line_ix].trim();
         // Is it a comment? Skip it entirely:
         if ( line_in.match(/^'/) ) {
             continue;
         }
-        // Is it a node spec?
+        // Try to match the line to a Node spec:
         matches = line_in.match(
-                /^:(.+) #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i );
+                /^:(.+)\ #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i );
         if ( matches !== null ) {
             good_node_lines.push(
                 { 'name' : matches[1].trim(),
@@ -199,19 +211,22 @@ function process_sankey() {
                   'inherit1' : matches[4],
                   'inherit2' : matches[5]
                 } );
+            // No need to process this as a Data line, let's move on:
             continue;
         }
+
+        // Try to match the line to a Data spec:
         matches = line_in.match( /^(.+)\[([\d\.\s\+\-]+)\](.+)$/ );
         if ( matches !== null ) {
-            // The Amount looked like a number; is it really (after tossing out
-            // whitespace)?
             amount_in = matches[2].replace(/\s/g,'');
+            // The Amount looked trivially like a number; reject the line
+            // if it really isn't:
             if ( !isNumeric(amount_in) ) {
                 bad_lines.push (
                     { 'value' : line_in,
                       'message' : 'The Amount is not a valid decimal number.' } );
+            // The Sankey library doesn't currently support negative numbers or 0:
             } else if (amount_in <= 0) {
-                // The Sankey library doesn't currently support negative numbers or 0:
                 bad_lines.push (
                     { 'value' : line_in,
                       'message' : 'Amounts must be greater than 0.' } );
@@ -221,26 +236,28 @@ function process_sankey() {
                     { 'source' : matches[1].trim(),
                       'target' : matches[3].trim(),
                       'amount' : amount_in } );
-                // We need the maximum precision of the inputs (# of characters
-                // to the RIGHT of the decimal) for some error checking
-                // operations (& display) later:
+                // We need to know the maximum precision of the inputs (greatest
+                // # of characters to the RIGHT of the decimal) for some error
+                // checking operations (& display) later:
                 max_places =
                     Math.max( max_places,
                         ( ( amount_in.split( /\./ ) )[1] || '' ).length );
             }
+        // Did something make the input not match the pattern?:
         } else if ( line_in !== '' ) {
-            // There was input, but something made it not match the pattern:
             bad_lines.push(
                 { 'value' : line_in,
                   'message' :
                     'The line is not in the format: Source [Amount] Target' }
             );
         }
-        // else, the final case: a blank line. We just skip those silently, so
-        // someone can separate their input lines with whitespace if desired.
+        // and the final 'else' case is: a blank line.
+        // We just skip those silently, so you can separate your input lines with
+        // whitespace if desired.
     }
+
     // We know max_places now, so we can derive the smallest important difference.
-    // Defining it as smallest-input-decimal/10; lets us work around various
+    // Defining it as smallest-input-decimal/10; this lets us work around various
     // binary/decimal math issues.
     epsilon_difference = Math.pow( 10, -max_places - 1 );
 
@@ -255,7 +272,9 @@ function process_sankey() {
              false );
     });
 
-    // save_node: Add a node to the unique list (if it's not there already):
+    // Define a couple more useful functions that only matter from this point on:
+
+    // save_node: Add (or update) a node in the 'unique' list:
     function save_node( nodename, nodeparams ) {
         // Have we NOT seen this node before? Then add it:
         if ( !unique_nodes.hasOwnProperty(nodename) ) {
@@ -274,8 +293,8 @@ function process_sankey() {
                 // console.log(nodename, p,
                 //    unique_nodes[nodename].hasOwnProperty(p) );
                 if ( nodeparams[p] !== null && nodeparams[p] !== "" ) {
-                    // Note: If there are multiple lines specifying the same
-                    // param for a node, the last one will win:
+                    // Note: If there are multiple lines specifying a value for
+                    // the same parameter for a node, the last one will win:
                     unique_nodes[nodename][p] = nodeparams[p];
                 }
             } );
@@ -311,7 +330,7 @@ function process_sankey() {
         // e.g. Clinton #CCDDEE
         // e.g. Gondor "Legolas" #998877.25
         // Look for an additional string starting with # for color info
-        matches = flow.target.match( /^(.+)\s+(\#\S+)$/ );
+        matches = flow.target.match( /^(.+)\s+(#\S+)$/ );
         if ( matches !== null ) {
             // IFF the # string matches the pattern, separate the nodename
             // into parts. Assume a color will have at least 3 digits (rgb).
@@ -333,7 +352,7 @@ function process_sankey() {
                     opacity_on_hover = ( Number(opacity) + 1 ) / 2;
                 }
             }
-            // Otherwise we just treat it as part of the nodename
+            // Otherwise we just treat it as part of the nodename, e.g. "Team #1"
         }
         save_node(flow.source);
         save_node(flow.target);
@@ -461,8 +480,8 @@ function process_sankey() {
         approved_config.default_flow_inherit = flow_inherit;
     } // otherwise skip & use the default
 
-    // General HTML color inputs handler:
-    function get_color_input( field_name, default_color ) {
+    // get_color_input: If a field has a valid-looking HTML color value, use it:
+    function get_color_input( field_name ) {
         var field_el  = document.getElementById(field_name),
             field_val = field_el.value;
         // console.log(field_name, field_val, typeof field_val);
@@ -487,7 +506,7 @@ function process_sankey() {
         approved_config.default_node_colorset = colorset_in;
     }
     fontface_in = radio_value("font_face");
-    if ( fontface_in.match( /^(?:serif|sans\-serif|monospace)$/ ) ) {
+    if ( fontface_in.match( /^(?:serif|sans-serif|monospace)$/ ) ) {
         approved_config.font_face = fontface_in;
     }
 
@@ -528,14 +547,15 @@ function process_sankey() {
                 && Math.abs(difference) >= epsilon_difference ) {
                 // Construct a hyper-informative error message about the
                 // imbalance.
-                // If we don't round the outputs to match the maximum precision
-                // of the inputs, we get uselessly long repeated decimals:
+                // First time through the loop, make sure we get a header:
                 if ( cross_check_error_ct === 0 ) {
                     add_message( "cautionmessage",
                         "The Flow Cross-Checker found some <strong>Imbalances:</strong>",
                         false );
                 }
-                cross_check_error_ct++;
+                // If we don't round the outputs to match the maximum precision
+                // of the inputs, we get uselessly long repeated decimals:
+                cross_check_error_ct += 1;
                 add_message( "cautionmessage",
                     "&quot;<b>" + escapeHtml(nodename) + "</b>&quot;: " +
                     "Amount IN "
@@ -589,7 +609,8 @@ function process_sankey() {
             status_message += " No imbalances found.";
         }
     } else {
-        status_message += ' <span class="importanttext">Flow Cross-Check is <strong>OFF</strong>.</span>';
+        status_message
+            += ' <span class="importanttext">Flow Cross-Check is <strong>OFF</strong>.</span>';
     }
     add_message( "okmessage", status_message, true ); // always display main status line first
 
@@ -598,7 +619,9 @@ function process_sankey() {
 
     // Figure out this diagram's scale:
     var tallest_node_height
-        = parseFloat( document.getElementById( "r" + max_node_index ).getAttributeNS( null,"height" ) );
+        = parseFloat(
+            document.getElementById( "r" + max_node_index ).getAttributeNS( null,"height" )
+            );
     // Use a high precision for the scale output:
     var scale_report = unit_fy(max_node_val) + " / " +
         d3.format(",.2f")(tallest_node_height) + "px = <strong>" +
@@ -607,9 +630,11 @@ function process_sankey() {
 
     render_updated_png();
 
+    // all clear; give control back to the browser:
     return null;
 }
 
+// render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
 function render_sankey(nodes_in, flows_in, config_in) {
     "use strict";
 
@@ -617,7 +642,6 @@ function render_sankey(nodes_in, flows_in, config_in) {
         units_format, d3_color_scale, svg, sankey, flow, link, node,
         node_width    = config_in.node_width,
         node_padding  = config_in.node_padding,
-        node_border   = config_in.node_border,
         total_width   = config_in.canvas_width,
         total_height  = config_in.canvas_height,
         margin_top    = config_in.top_margin,
