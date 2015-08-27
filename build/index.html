@@ -45,20 +45,20 @@ Inputs<span id="input_options_hint">:</span></h2>
 ' Examples:
 
 Wages [2000] Budget
-Interest [5] Budget
+Interest [25] Budget
 Budget [500] Taxes
 Budget [450] Housing
-Budget [300] Food
+Budget [310] Food
 Budget [205] Transportation
 Budget [400] Health Care
-Budget [150] Other Necessities
+Budget [160] Other Necessities
 
 ' After all your Flows are entered, use
 ' the controls below to customize the
 ' diagram's appearance.
 
 ' For even finer control over presentation,
-' see the Manual.</textarea>
+' see the Manual (linked above).</textarea>
 
 <p class="center_basic"><button id="preview_graph" type="submit">Preview</button></p>
 </div>
@@ -67,24 +67,27 @@ Budget [150] Other Necessities
 
 <h2 class="ui_head" onclick="toggle_panel('diagram_options');">
 <span id="diagram_options_indicator" class="indicator">&uArr;</span>
-Size &amp; Spacing<span id="diagram_options_hint">:</span></h2>
+Size, Spacing &amp; Shape<span id="diagram_options_hint">:</span></h2>
 
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1">
 <label for="canvas_width"><strong>Diagram Width:</strong></label>
 <input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"> px
 <label for="canvas_height" class="spaced_label"><strong>Height:</strong></label>
-<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="500" onchange="process_sankey();"> px
+<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"> px
 </p>
 
 <p class="form_elements2">
 <label for="node_padding"><strong>Space between Nodes:</strong></label>
-<input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="12" onchange="process_sankey();"> px
+<input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px
 </p>
 
 <p class="form_elements1">
 <label for="node_width"><strong>Node Width:</strong></label>
 <input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
+
+<label for="curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
+|<input id="curvature" type="range" min="0.05" max="0.8" step="0.15" value="0.5" onchange="process_sankey();" class="narrowslider">(<br />
 </p>
 
 <p class="form_elements2">
@@ -117,18 +120,19 @@ Colors<span id="color_options_hint">...</span></h2>
 Use theme:
 <input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" /><label for="node_use_set_a">A</label>
 <input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" /><label for="node_use_set_b">B</label>
-<input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" /><label for="node_use_set_c">C</label><br />
-<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" checked="checked" /><label for="node_use_color">Use a single color:</label>
+<input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" checked="checked" /><label for="node_use_set_c">C</label><br />
+<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use a single color:</label>
 <input type="color" id="default_node_color" size="7" maxlength="7" value="#004477" onchange="process_sankey();"><br />
 </p>
 
 <p class="form_elements2">
 <strong>Flow Colors:</strong><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label for="flow_inherit_from_source">Use
-the Source Node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label for="flow_inherit_from_target">Use
-the Target Node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" checked="checked" /><label for="flow_use_color">Use a single color:</label>
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" />
+<label for="flow_inherit_from_source">Use the Source Node's color</label><br />
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" checked="checked" />
+<label for="flow_inherit_from_target">Use the Target Node's color</label><br />
+<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" />
+<label for="flow_use_color">Use a single color:</label>
 <input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();">
 </p>
 
@@ -165,7 +169,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" style="font-family: monospace;">mono</label>
 
 <label for="font_size" class="spaced_label"><strong>Size:</strong></label>
-<input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="13" onchange="process_sankey();"> <label for="font_size">px</label>
+<input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="15" onchange="process_sankey();"> <label for="font_size">px</label>
 </p>
 
 <p class="form_elements1">
@@ -257,9 +261,9 @@ Export<span id="export_options_hint">:</span></h2>
 </table>
 
 <p id="chart">
-<svg id="the_svg" height="500" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
+<svg id="the_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
-<canvas id="png_preview" height="500" width="600" style="background: #FFFFFF; display:none;"></canvas>
+<canvas id="png_preview" height="600" width="600" style="background: #FFFFFF; display:none;"></canvas>
 <div id="chartfooter">
 </div>
 </td></tr></table>

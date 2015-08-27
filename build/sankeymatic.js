@@ -129,7 +129,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
         margin_top    = config_in.top_margin,
         margin_bottom = config_in.bottom_margin,
         margin_left   = config_in.left_margin,
-        margin_right  = config_in.right_margin;
+        margin_right  = config_in.right_margin,
+        curvature     = config_in.curvature;
 
     config_in.unit_prefix =
         ( typeof config_in.unit_prefix === "undefined"
@@ -202,7 +203,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .size([graph_width, graph_height])
         .nodes(the_clean_json.nodes)
         .links(the_clean_json.links)
-        .layout(32);
+        .curvature(curvature)
+        .layout(50);
 
     // flow is a function returning coordinates and specs for each flow area
     flow = sankey.link();
@@ -244,6 +246,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         // sets the order of display, seems like:
         .sort(function (a, b) { return b.dy - a.dy; });
 
+    // TODO make tooltips a separate option
     if ( config_in.show_labels ) {
         link.append("title") // Make tooltips for FLOWS
             .text(function (d) {
@@ -260,15 +263,15 @@ function render_sankey(nodes_in, flows_in, config_in) {
         d3.select(this).attr(
             "transform", "translate(" + d.x + "," + d.y + ")"
         );
-        // re-render:
+        // Recalculate the flows between the links' new positions:
         sankey.relayout();
-        // rewrite the flow's data:
+        // Put that new information in the SVG:
         link.attr("d", flow);
-        // regenerate the static version, incorporating the drag:
+        // Regenerate the static version, now incorporating the drag:
         render_updated_png();
     }
 
-    // Set up NODE info, behaviors:
+    // Set up NODE info, including drag behavior:
     node = svg.append("g").selectAll(".node")
         .data(the_clean_json.nodes)
         .enter()
@@ -281,7 +284,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
             .on("drag", dragmove)
             );
 
-    // Construct actual rectangles for NODEs:
+    // Construct the actual rectangles for NODEs:
     node.append("rect")
         .attr("height", function (d) { return d.dy; })
         .attr("width", node_width)
@@ -328,7 +331,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
             "font-weight": config_in.font_weight,
             "fill":        config_in.font_color
             } )
-        // In the left half of the picture, place labels to the right of nodes:
+        // In the left half of the picture, place labels to the RIGHT of nodes:
         .filter( function (d) {
             // If the x-coordinate of the data point is less than half the width
             // of the graph, relocate the label to begin to the right of the
@@ -660,6 +663,7 @@ function process_sankey() {
         node_padding: 12,
         node_border: 0,
         reverse_graph: 0,
+        curvature: 0.5,
         default_flow_inherit: "none",
         default_flow_color: "#666666",
         background_color:   "#FFFFFF",
@@ -742,7 +746,8 @@ function process_sankey() {
     });
 
     // Decimal:
-    (["default_node_opacity","default_flow_opacity"]).forEach( function(field_name) {
+    (["default_node_opacity","default_flow_opacity",
+        "curvature"]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
         if ( field_val.match(/^\d(?:.\d+)?$/) ) {
             approved_config[field_name] = field_val;
