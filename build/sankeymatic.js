@@ -1,10 +1,11 @@
-/* sankeymatic.js
+/*
+SankeyMATIC
 A Sankey diagram builder for everyone
-by Steve Bogart (@nowthis)
+by Steve Bogart (@nowthis; http://nowthis.com/; sbogart@sankeymatic.com)
 
 Requires:
     D3.js
-    canvg.js
+    canvg.js (+ rgbcolor.js)
 */
 
 // isNumeric: borrowed from jquery
@@ -15,6 +16,7 @@ function isNumeric(n) {
     return n - parseFloat(n) >= 0;
 }
 
+// escapeHtml: make any input string safe to display
 function escapeHtml(unsafe_string) {
     return unsafe_string
          .replace(/&/g, "&amp;")
@@ -24,12 +26,11 @@ function escapeHtml(unsafe_string) {
          .replace(/'/g, "&#039;");
 }
 
-// remove_zeroes: Strip off zeros from after any decimal.
+// remove_zeroes: Strip off zeros from after any decimal
 function remove_zeroes(number_string) {
-    // If no digits remain, remove the '.' as well.
     return number_string
         .replace( /(\.\d*?)0+$/, '$1' )
-        .replace( /\.$/, '');
+        .replace( /\.$/, '');  // If no digits remain, remove the '.' as well.
 }
 
 // radio_value: given a field name, get the value of the checked radio button
@@ -148,15 +149,14 @@ function render_sankey(nodes_in, flows_in, config_in) {
         : colorset === "B" ? d3.scale.category20b()
         : d3.scale.category20c();
 
-    // Fill in any un-set node colors up front so they can be inherited from:
+    // Fill in any un-set node colors up front so flows can inherit colors from them:
     nodes_in.forEach( function(node) {
         if (typeof node.color === 'undefined' || node.color === '') {
             if (colorset === "none") {
                 node.color = config_in.default_node_color;
             } else {
                 // Use the first word of the label as the basis for
-                // finding an already-used color or picking a new one (case
-                // sensitive).
+                // finding an already-used color or picking a new one (case sensitive!)
                 // If there are no 'word' characters, substitute a word-ish value
                 // (rather than crash):
                 var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
@@ -186,7 +186,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // clear out any old contents:
     // Simply emptying the SVG tag didn't work well in Safari; we reset the whole tag here:
     document.getElementById('chart').innerHTML =
-        '<svg id="the_svg" height="500" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
+        '<svg id="the_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
 
     // Select the svg canvas, set the defined dimensions:
     svg = d3.select("#the_svg")
@@ -500,6 +500,15 @@ function process_sankey() {
              false );
     });
 
+    // Are there any good flows at all? If not, offer a little help:
+    if ( good_flows.length === 0 ) {
+        add_message('okmessage',
+            'Enter a list of Flows (one per line). See the <a href="/manual/" target="_blank">Manual</a> for more help.',
+            false );
+        // No point in proceeding any further. Return to the browser:
+        return null;
+    }
+
     // Define a couple more useful functions that only matter from this point on:
 
     // save_node: Add (or update) a node in the 'unique' list:
@@ -529,10 +538,9 @@ function process_sankey() {
         }
     }
 
+    // reset_field: We got bad input, so reset the form field to the default value
     function reset_field(field_name) {
-        // We got bad input, so reset the form field to the default value:
-        document.getElementById(field_name).value
-            = approved_config[field_name];
+        document.getElementById(field_name).value = approved_config[field_name];
     }
 
     // First go through the Node list and set up any extra parameters we have:
@@ -653,7 +661,7 @@ function process_sankey() {
         include_values_in_node_labels: 0,
         show_labels: 1,
         canvas_width: 600,
-        canvas_height: 500,
+        canvas_height: 600,
         font_size: 13,
         font_weight: 400,
         top_margin: 12, right_margin: 12, bottom_margin: 12, left_margin: 12,
@@ -763,15 +771,17 @@ function process_sankey() {
     chart_el.style.height = approved_config.canvas_height + "px";
     chart_el.style.width = approved_config.canvas_width + "px";
 
-    // Flow cross-check: Test if the total INTO a node is equal to the amount
-    // OUT OF it; warn the user if not:
+    // Calculate some totals & stats for the graph.
     node_order.forEach( function(nodename) {
-        var this_node = unique_nodes[nodename], difference;
-        // Skip any nodes with 0 as the From or To amount; those are the
-        // starting & ending nodes for the whole graph:
+        var this_node = unique_nodes[nodename],
+            difference = 0;
+        // Don't crosscheck any nodes with 0 as the From or To amount; those are the
+        // origins & endpoints for the whole graph and don't qualify:
         if ( this_node.from_sum > 0 && this_node.to_sum > 0) {
             difference = this_node.to_sum - this_node.from_sum;
-            // Is the difference great enough to matter? (i.e. bigger than 1/10
+            // Flow Cross-Check: Test if the total INTO a node is equal to the amount
+            // OUT OF it, and warn the user if not.
+            // Is there a difference great enough to matter? (i.e. bigger than 1/10
             // the smallest unit used?)
             if ( do_cross_checking
                 && Math.abs(difference) >= epsilon_difference ) {
@@ -796,21 +806,14 @@ function process_sankey() {
                     false );
             }
         } else {
-            // One of these values will be 0 every time, but so what...
-            total_inflow += this_node.from_sum;
+            // Accumulate totals in & out of the graph
+            // (One of these values will be 0 every time.)
+            total_inflow  += this_node.from_sum;
             total_outflow += this_node.to_sum;
         }
     });
 
-    // Are there any good flows at all? If not, offer help:
-    if ( good_flows.length === 0 ) {
-        add_message('okmessage',
-            'Enter a list of Flows (one per line). See the <a href="/manual/" target="_blank">Manual</a> for more help.',
-            false );
-        // No point in proceeding any further:
-        return null;
-    }
-
+    // Reflect summary stats to the user, including an overview of any cross-checks:
     status_message = "Showing: <strong>" + approved_flows.length +
         " Flows</strong> between <strong>" + approved_nodes.length +
         " Nodes</strong>.";
@@ -834,6 +837,7 @@ function process_sankey() {
             + unit_fy(total_inflow) + "</strong>. Total <strong>OUT</strong> = <strong>"
             + unit_fy(total_outflow) + "</strong>.";
     }
+
     if (do_cross_checking) {
         if ( cross_check_error_ct === 0 ) {
             status_message += " No imbalances found.";
@@ -847,19 +851,20 @@ function process_sankey() {
     // Do the actual rendering:
     render_sankey( approved_nodes, approved_flows, approved_config );
 
-    // Figure out this diagram's scale:
+    // Figure out this diagram's scale & tell the user:
     var tallest_node_height
         = parseFloat(
             document.getElementById( "r" + max_node_index ).getAttributeNS( null,"height" )
             );
-    // Use a high precision for the scale output:
+    // Use a high precision for the scale output (6 decimal places):
     var scale_report = unit_fy(max_node_val) + " / " +
         d3.format(",.2f")(tallest_node_height) + "px = <strong>" +
         unit_fy( max_node_val / tallest_node_height, 6 ) + "/px</strong>";
     document.getElementById("scale_figures").innerHTML = scale_report;
 
+    // Re-make the PNG file in the background so it's ready to download:
     render_updated_png();
 
-    // all clear; give control back to the browser:
+    // All done. Give control back to the browser:
     return null;
 }
