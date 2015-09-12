@@ -8,16 +8,28 @@ Requires:
     canvg.js (+ rgbcolor.js)
 */
 
-// isNumeric: borrowed from jquery
-function isNumeric(n) {
+// toggle_panel: hide or show one of the interface panels, by name
+function toggle_panel(el_id) {
+    var el = document.getElementById(el_id),
+        indicator_el = document.getElementById( el_id + "_indicator" ),
+        hint_el      = document.getElementById( el_id + "_hint" ),
+        hiding_now = ( el.style.display !== "none" );
+    el.style.display       = hiding_now ? "none"   : "";
+    hint_el.innerHTML      = hiding_now ? "..."    : ":";
+    indicator_el.innerHTML = hiding_now ? "&dArr;" : "&uArr;";
+    return null;
+}
+
+// is_numeric: borrowed from jquery
+function is_numeric(n) {
     /* "parseFloat NaNs numeric-cast false positives (null|true|false|"")
        ...but misinterprets leading-number strings, particularly hex literals ("0x...")
        subtraction forces infinities to NaN" */
     return n - parseFloat(n) >= 0;
 }
 
-// escapeHtml: make any input string safe to display
-function escapeHtml(unsafe_string) {
+// escape_html: make any input string safe to display
+function escape_html(unsafe_string) {
     return unsafe_string
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
@@ -44,49 +56,56 @@ function radio_value(radio_input_name) {
     return radio_result;
 }
 
+// make_diagram_blank: reset the SVG tag to be empty
+function make_diagram_blank(w, h, background_color) {
+    // Simply emptying the SVG tag doesn't seem to work well in Safari,
+    // so we remake the whole tag instead:
+    document.getElementById('chart').innerHTML =
+        '<svg id="the_svg" height="' + h + '" width="' + w + '" '
+        + 'xmlns="http://www.w3.org/2000/svg" version="1.1" '
+        + 'style="background-color: ' + background_color + '"></svg>';
+    return;
+}
+
 // render_updated_png: After the SVG is updated, re-render the static image
 function render_updated_png() {
     "use strict";
     // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
     // does seem to in Firefox), we string together the node contents to submit
     // to the canvas converter:
-    var svg_content
-         = ( new XMLSerializer() ).serializeToString(
-            document.getElementById("the_svg") ),
-        canvas_context = '', svg_as_png_url = '',
+    var svg_el       = document.getElementById("the_svg"),
+        svg_content  = ( new XMLSerializer() ).serializeToString(svg_el),
         canvas_el    = document.getElementById("png_preview"),
         png_link_el  = document.getElementById("download_png_link"),
         chart_el     = document.getElementById("chart"),
         img_tag_el   = document.getElementById("img_tag_hint"),
+        // Do any scaling necessary --
         scale_factor = radio_value("scale_x") || 1,
-        orig_h = 0, h = 0, orig_w = 0, w = 0;
+        // Btw, this is a horrible way to get the original size of the chart:
+        orig_w = Number( chart_el.style.width.replace(/px/,'') ),
+        orig_h = Number( chart_el.style.height.replace(/px/,'') ),
+        png_w = orig_w * scale_factor,
+        png_h = orig_h * scale_factor,
+        canvas_context = canvas_el.getContext("2d"),
+        svg_as_png_url = '';
 
-    // Do any scaling necessary.
-    // This is a horrible way to get the original size of the chart:
-    orig_w = Number( chart_el.style.width.replace(/px/,'') );
-    orig_h = Number( chart_el.style.height.replace(/px/,'') );
-    w = orig_w * scale_factor;
-    h = orig_h * scale_factor;
-    canvas_el.width = w;
-    canvas_el.height = h;
+    canvas_el.width  = png_w;
+    canvas_el.height = png_h;
 
     // Draw the svg contents on the canvas:
     canvg( canvas_el, svg_content, {
         ignoreMouse: true,
         ignoreAnimation: true,
         ignoreDimensions: true, // DON'T make the canvas size match the svg's
-        scaleWidth: w,
-        scaleHeight: h
+        scaleWidth:  png_w,
+        scaleHeight: png_h
         } );
 
-    // set background = white by drawing rect on entire canvas
-    // credit to Mike Chambers (@mesh) for this approach:
-    canvas_context = canvas_el.getContext("2d");
+    // Color the background correctly by drawing a canvas-sized rect underneath.
+    // Credit to Mike Chambers (@mesh) for this approach.
     canvas_context.globalCompositeOperation = "destination-over";
-    // Why trust this value? Because we vetted it or replaced it moments ago:
-    canvas_context.fillStyle
-        = document.getElementById("background_color").value;
-    canvas_context.fillRect( 0, 0, w, h);
+    canvas_context.fillStyle = svg_el.style.backgroundColor;
+    canvas_context.fillRect(0,0,png_w,png_h);
 
     // Convert canvas image to a PNG:
     svg_as_png_url = canvas_el.toDataURL('image/png');
@@ -96,25 +115,14 @@ function render_updated_png() {
     png_link_el.setAttribute( "target", "_blank" );
 
     // update download link & filename with dimensions:
-    png_link_el.innerHTML = "Export " + w + " x " + h + " PNG";
-    png_link_el.setAttribute( "download", "sankeymatic_" + w + "x" + h + ".png" );
+    png_link_el.innerHTML = "Export " + png_w + " x " + png_h + " PNG";
+    png_link_el.setAttribute( "download", "sankeymatic_" + png_w + "x" + png_h + ".png" );
 
     // update img tag hint
     img_tag_el.innerHTML =
         "<code>&lt;img width=&quot;<strong>" + orig_w
         + "</strong>&quot; height=&quot;<strong>" + orig_h
         + "</strong>&quot; ... /&gt;</code>";
-}
-
-// toggle_panel: hide or show one of the interface panels, by name
-function toggle_panel(el_id) {
-    var el = document.getElementById(el_id),
-        indicator_el = document.getElementById( el_id + "_indicator" ),
-        hint_el      = document.getElementById( el_id + "_hint" ),
-        hiding_now = ( el.style.display !== "none" );
-    el.style.display       = hiding_now ? "none"   : "";
-    hint_el.innerHTML      = hiding_now ? "..."    : ":";
-    indicator_el.innerHTML = hiding_now ? "&dArr;" : "&uArr;";
 }
 
 // render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
@@ -183,10 +191,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
             + config_in.unit_suffix;
     };
 
-    // clear out any old contents:
-    // Simply emptying the SVG tag didn't work well in Safari; we reset the whole tag here:
-    document.getElementById('chart').innerHTML =
-        '<svg id="the_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>';
+    // Clear out any old contents:
+    make_diagram_blank(total_width, total_height, config_in.background_color);
 
     // Select the svg canvas, set the defined dimensions:
     svg = d3.select("#the_svg")
@@ -355,9 +361,10 @@ function process_sankey() {
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '', total_difference = 0,
-        chart_el = '', reverse_the_graph = 0,
+        reverse_the_graph = 0,
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
         colorset_in = '', fontface_in = '',
+        chart_el    = document.getElementById("chart"),
         messages_el = document.getElementById("messages_area"),
         png_link_el = document.getElementById("download_png_link"),
         raw_source  = document.getElementById("flows_in").value;
@@ -449,7 +456,7 @@ function process_sankey() {
             amount_in = matches[2].replace(/\s/g,'');
             // The Amount looked trivially like a number; reject the line
             // if it really isn't:
-            if ( !isNumeric(amount_in) ) {
+            if ( !is_numeric(amount_in) ) {
                 bad_lines.push (
                     { 'value' : line_in,
                       'message' : 'The Amount is not a valid decimal number.' } );
@@ -495,21 +502,42 @@ function process_sankey() {
     // Mention the bad lines in the message area:
     bad_lines.forEach( function(parse_error) {
         add_message('errormessage',
-            '&quot;<b>' + escapeHtml(parse_error.value) + '</b>&quot;: ' +
+            '&quot;<b>' + escape_html(parse_error.value) + '</b>&quot;: ' +
              parse_error.message,
              false );
     });
 
-    // Are there any good flows at all? If not, offer a little help:
-    if ( good_flows.length === 0 ) {
-        add_message('okmessage',
-            'Enter a list of Flows (one per line). See the <a href="/manual/" target="_blank">Manual</a> for more help.',
-            false );
-        // No point in proceeding any further. Return to the browser:
-        return null;
-    }
+    // Set up some data & functions that only matter from this point on:
 
-    // Define a couple more useful functions that only matter from this point on:
+    // approved_config begins with all the default values defined.
+    // Values the user enters will override these (if present & valid).
+    approved_config = {
+        unit_prefix: "",
+        unit_suffix: "",
+        max_places: max_places,
+        display_full_precision: 1,
+        include_values_in_node_labels: 0,
+        show_labels: 1,
+        canvas_width: 600,
+        canvas_height: 600,
+        font_size: 13,
+        font_weight: 400,
+        top_margin: 12, right_margin: 12, bottom_margin: 12, left_margin: 12,
+        default_flow_opacity: 0.4,
+        default_node_opacity: 0.9,
+        node_width: 10,
+        node_padding: 12,
+        node_border: 0,
+        reverse_graph: 0,
+        curvature: 0.5,
+        default_flow_inherit: "target",
+        default_flow_color: "#666666",
+        background_color:   "#FFFFFF",
+        font_color:         "#000000",
+        default_node_color: "#006699",
+        default_node_colorset: "C",
+        font_face: "sans-serif"
+    };
 
     // save_node: Add (or update) a node in the 'unique' list:
     function save_node( nodename, nodeparams ) {
@@ -541,6 +569,23 @@ function process_sankey() {
     // reset_field: We got bad input, so reset the form field to the default value
     function reset_field(field_name) {
         document.getElementById(field_name).value = approved_config[field_name];
+    }
+
+    // get_color_input: If a field has a valid-looking HTML color value, then use it
+    function get_color_input( field_name ) {
+        var field_el  = document.getElementById(field_name),
+            field_val = field_el.value;
+        // console.log(field_name, field_val, typeof field_val);
+        if ( field_val.match( /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
+            approved_config[field_name] = field_val;
+        } else if ( field_val.match( /^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
+            // Forgive colors with missing #:
+            field_val = '#' + field_val;
+            approved_config[field_name] = field_val;
+            field_el.value = field_val;
+        } else {
+            reset_field(field_name);
+        }
     }
 
     // First go through the Node list and set up any extra parameters we have:
@@ -650,47 +695,6 @@ function process_sankey() {
         approved_nodes.push(readynode);
     });
 
-    // Get & fill in the config.
-    // Why now? For one thing, we need the Units for the messages we make below.
-    // First fill in basic defaults. Values from the form will override if present.
-    approved_config = {
-        unit_prefix: "",
-        unit_suffix: "",
-        max_places: max_places,
-        display_full_precision: 1,
-        include_values_in_node_labels: 0,
-        show_labels: 1,
-        canvas_width: 600,
-        canvas_height: 600,
-        font_size: 13,
-        font_weight: 400,
-        top_margin: 12, right_margin: 12, bottom_margin: 12, left_margin: 12,
-        default_flow_opacity: 0.4,
-        default_node_opacity: 0.9,
-        node_width: 10,
-        node_padding: 12,
-        node_border: 0,
-        reverse_graph: 0,
-        curvature: 0.5,
-        default_flow_inherit: "none",
-        default_flow_color: "#666666",
-        background_color:   "#FFFFFF",
-        font_color:         "#000000",
-        default_node_color: "#006699",
-        default_node_colorset: "A",
-        font_face: "sans-serif"
-    };
-
-    // Plain strings:
-    (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
-        var field_val = document.getElementById(field_name).value;
-        if (field_val.length <= 10) {
-            approved_config[field_name] = field_val;
-        } else {
-            reset_field(field_name);
-        }
-    });
-
     // Whole positive numbers:
     ([ "canvas_width", "canvas_height", "font_size",
         "top_margin",  "right_margin",  "bottom_margin",
@@ -699,6 +703,46 @@ function process_sankey() {
         var field_val = document.getElementById(field_name).value;
         if (field_val.length < 10 && field_val.match(/^\d+$/)) {
             approved_config[field_name] = Number(field_val);
+        } else {
+            reset_field(field_name);
+        }
+    });
+
+    (["default_flow_color", "background_color", "font_color",
+        "default_node_color" ]).forEach( function(field_name) {
+        get_color_input(field_name);
+    });
+
+    // Since we know the canvas' intended size now, go ahead & set that up
+    // (before we potentially quit):
+    chart_el.style.height = approved_config.canvas_height + "px";
+    chart_el.style.width  = approved_config.canvas_width  + "px";
+
+    // Are there any good flows at all? If not, offer a little help & exit:
+    if ( good_flows.length === 0 ) {
+        add_message('okmessage',
+            'Enter a list of Flows (one per line). '
+            + 'See the <a href="/manual/" target="_blank">Manual</a> for more help.',
+            false );
+
+        // Clear the contents of the graph in case there was an old graph left over:
+        make_diagram_blank(
+            approved_config.canvas_width,
+            approved_config.canvas_height,
+            approved_config.background_color);
+
+        // Also clear out any leftover PNG image by rendering the currently-blank canvas:
+        render_updated_png();
+
+        // No point in proceeding any further. Return to the browser:
+        return null;
+    }
+
+    // Plain strings:
+    (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
+        var field_val = document.getElementById(field_name).value;
+        if (field_val.length <= 10) {
+            approved_config[field_name] = field_val;
         } else {
             reset_field(field_name);
         }
@@ -717,31 +761,11 @@ function process_sankey() {
         approved_config.default_flow_inherit = flow_inherit;
     } // otherwise skip & use the default
 
-    // get_color_input: If a field has a valid-looking HTML color value, use it:
-    function get_color_input( field_name ) {
-        var field_el  = document.getElementById(field_name),
-            field_val = field_el.value;
-        // console.log(field_name, field_val, typeof field_val);
-        if ( field_val.match( /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
-            approved_config[field_name] = field_val;
-        } else if ( field_val.match( /^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
-            // Forgive colors with missing #:
-            field_val = '#' + field_val;
-            approved_config[field_name] = field_val;
-            field_el.value = field_val;
-        } else {
-            reset_field(field_name);
-        }
-    }
-    (["default_flow_color", "background_color", "font_color",
-        "default_node_color" ]).forEach( function(field_name) {
-        get_color_input(field_name);
-    });
-
     colorset_in = radio_value("default_node_colorset");
     if ( colorset_in.match( /^(?:[ABC]|none)$/ ) ) {
         approved_config.default_node_colorset = colorset_in;
     }
+
     fontface_in = radio_value("font_face");
     if ( fontface_in.match( /^(?:serif|sans-serif|monospace)$/ ) ) {
         approved_config.font_face = fontface_in;
@@ -765,11 +789,6 @@ function process_sankey() {
     });
 
     do_cross_checking = document.getElementById("flow_cross_check").checked;
-
-    // Given the canvas size, adjust the size of the containing element:
-    chart_el = document.getElementById('chart');
-    chart_el.style.height = approved_config.canvas_height + "px";
-    chart_el.style.width = approved_config.canvas_width + "px";
 
     // Calculate some totals & stats for the graph.
     node_order.forEach( function(nodename) {
@@ -797,7 +816,7 @@ function process_sankey() {
                 // of the inputs, we get uselessly long repeated decimals:
                 cross_check_error_ct += 1;
                 add_message( "cautionmessage",
-                    "&quot;<b>" + escapeHtml(nodename) + "</b>&quot;: " +
+                    "&quot;<b>" + escape_html(nodename) + "</b>&quot;: " +
                     "Amount IN "
                     + explain_sum( this_node.to_sum, this_node.to_list )
                     + " &ne; OUT "
