@@ -176,13 +176,13 @@ function render_sankey(nodes_in, flows_in, config_in) {
     });
 
     var the_clean_json = {
-        "nodes": nodes_in,
-        "links": flows_in
+        nodes: nodes_in,
+        links: flows_in
     };
 
     // Set the dimensions of the space:
-    graph_width = total_width - margin_left - margin_right;
-    graph_height = total_height - margin_top - margin_bottom;
+    graph_width  = total_width  - margin_left - margin_right;
+    graph_height = total_height - margin_top  - margin_bottom;
 
     units_format = function (d) {
         var number_portion = d3.format( ",." + config_in.max_places + "f" )(d);
@@ -337,7 +337,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
             "font-family": config_in.font_face,
             "font-size":   config_in.font_size + "px",
             "font-weight": config_in.font_weight,
-            "fill":        config_in.font_color
+            fill:          config_in.font_color
             } )
         // In the left half of the picture, place labels to the RIGHT of nodes:
         .filter( function (d) {
@@ -402,7 +402,7 @@ glob.process_sankey = function () {
         var diff_is_big = ( Math.abs(diff) > (11 * epsilon_difference) );
         return "&Delta; = "
             + ( diff_is_big ? "<strong>" : "" )
-            + ( diff >= 0 ? "+" : "-")  // explicit sign
+            + ( diff >= 0   ? "+"        : "-")  // explicit sign
             + unit_fy( Math.abs(diff) ) // produces no sign
             + ( diff_is_big ? "</strong>" : "" );
     }
@@ -441,11 +441,11 @@ glob.process_sankey = function () {
                 /^:(.+)\ #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i );
         if ( matches !== null ) {
             good_node_lines.push(
-                { 'name' : matches[1].trim(),
-                  'color' : matches[2],
-                  'opacity' : matches[3],
-                  'inherit1' : matches[4],
-                  'inherit2' : matches[5]
+                { name:     matches[1].trim(),
+                  color:    matches[2],
+                  opacity:  matches[3],
+                  inherit1: matches[4],
+                  inherit2: matches[5]
                 } );
             // No need to process this as a Data line, let's move on:
             continue;
@@ -459,19 +459,19 @@ glob.process_sankey = function () {
             // if it really isn't:
             if ( !is_numeric(amount_in) ) {
                 bad_lines.push (
-                    { 'value' : line_in,
-                      'message' : 'The Amount is not a valid decimal number.' } );
+                    { value: line_in,
+                      message: 'The Amount is not a valid decimal number.' } );
             // The Sankey library doesn't currently support negative numbers or 0:
             } else if (amount_in <= 0) {
                 bad_lines.push (
-                    { 'value' : line_in,
-                      'message' : 'Amounts must be greater than 0.' } );
+                    { value: line_in,
+                      message: 'Amounts must be greater than 0.' } );
             } else {
                 // All seems well, save it as good (even if 0):
                 good_flows.push(
-                    { 'source' : matches[1].trim(),
-                      'target' : matches[3].trim(),
-                      'amount' : amount_in } );
+                    { source: matches[1].trim(),
+                      target: matches[3].trim(),
+                      amount: amount_in } );
                 // We need to know the maximum precision of the inputs (greatest
                 // # of characters to the RIGHT of the decimal) for some error
                 // checking operations (& display) later:
@@ -482,8 +482,8 @@ glob.process_sankey = function () {
         // Did something make the input not match the pattern?:
         } else if ( line_in !== '' ) {
             bad_lines.push(
-                { 'value' : line_in,
-                  'message' :
+                { value: line_in,
+                  message:
                     'The line is not in the format: Source [Amount] Target' }
             );
         }
@@ -519,7 +519,7 @@ glob.process_sankey = function () {
         display_full_precision: 1,
         include_values_in_node_labels: 0,
         show_labels: 1,
-        canvas_width: 600,
+        canvas_width:  600,
         canvas_height: 600,
         font_size: 13,
         font_weight: 400,
@@ -528,7 +528,7 @@ glob.process_sankey = function () {
         default_node_opacity: 0.9,
         node_width: 10,
         node_padding: 12,
-        node_border: 0,
+        node_border:   0,
         reverse_graph: 0,
         curvature: 0.5,
         default_flow_inherit: "target",
@@ -546,9 +546,9 @@ glob.process_sankey = function () {
         if ( !unique_nodes.hasOwnProperty(nodename) ) {
             // establish the hash:
             unique_nodes[nodename] = {
-                "from_sum": 0,   "to_sum": 0,
-                "from_list": [], "to_list": [],
-                "index": node_order.length
+                from_sum:  0,  to_sum:  0,
+                from_list: [], to_list: [],
+                index: node_order.length
             };
             node_order.push(nodename);
         }
@@ -641,12 +641,12 @@ glob.process_sankey = function () {
 
         // Add the encoded flow to the list of approved flows:
         flow_struct = {
-            "source": unique_nodes[flow.source].index,
-            "target": unique_nodes[flow.target].index,
-            "value": flow.amount,
-            "color": flow_color,
-            "opacity": opacity,
-            "opacity_on_hover": opacity_on_hover
+            source: unique_nodes[flow.source].index,
+            target: unique_nodes[flow.target].index,
+            value:  flow.amount,
+            color:  flow_color,
+            opacity:          opacity,
+            opacity_on_hover: opacity_on_hover
         };
         if (reverse_the_graph) {
             tmp = flow_struct.source;
@@ -678,12 +678,12 @@ glob.process_sankey = function () {
             ? 1
             : 0;
         readynode = {
-            "name": nodename,
-            "index": this_node.index,
-            "color": this_node.color,
-            "opacity": this_node.opacity,
-            "inherit_right": reverse_the_graph ? inherit_left : inherit_right,
-            "inherit_left": reverse_the_graph ? inherit_right : inherit_left
+            name:    nodename,
+            index:   this_node.index,
+            color:   this_node.color,
+            opacity: this_node.opacity,
+            inherit_right: reverse_the_graph ? inherit_left  : inherit_right,
+            inherit_left:  reverse_the_graph ? inherit_right : inherit_left
         };
 
         // Is this a new maximum node?
