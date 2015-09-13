@@ -8,8 +8,13 @@ Requires:
     canvg.js (+ rgbcolor.js)
 */
 
+(function (glob) {
+"use strict";
+// 'glob' points to the global object, either window or global
+// This lets us contain everything in an IIFE (Immediately-Invoked Function Expression)
+
 // toggle_panel: hide or show one of the interface panels, by name
-function toggle_panel(el_id) {
+glob.toggle_panel = function (el_id) {
     var el = document.getElementById(el_id),
         indicator_el = document.getElementById( el_id + "_indicator" ),
         hint_el      = document.getElementById( el_id + "_hint" ),
@@ -18,7 +23,7 @@ function toggle_panel(el_id) {
     hint_el.innerHTML      = hiding_now ? "..."    : ":";
     indicator_el.innerHTML = hiding_now ? "&dArr;" : "&uArr;";
     return null;
-}
+};
 
 // is_numeric: borrowed from jquery
 function is_numeric(n) {
@@ -68,8 +73,7 @@ function make_diagram_blank(w, h, background_color) {
 }
 
 // render_updated_png: After the SVG is updated, re-render the static image
-function render_updated_png() {
-    "use strict";
+glob.render_updated_png = function () {
     // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
     // does seem to in Firefox), we string together the node contents to submit
     // to the canvas converter:
@@ -123,12 +127,10 @@ function render_updated_png() {
         "<code>&lt;img width=&quot;<strong>" + orig_w
         + "</strong>&quot; height=&quot;<strong>" + orig_h
         + "</strong>&quot; ... /&gt;</code>";
-}
+};
 
 // render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
 function render_sankey(nodes_in, flows_in, config_in) {
-    "use strict";
-
     var graph_width, graph_height, colorset,
         units_format, d3_color_scale, svg, sankey, flow, link, node,
         node_width    = config_in.node_width,
@@ -274,7 +276,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         // Put that new information in the SVG:
         link.attr("d", flow);
         // Regenerate the static version, now incorporating the drag:
-        render_updated_png();
+        glob.render_updated_png();
     }
 
     // Set up NODE info, including drag behavior:
@@ -352,8 +354,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
 // MAIN FUNCTION:
 // Gather inputs from user; validate them; render updated diagram
-function process_sankey() {
-    "use strict";
+glob.process_sankey = function () {
     var source_lines = [], good_flows = [], good_node_lines = [],
         bad_lines = [], node_order = [], line_ix = 0, line_in = '',
         unique_nodes = {}, matches = [], amount_in = 0,
@@ -732,7 +733,7 @@ function process_sankey() {
             approved_config.background_color);
 
         // Also clear out any leftover PNG image by rendering the currently-blank canvas:
-        render_updated_png();
+        glob.render_updated_png();
 
         // No point in proceeding any further. Return to the browser:
         return null;
@@ -882,8 +883,10 @@ function process_sankey() {
     document.getElementById("scale_figures").innerHTML = scale_report;
 
     // Re-make the PNG file in the background so it's ready to download:
-    render_updated_png();
+    glob.render_updated_png();
 
     // All done. Give control back to the browser:
     return null;
-}
+};
+
+}(window === 'undefined' ? global : window));
