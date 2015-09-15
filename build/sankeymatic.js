@@ -72,8 +72,9 @@ function make_diagram_blank(w, h, background_color) {
     return;
 }
 
-// render_updated_png: After the SVG is updated, re-render the static image
-glob.render_updated_png = function () {
+
+// finish_png_rendering: Build the PNG file in the background
+function finish_png_rendering() {
     // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
     // does seem to in Firefox), we string together the node contents to submit
     // to the canvas converter:
@@ -127,6 +128,23 @@ glob.render_updated_png = function () {
         "<code>&lt;img width=&quot;<strong>" + orig_w
         + "</strong>&quot; height=&quot;<strong>" + orig_h
         + "</strong>&quot; ... /&gt;</code>";
+
+    return;
+}
+
+// render_updated_png: After the SVG is updated, kick off a re-render of the static image
+// Called by the original drawing routine or when the user chooses a new PNG resolution
+glob.render_updated_png = function () {
+    var png_link_el = document.getElementById("download_png_link");
+
+    // Clear out the old image link, cue user that the graphic isn't yet ready:
+    png_link_el.innerHTML = '...creating downloadable graphic...';
+    png_link_el.setAttribute( 'href', '#' );
+
+    // Fire off an asynchronous event so we can give control back asap:
+    setTimeout( finish_png_rendering, 0 );
+
+    return null;
 };
 
 // render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
@@ -367,7 +385,6 @@ glob.process_sankey = function () {
         colorset_in = '', fontface_in = '',
         chart_el    = document.getElementById("chart"),
         messages_el = document.getElementById("messages_area"),
-        png_link_el = document.getElementById("download_png_link"),
         raw_source  = document.getElementById("flows_in").value;
 
     // Define utility functions:
@@ -418,7 +435,6 @@ glob.process_sankey = function () {
 
     // BEGIN by resetting all messages:
     messages_el.innerHTML = '';
-    png_link_el.innerHTML = "...";
 
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
