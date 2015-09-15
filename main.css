@@ -55,3 +55,4 @@ img.figure_left {
 
 .center_content { text-align: center; }
 .align_right { text-align: right; }
+.no_wrap { white-space: nowrap; }

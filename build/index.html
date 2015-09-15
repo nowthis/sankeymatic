@@ -72,34 +72,34 @@ Size, Spacing &amp; Shape<span id="diagram_options_hint">:</span></h2>
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1">
 <label for="canvas_width"><strong>Diagram Width:</strong></label>
-<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"> px
+<span class="no_wrap"><input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
 <label for="canvas_height" class="spaced_label"><strong>Height:</strong></label>
-<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"> px
+<span class="no_wrap"><input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
 </p>
 
 <p class="form_elements2">
 <label for="node_padding"><strong>Space between Nodes:</strong></label>
-<input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px
+<span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="15" onchange="process_sankey();"> px</span>
 </p>
 
 <p class="form_elements1">
 <label for="node_width"><strong>Node Width:</strong></label>
-<input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px
+<span class="no_wrap"><input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px</span>
 
 <label for="curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
-|<input id="curvature" type="range" min="0.05" max="0.8" step="0.15" value="0.5" onchange="process_sankey();" class="narrowslider">(<br />
+<span class="no_wrap">|<input id="curvature" type="range" min="0.05" max="0.8" step="0.15" value="0.5" onchange="process_sankey();" class="narrowslider">(</span><br />
 </p>
 
 <p class="form_elements2">
 <strong>Margins:</strong>
-<label for="top_margin">Top</label>
-<input type="text" class="wholenumber" id="top_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
-<label for="bottom_margin">Bot</label>
-<input type="text" class="wholenumber" id="bottom_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
-<label for="left_margin">L</label>
-<input type="text" class="wholenumber" id="left_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
-<label for="right_margin">R</label>
-<input type="text" class="wholenumber" id="right_margin" size="2" maxlength="4" value="12" onchange="process_sankey();">
+<span class="no_wrap"><label for="top_margin">Top</label>
+<input type="text" class="wholenumber" id="top_margin" size="2" maxlength="4" value="12" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="bottom_margin">Bot</label>
+<input type="text" class="wholenumber" id="bottom_margin" size="2" maxlength="4" value="12" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="left_margin">L</label>
+<input type="text" class="wholenumber" id="left_margin" size="2" maxlength="4" value="12" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="right_margin">R</label>
+<input type="text" class="wholenumber" id="right_margin" size="2" maxlength="4" value="12" onchange="process_sankey();"></span>
 </p>
 
 </div>
@@ -138,7 +138,7 @@ Use theme:
 
 <p class="form_elements1">
 <label for="default_flow_opacity"><strong>Flow Opacity:</strong></label>
-<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.4" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
+<span class="no_wrap"><span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.4" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
 </p>
 </div>
 
@@ -164,12 +164,12 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 
 <p class="form_elements2">
 <strong>Face:</strong>
-<input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" style="font-family: sans-serif;">sans</label>
-<input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" style="font-family: serif;">serif</label>
-<input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" style="font-family: monospace;">mono</label>
+<span class="no_wrap"><input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" style="font-family: sans-serif;">sans</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" style="font-family: serif;">serif</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" style="font-family: monospace;">mono</label></span>
 
 <label for="font_size" class="spaced_label"><strong>Size:</strong></label>
-<input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="15" onchange="process_sankey();"> <label for="font_size">px</label>
+<span class="no_wrap"><input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="15" onchange="process_sankey();"> <label for="font_size">px</label></span>
 </p>
 
 <p class="form_elements1">
@@ -177,12 +177,13 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
 
 <label for="font_weight" class="spaced_label"><strong>Weight:</strong></label>
-<span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span><br />
+<span class="no_wrap"><span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span></span><br />
 </p>
 
 <p class="form_elements2">
-<strong>Units:</strong> <label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();">
-<label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();">
+<strong>Units:</strong>
+<span class="no_wrap"><label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"></span>
 </p>
 </div>
 
@@ -211,7 +212,7 @@ re-draw/reset the whole diagram.)</p>
 
 <p class="form_elements2">
 <label for="default_node_opacity"><strong>Node Opacity:</strong></label>
-<span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span>
+<span class="no_wrap"><span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
 
 <label for="node_border" class="spaced_label"><strong>Border:</strong></label>
 <select id="node_border" onchange="process_sankey();">
@@ -239,10 +240,11 @@ Export<span id="export_options_hint">:</span></h2>
 <p class="form_elements">Once you are satisfied with your diagram, you can<br />
 <strong>export it as a .PNG image</strong>:</p>
 <p class="center_para"><strong>Scale:</strong>
-<input name="scale_x" type="radio" value="1" id="scale_1x" onchange="render_updated_png();" /><label for="scale_1x">1x (Basic)</label>
-<input name="scale_x" type="radio" value="2" id="scale_2x" onchange="render_updated_png();" class="spaced_label" checked="checked" /><label for="scale_2x">2x (Retina)</label>
-<input name="scale_x" type="radio" value="4" id="scale_4x" onchange="render_updated_png();" class="spaced_label" /><label for="scale_4x">4x (Print)</label></p>
-<p class="center_para" id="download_link"><strong><a href="#" id="download_png_link" download="sankey.png">...</a></strong></p>
+<span class="no_wrap"><input name="scale_x" type="radio" value="1" id="scale_1x" onchange="render_updated_png();" /><label for="scale_1x">1x&nbsp;(Basic)</label></span>
+<span class="no_wrap"><input name="scale_x" type="radio" value="2" id="scale_2x" onchange="render_updated_png();" class="spaced_label" checked="checked" /><label for="scale_2x">2x&nbsp;(Retina)</label></span>
+<span class="no_wrap"><input name="scale_x" type="radio" value="4" id="scale_4x" onchange="render_updated_png();" class="spaced_label" /><label for="scale_4x">4x&nbsp;(Print)</label></span>
+</p>
+<p class="center_para no_wrap" id="download_link"><strong><a href="#" id="download_png_link" download="sankey.png">...</a></strong></p>
 <p class="center_content" style="margin-bottom: 6px;">Dimensions for IMG tag:</p>
 <p class="center_content" id="img_tag_hint"></p>
 </div>
