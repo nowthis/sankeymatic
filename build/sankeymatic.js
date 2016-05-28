@@ -10,7 +10,7 @@ Requires:
 
 (function (glob) {
 "use strict";
-// 'glob' points to the global object, either window or global
+// 'glob' points to the global object, either 'window' (browser) or 'global' (node.js)
 // This lets us contain everything in an IIFE (Immediately-Invoked Function Expression)
 
 // toggle_panel: hide or show one of the interface panels, by name
@@ -25,7 +25,7 @@ glob.toggle_panel = function (el_id) {
     return null;
 };
 
-// is_numeric: borrowed from jquery
+// is_numeric: borrowed from jQuery's isNumeric
 function is_numeric(n) {
     /* "parseFloat NaNs numeric-cast false positives (null|true|false|"")
        ...but misinterprets leading-number strings, particularly hex literals ("0x...")
