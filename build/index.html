@@ -185,6 +185,18 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <span class="no_wrap"><label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"></span>
 </p>
+
+<p class="form_elements1">
+<label for="number_format"><strong>Number Format:</strong></label>
+<select id="number_format" onchange="process_sankey();">
+<option value=",." selected="selected">1,000,000.00</option>
+<option value=".,">1.000.000,00</option>
+<option value=" .">1 000 000.00</option>
+<option value=" ,">1 000 000,00</option>
+<option value="X.">1000000.00</option>
+<option value="X,">1000000,00</option>
+</select>
+</p>
 </div>
 
 <!-- ADVANCED -->

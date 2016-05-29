@@ -50,6 +50,32 @@ function remove_zeroes(number_string) {
         .replace( /\.$/, '');  // If no digits remain, remove the '.' as well.
 }
 
+
+// fix_separators: given a US-formatted number, replace with user's preferred separators:
+function fix_separators(n, seps) {
+    // If desired format is not the US default, perform hacky-but-functional swap:
+    return ( seps.thousands !== ","
+        ?  // 3-step swap using ! as the placeholder:
+            n.replace(/,/g, "!")
+             .replace(/\./g, seps.decimal)
+             .replace(/!/g, seps.thousands)
+        : n );
+}
+
+// format_a_value: produce a fully prefixed, suffixed, & separated number for display:
+function format_a_value(number_in, places, separators, prefix, suffix,
+    display_full_precision) {
+    var number_portion =
+        fix_separators(
+            d3.format( ",." + places + "f" )(number_in),
+            separators );
+    return prefix
+        + ( display_full_precision
+            ? number_portion
+            : remove_zeroes(number_portion) )
+        + suffix;
+}
+
 // radio_value: given a field name, get the value of the checked radio button
 function radio_value(radio_input_name) {
     var radio_result='';
@@ -159,16 +185,26 @@ function render_sankey(nodes_in, flows_in, config_in) {
         margin_bottom = config_in.bottom_margin,
         margin_left   = config_in.left_margin,
         margin_right  = config_in.right_margin,
-        curvature     = config_in.curvature;
+        curvature     = config_in.curvature,
+        separators    = config_in.seps;
 
     config_in.unit_prefix =
         ( typeof config_in.unit_prefix === "undefined"
-            || config_in.unit_prefix === null )
+            ||   config_in.unit_prefix === null )
             ? "" : config_in.unit_prefix;
     config_in.unit_suffix =
         ( typeof config_in.unit_suffix === "undefined"
-            || config_in.unit_suffix === null)
+            ||   config_in.unit_suffix === null)
             ? "" : config_in.unit_suffix;
+
+    separators.thousands =
+        ( typeof separators.thousands === "undefined"
+            ||   separators.thousands === null )
+            ? "," : separators.thousands;
+    separators.decimal =
+        ( typeof separators.decimal === "undefined"
+            ||   separators.decimal === null )
+            ? "." : separators.decimal;
 
     // Establish a list of 20 compatible colors to choose from:
     colorset = config_in.default_node_colorset;
@@ -202,13 +238,12 @@ function render_sankey(nodes_in, flows_in, config_in) {
     graph_width  = total_width  - margin_left - margin_right;
     graph_height = total_height - margin_top  - margin_bottom;
 
-    units_format = function (d) {
-        var number_portion = d3.format( ",." + config_in.max_places + "f" )(d);
-        return config_in.unit_prefix
-            + ( config_in.display_full_precision
-                ? number_portion
-                : remove_zeroes(number_portion) )
-            + config_in.unit_suffix;
+    // units_format: produce a fully prefixed, suffixed, and separated number for display:
+    units_format = function (n) {
+        return format_a_value(n,
+            config_in.max_places,  separators,
+            config_in.unit_prefix, config_in.unit_suffix,
+            config_in.display_full_precision);
     };
 
     // Clear out any old contents:
@@ -402,14 +437,10 @@ glob.process_sankey = function () {
     // Uses approved_config and max_places (or a separately submitted
     // 'places' param)
     function unit_fy(number_in, places) {
-        var number_portion;
-        places = places || max_places;
-        number_portion = d3.format( ",." + places + "f" )(number_in);
-        return approved_config.unit_prefix
-            + ( approved_config.display_full_precision
-                ? number_portion
-                : remove_zeroes(number_portion) )
-            + approved_config.unit_suffix;
+        return format_a_value(number_in,
+            ( places || max_places ),  approved_config.seps,
+            approved_config.unit_prefix, approved_config.unit_suffix,
+            approved_config.display_full_precision);
     }
 
     // show_delta: Returns an html string of "(Delta symbol) = difference-with-units"
@@ -531,6 +562,8 @@ glob.process_sankey = function () {
     approved_config = {
         unit_prefix: "",
         unit_suffix: "",
+        number_format: ",.",
+        seps: { thousands: ",", decimal: "." },
         max_places: max_places,
         display_full_precision: 1,
         include_values_in_node_labels: 0,
@@ -755,7 +788,7 @@ glob.process_sankey = function () {
         return null;
     }
 
-    // Plain strings:
+    // Verify valid plain strings:
     (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
         if (field_val.length <= 10) {
@@ -763,6 +796,23 @@ glob.process_sankey = function () {
         } else {
             reset_field(field_name);
         }
+    });
+
+    // Interpret user's number format settings:
+    (["number_format"]).forEach( function(field_name) {
+        var seps = { thousands: ",", decimal: "." },
+            field_val = document.getElementById(field_name).value;
+        if (field_val.length === 2 && ( /^[,.\ X][,.]$/.exec(field_val) ) ) {
+            // Grab the 1st character if it's a valid 'thousands' value:
+            seps.thousands = (/^[,.\ X]/.exec(field_val))[0];
+            // Handle the case of No Separator:
+            if (seps.thousands === "X") { seps.thousands = ""; }
+            // Grab the 2nd character if it's a valid 'decimal' value:
+            seps.decimal = (/^.([,.])/.exec(field_val))[1];
+        } else {
+            reset_field(field_name);
+        }
+        approved_config.seps = seps;
     });
 
     // Direction of flow color inheritance:
@@ -894,7 +944,9 @@ glob.process_sankey = function () {
             );
     // Use a high precision for the scale output (6 decimal places):
     var scale_report = unit_fy(max_node_val) + " / " +
-        d3.format(",.2f")(tallest_node_height) + "px = <strong>" +
+        fix_separators( d3.format(",.2f")(tallest_node_height),
+            approved_config.seps) +
+        "px = <strong>" +
         unit_fy( max_node_val / tallest_node_height, 6 ) + "/px</strong>";
     document.getElementById("scale_figures").innerHTML = scale_report;
 
