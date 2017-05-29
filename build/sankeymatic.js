@@ -92,19 +92,19 @@ function make_diagram_blank(w, h, background_color) {
     // Simply emptying the SVG tag doesn't seem to work well in Safari,
     // so we remake the whole tag instead:
     document.getElementById('chart').innerHTML =
-        '<svg id="the_svg" height="' + h + '" width="' + w + '" '
+        '<svg id="sankey_svg" height="' + h + '" width="' + w + '" '
         + 'xmlns="http://www.w3.org/2000/svg" version="1.1" '
         + 'style="background-color: ' + background_color + '"></svg>';
     return;
 }
 
 
-// finish_png_rendering: Build the PNG file in the background
-function finish_png_rendering() {
+// render_png: Build the PNG file in the background
+function render_png() {
     // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
     // does seem to in Firefox), we string together the node contents to submit
     // to the canvas converter:
-    var svg_el       = document.getElementById("the_svg"),
+    var svg_el       = document.getElementById("sankey_svg"),
         svg_content  = ( new XMLSerializer() ).serializeToString(svg_el),
         canvas_el    = document.getElementById("png_preview"),
         png_link_el  = document.getElementById("download_png_link"),
@@ -158,17 +158,46 @@ function finish_png_rendering() {
     return;
 }
 
-// render_updated_png: After the SVG is updated, kick off a re-render of the static image
+// produce_svg_code: take the current state of 'sankey_svg' and hand it nicely to the user
+function produce_svg_code() {
+  // Prep for filling in the code area
+  var svg_export_el = document.getElementById("svg_for_export"),
+      svg_el        = document.getElementById("sankey_svg");
+
+  // Hack to put in a placeholder title & comment & background rectangle
+  var svg_for_copying =
+      document.getElementById("chart")
+        .innerHTML
+        .replace(/><g/, // <-- Inserting in front of the first <g> tag
+          "><title>Your Diagram Title</title>" +
+          "<!-- Generated with SankeyMATIC on " + (new Date()) + "-->" +
+          "<g><rect width=\"100%\" height=\"100%\" fill=\"" +
+          svg_el.style.backgroundColor + "\"></rect><g")
+        .replace(/<\/svg>/,"</g></svg>"); // close the extra <g> tag
+
+  // Escape that whole batch of tags and put it in the <div> for copying:
+  svg_export_el.innerHTML = escape_html(svg_for_copying);
+
+  return;
+}
+
+// render_updated_outputs: After the SVG is updated, kick off a re-render of the static image
 // Called by the original drawing routine or when the user chooses a new PNG resolution
-glob.render_updated_png = function () {
-    var png_link_el = document.getElementById("download_png_link");
+glob.render_updated_outputs = function () {
+    // Reset the existing export output areas:
+    var png_link_el   = document.getElementById("download_png_link"),
+        svg_export_el = document.getElementById("svg_for_export");
 
     // Clear out the old image link, cue user that the graphic isn't yet ready:
     png_link_el.innerHTML = '...creating downloadable graphic...';
     png_link_el.setAttribute( 'href', '#' );
+    // Wipe out the SVG from the old diagram:
+    svg_export_el.innerHTML = '(generating SVG code...)';
 
-    // Fire off an asynchronous event so we can give control back asap:
-    setTimeout( finish_png_rendering, 0 );
+    // Fire off asynchronous events for generating the export output,
+    // so we can give control back asap:
+    setTimeout( render_png, 0 );
+    setTimeout( produce_svg_code, 0 );
 
     return null;
 };
@@ -250,7 +279,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
     make_diagram_blank(total_width, total_height, config_in.background_color);
 
     // Select the svg canvas, set the defined dimensions:
-    svg = d3.select("#the_svg")
+    svg = d3.select("#sankey_svg")
         .attr("width", total_width)
         .attr("height", total_height)
         .attr("style", "background-color: " + config_in.background_color )
@@ -328,8 +357,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
         sankey.relayout();
         // Put that new information in the SVG:
         link.attr("d", flow);
-        // Regenerate the static version, now incorporating the drag:
-        glob.render_updated_png();
+        // Regenerate the export versions, now incorporating the drag:
+        glob.render_updated_outputs();
     }
 
     // Set up NODE info, including drag behavior:
@@ -781,8 +810,8 @@ glob.process_sankey = function () {
             approved_config.canvas_height,
             approved_config.background_color);
 
-        // Also clear out any leftover PNG image by rendering the currently-blank canvas:
-        glob.render_updated_png();
+        // Also clear out any leftover export output by rendering the currently-blank canvas:
+        glob.render_updated_outputs();
 
         // No point in proceeding any further. Return to the browser:
         return null;
@@ -950,8 +979,8 @@ glob.process_sankey = function () {
         unit_fy( max_node_val / tallest_node_height, 6 ) + "/px</strong>";
     document.getElementById("scale_figures").innerHTML = scale_report;
 
-    // Re-make the PNG file in the background so it's ready to download:
-    glob.render_updated_png();
+    // Re-make the PNG+SVG outputs in the background so they are ready to use:
+    glob.render_updated_outputs();
 
     // All done. Give control back to the browser:
     return null;

@@ -81,16 +81,27 @@ textarea#flows_in {
 /* label which needs leftward breathing room:*/
 .spaced_label { margin-left: 12px; }
 
-h2.ui_head {
-    font-size: 14px;
+.ui_head {
     padding: 3px 6px 2px;
     margin: 2px 0px 0px;
-    background-color: #004477;
     color: white;
     text-align: left;
 }
-.ui_head:hover {
+
+h2.ui_head {
+    font-size: 14px;
+    background-color: #004477;
+}
+h2.ui_head:hover {
     background-color: #006699;
+}
+
+h3.ui_head {
+    font-size: 12px;
+    background-color: #3377BB;
+}
+h3.ui_head:hover {
+    background-color: #3399DD;
 }
 
 .form_chunk {
@@ -153,10 +164,10 @@ td#flows_entry {
     vertical-align: middle;
 }
 
-#download_link {
+.download_link {
     margin-top: 8px;
 }
-#download_link a {
+.download_link a {
     background-color: #acf;
     border: 1px solid #069;
     padding: 5px 8px;
@@ -169,6 +180,11 @@ td#flows_entry {
     border: 1px dotted #999;
 }
 
-/* input.wholenumber {
-    text-align: right;
-}*/
+#svg_for_export {
+    border: 1px solid #ccc;
+    background: #f2f2f2;
+    color: #666;
+    overflow: auto;
+    text-align: left;
+    margin: auto;
+}

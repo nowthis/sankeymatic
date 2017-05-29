@@ -245,22 +245,37 @@ re-draw/reset the whole diagram.)</p>
 
 <h2 class="ui_head" onclick="toggle_panel('export_options');">
 <span id="export_options_indicator" class="indicator">&uArr;</span>
-Export<span id="export_options_hint">:</span></h2>
+Export Diagram<span id="export_options_hint">:</span></h2>
 
 <div id="export_options" class="form_chunk">
+<p class="form_elements" style="padding:4px;">Once you are satisfied with your diagram, you can<br /> <strong>export it</strong> as an image or as vector code (SVG):</p>
+
+<h3 class="ui_head" onclick="toggle_panel('png_options');"><span id="png_options_indicator" class="indicator">&dArr;</span><abbr title="Portable Network Graphics">PNG</abbr> Image<span id="png_options_hint">...</span></h3>
+<div id="png_options" class="form_chunk" style="display: none;">
 <div class="form_elements1">
-<p class="form_elements">Once you are satisfied with your diagram, you can<br />
-<strong>export it as a .PNG image</strong>:</p>
-<p class="center_para"><strong>Scale:</strong>
-<span class="no_wrap"><input name="scale_x" type="radio" value="1" id="scale_1x" onchange="render_updated_png();" /><label for="scale_1x">1x&nbsp;(Basic)</label></span>
-<span class="no_wrap"><input name="scale_x" type="radio" value="2" id="scale_2x" onchange="render_updated_png();" class="spaced_label" checked="checked" /><label for="scale_2x">2x&nbsp;(Retina)</label></span>
-<span class="no_wrap"><input name="scale_x" type="radio" value="4" id="scale_4x" onchange="render_updated_png();" class="spaced_label" /><label for="scale_4x">4x&nbsp;(Print)</label></span>
-</p>
-<p class="center_para no_wrap" id="download_link"><strong><a href="#" id="download_png_link" download="sankey.png">...</a></strong></p>
-<p class="center_content" style="margin-bottom: 6px;">Dimensions for IMG tag:</p>
-<p class="center_content" id="img_tag_hint"></p>
+    <p class="center_para"><strong>Scale:</strong>
+    <span class="no_wrap"><input name="scale_x" type="radio" value="1" id="scale_1x" onchange="render_updated_outputs();" /><label for="scale_1x">1x&nbsp;(Basic)</label></span>
+    <span class="no_wrap"><input name="scale_x" type="radio" value="2" id="scale_2x" onchange="render_updated_outputs();" class="spaced_label" checked="checked" /><label for="scale_2x">2x&nbsp;(Retina)</label></span>
+    <span class="no_wrap"><input name="scale_x" type="radio" value="4" id="scale_4x" onchange="render_updated_outputs();" class="spaced_label" /><label for="scale_4x">4x&nbsp;(Print)</label></span>
+    </p>
+    <p class="center_para no_wrap download_link"><strong><a href="#" id="download_png_link" download="sankey.png">...</a></strong></p>
+    <p class="center_content" style="margin-bottom: 6px;">Dimensions for IMG tag:</p>
+    <p class="center_content" id="img_tag_hint"></p>
 </div>
 </div>
+
+<h3 class="ui_head" onclick="toggle_panel('svg_options');"><span id="svg_options_indicator" class="indicator">&dArr;</span><abbr title="Scalable Vector Graphics">SVG</abbr> Code<span id="svg_options_hint">...</span></h3>
+<div id="svg_options" class="form_chunk" style="display: none;">
+<div class="form_elements1">
+    <div id="svg_for_export" contenteditable="true" style="width:260px; height:130px; resize: both;">(generating SVG code...)</div>
+    <p class="form_elements">Copy the code above to embed your diagram.</p>
+    <p class="form_elements">Save it in a &ldquo;<code>.svg</code>&rdquo; file to edit it in another application.</p>
+    <p class="form_elements">Every Flow will have a tooltip when hovering.</p>
+</div>
+</div>
+
+</div>
+
 
 </td>
 </tr>
@@ -275,7 +290,7 @@ Export<span id="export_options_hint">:</span></h2>
 </table>
 
 <p id="chart">
-<svg id="the_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
+<svg id="sankey_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
 <canvas id="png_preview" height="600" width="600" style="background: #FFFFFF; display:none;"></canvas>
 <div id="chartfooter">
