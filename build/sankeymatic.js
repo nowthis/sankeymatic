@@ -36,6 +36,7 @@ function is_numeric(n) {
 // escape_html: make any input string safe to display
 function escape_html(unsafe_string) {
     return unsafe_string
+         .replace(/→/g, "&rarr;")
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
          .replace(/>/g, "&gt;")
@@ -49,7 +50,6 @@ function remove_zeroes(number_string) {
         .replace( /(\.\d*?)0+$/, '$1' )
         .replace( /\.$/, '');  // If no digits remain, remove the '.' as well.
 }
-
 
 // fix_separators: given a US-formatted number, replace with user's preferred separators:
 function fix_separators(n, seps) {
@@ -605,7 +605,7 @@ glob.process_sankey = function () {
         default_flow_opacity: 0.4,
         default_node_opacity: 0.9,
         node_width: 10,
-        node_padding: 12,
+        node_padding: 18,
         node_border:   0,
         reverse_graph: 0,
         curvature: 0.5,
