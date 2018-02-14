@@ -87,14 +87,24 @@ function radio_value(radio_input_name) {
     return radio_result;
 }
 
-// make_diagram_blank: reset the SVG tag to be empty
-function make_diagram_blank(w, h, background_color) {
+// background_clause:
+//  Generate the style clause for either a transparent or color background
+function background_clause(color_spec, transparent) {
+    return ( transparent
+            ? 'background-color: transparent; background-image: url(transparent_bg.png); background-repeat: repeat;'
+            : 'background-color: ' + color_spec + ';');
+}
+
+// make_diagram_blank: reset the SVG tag to be empty, with the user's chosen background
+function make_diagram_blank(w, h, background_color, background_transparent) {
     // Simply emptying the SVG tag doesn't seem to work well in Safari,
     // so we remake the whole tag instead:
     document.getElementById('chart').innerHTML =
         '<svg id="sankey_svg" height="' + h + '" width="' + w + '" '
         + 'xmlns="http://www.w3.org/2000/svg" version="1.1" '
-        + 'style="background-color: ' + background_color + '"></svg>';
+        + 'style="'
+        + background_clause( background_color, background_transparent )
+        + '"></svg>';
     return;
 }
 
@@ -118,7 +128,8 @@ function render_png() {
         png_w = orig_w * scale_factor,
         png_h = orig_h * scale_factor,
         canvas_context = canvas_el.getContext("2d"),
-        svg_as_png_url = '';
+        svg_as_png_url = '',
+        svg_bgcolor = svg_el.style.backgroundColor || '';
 
     canvas_el.width  = png_w;
     canvas_el.height = png_h;
@@ -135,7 +146,7 @@ function render_png() {
     // Color the background correctly by drawing a canvas-sized rect underneath.
     // Credit to Mike Chambers (@mesh) for this approach.
     canvas_context.globalCompositeOperation = "destination-over";
-    canvas_context.fillStyle = svg_el.style.backgroundColor;
+    canvas_context.fillStyle = svg_bgcolor;
     canvas_context.fillRect(0,0,png_w,png_h);
 
     // Convert canvas image to a PNG:
@@ -168,12 +179,17 @@ function produce_svg_code() {
   var svg_for_copying =
       document.getElementById("chart")
         .innerHTML
-        .replace(/><g/, // <-- Inserting in front of the first <g> tag
+        // Take out the 1st style declaration (may contain transparency-hint image):
+        .replace(/ style="[^"]+"/, '')
+        // Insert some business in front of the first <g> tag:
+        .replace(/><g/,
           "><title>Your Diagram Title</title>" +
           "<!-- Generated with SankeyMATIC on " + (new Date()) + "-->" +
           "<g><rect width=\"100%\" height=\"100%\" fill=\"" +
+          // Note, this value might be "transparent", not a color:
           svg_el.style.backgroundColor + "\"></rect><g")
-        .replace(/<\/svg>/,"</g></svg>"); // close the extra <g> tag
+        // Close the extra <g> tag added above:
+        .replace(/<\/svg>/,"</g></svg>");
 
   // Escape that whole batch of tags and put it in the <div> for copying:
   svg_export_el.innerHTML = escape_html(svg_for_copying);
@@ -276,13 +292,17 @@ function render_sankey(nodes_in, flows_in, config_in) {
     };
 
     // Clear out any old contents:
-    make_diagram_blank(total_width, total_height, config_in.background_color);
+    make_diagram_blank(
+      total_width, total_height,
+      config_in.background_color,
+      config_in.background_transparent);
 
     // Select the svg canvas, set the defined dimensions:
     svg = d3.select("#sankey_svg")
         .attr("width", total_width)
         .attr("height", total_height)
-        .attr("style", "background-color: " + config_in.background_color )
+        .attr("style",
+            background_clause(config_in.background_color, config_in.background_transparent))
         .append("g")
         .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
 
@@ -449,6 +469,7 @@ glob.process_sankey = function () {
         colorset_in = '', fontface_in = '',
         chart_el    = document.getElementById("chart"),
         messages_el = document.getElementById("messages_area"),
+        bgcolor_el  = document.getElementById("background_color"),
         raw_source  = document.getElementById("flows_in").value;
 
     // Define utility functions:
@@ -498,6 +519,16 @@ glob.process_sankey = function () {
 
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
+
+    // UI control:
+    // Checking the 'Transparent' background-color box means that the color-picker is
+    // pointless, so disable that if the box is checked:
+    if (document.getElementById("background_transparent").checked) {
+      bgcolor_el.setAttribute("disabled","disabled");
+    } else {
+      // Re-enable it if the box is *not* checked:
+      bgcolor_el.removeAttribute("disabled");
+    }
 
     // Flows validation:
 
@@ -612,6 +643,7 @@ glob.process_sankey = function () {
         default_flow_inherit: "target",
         default_flow_color: "#666666",
         background_color:   "#FFFFFF",
+        background_transparent: 0,
         font_color:         "#000000",
         default_node_color: "#006699",
         default_node_colorset: "C",
@@ -808,7 +840,8 @@ glob.process_sankey = function () {
         make_diagram_blank(
             approved_config.canvas_width,
             approved_config.canvas_height,
-            approved_config.background_color);
+            approved_config.background_color,
+            approved_config.background_transparent);
 
         // Also clear out any leftover export output by rendering the currently-blank canvas:
         glob.render_updated_outputs();
@@ -869,7 +902,7 @@ glob.process_sankey = function () {
 
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
-        "show_labels"]).forEach( function(field_name) {
+        "show_labels", "background_transparent"]).forEach( function(field_name) {
         approved_config[field_name] = document.getElementById(field_name).checked;
     });
 

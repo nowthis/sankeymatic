@@ -112,7 +112,9 @@ Colors<span id="color_options_hint">...</span></h2>
 
 <div id="color_options" class="form_chunk" style="display: none;">
 <p class="form_elements2">
-<label for="background_color"><strong>Background Color:</strong></label> <input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
+<label for="background_color"><strong>Background Color:</strong></label>
+<input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
+<input type="checkbox" id="background_transparent" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="background_transparent">Transparent</label><br />
 </p>
 
 <p class="form_elements1">
@@ -292,7 +294,7 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 <p id="chart">
 <svg id="sankey_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
-<canvas id="png_preview" height="600" width="600" style="background: #FFFFFF; display:none;"></canvas>
+<canvas id="png_preview" height="600" width="600" style="background-color: transparent; display:none;"></canvas>
 <div id="chartfooter">
 </div>
 </td></tr></table>

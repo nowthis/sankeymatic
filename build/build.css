@@ -78,8 +78,8 @@ textarea#flows_in {
     padding: 2px 3px;
 }
 
-/* label which needs leftward breathing room:*/
-.spaced_label { margin-left: 12px; }
+/* for items which need leftward breathing room:*/
+.spaced_label, .spaced_checkbox { margin-left: 12px; }
 
 .ui_head {
     padding: 3px 6px 2px;
