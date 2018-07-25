@@ -41,7 +41,8 @@ function escape_html(unsafe_string) {
          .replace(/</g, "&lt;")
          .replace(/>/g, "&gt;")
          .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
+         .replace(/'/g, "&#039;")
+         .replace(/\n/g, "<br />");
 }
 
 // remove_zeroes: Strip off zeros from after any decimal
@@ -360,7 +361,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
     if ( config_in.show_labels ) {
         link.append("title") // Make tooltips for FLOWS
             .text(function (d) {
-                return d.source.name + " → " + d.target.name + "\n"
+                return d.source.name + " → " + d.target.name + ":\n"
                     + units_format(d.value);
             });
     }
@@ -413,7 +414,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .text(
             function (d) {
                 return config_in.show_labels
-                    ? d.name + "\n" + units_format(d.value)
+                    ? d.name + ":\n" + units_format(d.value)
                     : "";
             });
 
