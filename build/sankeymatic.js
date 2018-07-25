@@ -36,7 +36,7 @@ function is_numeric(n) {
 // escape_html: make any input string safe to display
 function escape_html(unsafe_string) {
     return unsafe_string
-         .replace(/→/g, "&rarr;")
+         .replace(/→/g, "&#8594;")
          .replace(/&/g, "&amp;")
          .replace(/</g, "&lt;")
          .replace(/>/g, "&gt;")
