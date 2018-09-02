@@ -560,6 +560,7 @@ glob.process_sankey = function () {
         }
 
         // Try to match the line to a Data spec:
+        // TODO: Allow commas in numbers
         matches = line_in.match( /^(.+)\[([\d\.\s\+\-]+)\](.+)$/ );
         if ( matches !== null ) {
             amount_in = matches[2].replace(/\s/g,'');
@@ -579,7 +580,8 @@ glob.process_sankey = function () {
                 good_flows.push(
                     { source: matches[1].trim(),
                       target: matches[3].trim(),
-                      amount: amount_in } );
+                      amount: amount_in,
+                      line: line_in } );
                 // We need to know the maximum precision of the inputs (greatest
                 // # of characters to the RIGHT of the decimal) for some error
                 // checking operations (& display) later:
@@ -587,8 +589,24 @@ glob.process_sankey = function () {
                     Math.max( max_places,
                         ( ( amount_in.split( /\./ ) )[1] || '' ).length );
             }
+            continue;
+        }
+
+        // Try to match against a computed node 
+        matches = line_in.match( /^(.+)\[(\s*\*\s*)\](.+)$/ );
+        if ( matches !== null ) {
+            good_flows.push(
+                { source: matches[1].trim(),
+                  target: matches[3].trim(),
+                  amount: 0,
+                  unknown: true,
+                  line: line_in
+                } ); // Record that the flow has a computed value
+            continue;
+        }
+
         // Did something make the input not match the pattern?:
-        } else if ( line_in !== '' ) {
+        if ( line_in !== '' ) {
             bad_lines.push(
                 { value: line_in,
                   message:
@@ -607,14 +625,6 @@ glob.process_sankey = function () {
 
     // TODO: Disable useless precision checkbox if max_places === 0
     // TODO: Look for cycles and post errors about them
-
-    // Mention the bad lines in the message area:
-    bad_lines.forEach( function(parse_error) {
-        add_message('errormessage',
-            '&quot;<b>' + escape_html(parse_error.value) + '</b>&quot;: ' +
-             parse_error.message,
-             false );
-    });
 
     // Set up some data & functions that only matter from this point on:
 
@@ -659,6 +669,7 @@ glob.process_sankey = function () {
             unique_nodes[nodename] = {
                 from_sum:  0,  to_sum:  0,
                 from_list: [], to_list: [],
+                unknown_from: [], unknown_to: [],
                 index: node_order.length
             };
             node_order.push(nodename);
@@ -757,7 +768,9 @@ glob.process_sankey = function () {
             value:  flow.amount,
             color:  flow_color,
             opacity:          opacity,
-            opacity_on_hover: opacity_on_hover
+            opacity_on_hover: opacity_on_hover,
+            unknown: flow.unknown,
+            line: flow.line
         };
         if (reverse_the_graph) {
             tmp = flow_struct.source;
@@ -771,6 +784,92 @@ glob.process_sankey = function () {
         unique_nodes[flow.source].from_list.push(flow.amount);
         unique_nodes[flow.target].to_sum += Number(flow.amount);
         unique_nodes[flow.target].to_list.push(flow.amount);
+
+        if (flow.unknown) {
+            // The naming of "from" and "to" is confusing here
+            unique_nodes[flow.source].unknown_to.push({"node": flow.target, "flow": flow_struct});
+            unique_nodes[flow.target].unknown_from.push({"node": flow.source, "flow": flow_struct});
+        }
+    });
+
+    // Calculate computed (unknown) values
+
+    // The algorithm is to look at each node that has exactly one unknown input or output flow,
+    // compute that value, and add the node connected by the formerly unknown flow to the list
+    // to look at.
+
+    {
+        function has_one_unknown( node ) {
+            if ( node.from_list.length == 0 || node.to_list.length == 0 ) {
+                return false; // Terminal node have an implicit second unknown
+            }
+            return ( node.unknown_to.length + node.unknown_from.length ) == 1;
+        }
+
+        function remove_unknown( array, node ) {
+            return array.splice(array.findIndex(e => e.node === node), 1);
+        }
+
+        var nodes_to_check = node_order.slice();
+        while ( Array.isArray(nodes_to_check) && nodes_to_check.length ) {
+            var nodename = nodes_to_check.pop();
+            var this_node = unique_nodes[nodename];
+            if ( has_one_unknown(this_node) ) {  // Either one unknown to or one unknown from
+                var is_unknown_to = (this_node.unknown_to.length == 1); // One unknown to
+                var unknown_elements = is_unknown_to? this_node.unknown_to : this_node.unknown_from;
+                var target_node_name = unknown_elements[0].node;
+                var removed_items = remove_unknown(this_node[is_unknown_to? "unknown_to" : "unknown_from"], target_node_name);
+                var flow = undefined;
+                if ( removed_items && removed_items[0] ) {
+                    flow = removed_items[0].flow;
+                }
+                var computed_value = ( this_node.to_sum - this_node.from_sum ) * ( is_unknown_to? 1 : -1 );
+                if ( computed_value < 0 ) {
+                    bad_lines.push(
+                        { value: flow? escape_html(flow.line): "",
+                          message:
+                            'Negative computed value: ' + computed_value }
+                    );
+                }
+                var target_node = unique_nodes[target_node_name];
+                this_node[is_unknown_to? "from_sum" : "to_sum"] += computed_value;
+                this_node[is_unknown_to? "from_list" : "to_list"].push(computed_value);
+                target_node[is_unknown_to? "to_sum" : "from_sum"] += computed_value;
+                target_node[is_unknown_to? "to_list" : "from_list"].push(computed_value);
+                remove_unknown(target_node[is_unknown_to? "unknown_from" : "unknown_to"], nodename);
+                if ( flow ) {
+                    flow.value = computed_value;
+                    flow.unknown = false;
+                    if ( has_one_unknown(target_node) ) {
+                        nodes_to_check.push(target_node_name);
+                    }
+                }
+            }
+        }
+
+        // Check for remaining unknown values (unsolvable inputs)
+        node_order.forEach( function (nodename) {
+            var this_node = unique_nodes[nodename];
+            function display_error_for_unknown (unknown) {
+                bad_lines.push(
+                    { value: escape_html(unknown.flow.line),
+                      message:
+                        'Not enough constraints to compute value' }
+                );
+            }
+            this_node.unknown_from.forEach(display_error_for_unknown);
+        });
+    }
+
+    // Remove flows that are still unknown from the approved list
+    approved_flows = approved_flows.filter(flow => !flow.unknown);
+
+    // Mention the bad lines in the message area:
+    bad_lines.forEach( function(parse_error) {
+        add_message('errormessage',
+            '&quot;<b>' + escape_html(parse_error.value) + '</b>&quot;: ' +
+             parse_error.message,
+             false );
     });
 
     // Construct the approved_nodes structure:
@@ -804,6 +903,11 @@ glob.process_sankey = function () {
             max_node_val   = node_total;
         }
         // approved_nodes = the real node list, formatted for the render routine:
+
+        // FIXME: When we can't solve for unknowns, nodes with no from_sum or to_sum still get approved,
+        // causing console errors. If we don't approve them, the indexes are wrong, though, causing worse
+        // crashes.
+
         approved_nodes.push(readynode);
     });
 
