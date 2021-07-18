@@ -420,42 +420,51 @@ function render_sankey(nodes_in, flows_in, config_in) {
                     : "";
             });
 
-    // Put in NODE labels
-    node.append("text")
-        // x,y = offsets relative to the node rectangle
-        .attr("x", -6)
-        .attr("y", function (d) { return d.dy / 2; })
-        .attr("dy", ".35em")
-        .attr("text-anchor", "end")
-        .attr("transform", null)
-        .text(
-            function (d) {
-                return config_in.show_labels
-                    ? d.name
-                        + ( config_in.include_values_in_node_labels
-                            ? ": " + units_format(d.value)
-                            : "" )
-                    : "";
-            })
-        .style( {   // be explicit about the font specs:
-            "stroke-width": "0", // positive stroke-width makes letters fuzzy
-            "font-family": config_in.font_face,
-            "font-size":   config_in.font_size + "px",
-            "font-weight": config_in.font_weight,
-            fill:          config_in.font_color
-            } )
-        // In the left half of the picture, place labels to the RIGHT of nodes:
-        .filter( function (d) {
-            // If the x-coordinate of the data point is less than half the width
-            // of the graph, relocate the label to begin to the right of the
-            // node.
-            // Adjusted x by a node_width to bias the very middle of the graph
-            // to put labels on the left.
-            return ( d.x + node_width ) < ( graph_width / 2 );
-            })
-        .attr("x", 6 + node_width)
-        .attr("text-anchor", "start");
-}
+    if ( config_in.show_labels ) {
+        // Put in NODE labels
+        node.append("text")
+            // x,y = offsets relative to the node rectangle
+            // Default to anchoring the text on the left, ending at the node:
+            .attr("x", -6)
+            .attr("y", function (d) { return d.dy / 2; })
+            // move letters down by 1/3 of a wide letter's width
+            // (makes them look vertically centered)
+            .attr("dy", ".35em")
+            .attr("text-anchor", "end")
+            .attr("transform", null)
+            .text(
+                function (d) {
+                    return d.name
+                            + ( config_in.include_values_in_node_labels
+                                ? ": " + units_format(d.value)
+                                : "" );
+                })
+            .style( {   // be explicit about the font specs:
+                "stroke-width": "0", // positive stroke-width makes letters fuzzy
+                "font-family": config_in.font_face,
+                "font-size":   config_in.font_size + "px",
+                "font-weight": config_in.font_weight,
+                fill:          config_in.font_color
+                } )
+            // Refine placement of nodes:
+            .filter(
+                // If this function returns TRUE, then the lines after this
+                // step are executed.
+                function (d) {
+                    // First check if the user has set a rule for all labels.
+                    // If not: When the x-coordinate of the data point is <
+                    // (half the width of the diagram), relocate the label to
+                    // the RIGHT of the node.
+                    return config_in.label_pos === "all_left"  ? 0
+                        :  config_in.label_pos === "all_right" ? 1
+                        // Also, adjust x by a node_width to make the center of
+                        // the diagram place labels on the left:
+                        :  (( d.x + node_width ) < ( graph_width / 2 ));
+                })
+            .attr("x", 6 + node_width)
+            .attr("text-anchor", "start");
+    }
+}  // end of render_sankey
 
 // MAIN FUNCTION:
 // Gather inputs from user; validate them; render updated diagram
@@ -469,7 +478,7 @@ glob.process_sankey = function () {
         epsilon_difference = 0, status_message = '', total_difference = 0,
         reverse_the_graph = 0,
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
-        colorset_in = '', fontface_in = '',
+        colorset_in = '', labelpos_in = '', fontface_in = '',
         chart_el    = document.getElementById("chart"),
         messages_el = document.getElementById("messages_area"),
         bgcolor_el  = document.getElementById("background_color"),
@@ -523,7 +532,8 @@ glob.process_sankey = function () {
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
 
-    // UI control:
+    // MARK: UI updates based on user choices:
+
     // Checking the 'Transparent' background-color box means that the color-picker is
     // pointless, so disable that if the box is checked:
     if (document.getElementById("background_transparent").checked) {
@@ -532,6 +542,17 @@ glob.process_sankey = function () {
       // Re-enable it if the box is *not* checked:
       bgcolor_el.removeAttribute("disabled");
     }
+
+    // If the user is setting Label positions to either left or right (i.e. not
+    // 'auto'), show the margin hint:
+    var label_pos_val = radio_value("label_pos");
+    var labelposnote_el = document.getElementById("label_pos_note");
+    labelposnote_el.innerHTML =
+        (label_pos_val === "all_left"
+       ? "Adjust the <strong>Left Margin</strong> above to fit your labels"
+       : label_pos_val === "all_right"
+       ? "Adjust the <strong>Right Margin</strong> above to fit your labels"
+       : "");
 
     // Flows validation:
 
@@ -631,6 +652,7 @@ glob.process_sankey = function () {
         display_full_precision: 1,
         include_values_in_node_labels: 0,
         show_labels: 1,
+        label_pos: "auto",
         canvas_width:  600,
         canvas_height: 600,
         font_size: 13,
@@ -898,6 +920,11 @@ glob.process_sankey = function () {
     colorset_in = radio_value("default_node_colorset");
     if ( colorset_in.match( /^(?:[ABC]|none)$/ ) ) {
         approved_config.default_node_colorset = colorset_in;
+    }
+
+    labelpos_in = radio_value("label_pos");
+    if ( labelpos_in.match( /^(?:all_left|auto|all_right)$/ ) ) {
+        approved_config.label_pos = labelpos_in;
     }
 
     fontface_in = radio_value("font_face");

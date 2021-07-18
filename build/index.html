@@ -78,28 +78,28 @@ Size, Spacing &amp; Shape<span id="diagram_options_hint">:</span></h2>
 </p>
 
 <p class="form_elements2">
+<strong>Margins:</strong>
+<span class="no_wrap"><label for="left_margin">Left</label>
+<input type="text" class="wholenumber" id="left_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="right_margin">Right</label>
+<input type="text" class="wholenumber" id="right_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="top_margin">Top</label>
+<input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="bottom_margin">Bot</label>
+<input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
+</p>
+
+<p class="form_elements1">
 <label for="node_padding"><strong>Vertical Space between Nodes:</strong></label>
 <span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="18" onchange="process_sankey();"> px</span>
 </p>
 
-<p class="form_elements1">
+<p class="form_elements2">
 <label for="node_width"><strong>Node Width:</strong></label>
 <span class="no_wrap"><input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px</span>
 
 <label for="curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
 <span class="no_wrap">|<input id="curvature" type="range" min="0.05" max="0.8" step="0.15" value="0.5" onchange="process_sankey();" class="narrowslider">(</span><br />
-</p>
-
-<p class="form_elements2">
-<strong>Margins:</strong>
-<span class="no_wrap"><label for="top_margin">Top</label>
-<input type="text" class="wholenumber" id="top_margin" size="2" maxlength="4" value="12" onchange="process_sankey();"></span>
-<span class="no_wrap"><label for="bottom_margin">Bot</label>
-<input type="text" class="wholenumber" id="bottom_margin" size="2" maxlength="4" value="12" onchange="process_sankey();"></span>
-<span class="no_wrap"><label for="left_margin">L</label>
-<input type="text" class="wholenumber" id="left_margin" size="2" maxlength="4" value="12" onchange="process_sankey();"></span>
-<span class="no_wrap"><label for="right_margin">R</label>
-<input type="text" class="wholenumber" id="right_margin" size="2" maxlength="4" value="12" onchange="process_sankey();"></span>
 </p>
 
 </div>
@@ -165,16 +165,25 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 </p>
 
 <p class="form_elements2">
-<strong>Face:</strong>
+<label for="font_size"><strong>Size:</strong></label>
+<span class="no_wrap"><input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="15" onchange="process_sankey();"> <label for="font_size">px</label></span>
+
+<strong class="spaced_label">Face:</strong>
 <span class="no_wrap"><input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" style="font-family: sans-serif;">sans</label></span>
 <span class="no_wrap"><input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" style="font-family: serif;">serif</label></span>
 <span class="no_wrap"><input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" style="font-family: monospace;">mono</label></span>
 
-<label for="font_size" class="spaced_label"><strong>Size:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="15" onchange="process_sankey();"> <label for="font_size">px</label></span>
 </p>
 
-<p class="form_elements1">
+<div class="form_elements1">
+<strong>Position:</strong>&nbsp;
+<span class="no_wrap"><label for="label_pos_left">Left side</label><input name="label_pos" type="radio" id="label_pos_left" value="all_left" onchange="process_sankey();" /></span>&nbsp;
+<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_auto" value="auto" onchange="process_sankey();" checked="checked" /><label for="label_pos_auto">Automatic</label></span>&nbsp;
+<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_right" value="all_right" onchange="process_sankey();" /><label for="label_pos_right">Right side</label></span><br />
+<div style="text-align: right;"><small id="label_pos_note"></small></div>
+</div>
+
+<p class="form_elements2">
 <label for="font_color"><strong>Color:</strong></label>
 <input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
 
@@ -182,13 +191,13 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <span class="no_wrap"><span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span></span><br />
 </p>
 
-<p class="form_elements2">
+<p class="form_elements1">
 <strong>Units:</strong>
 <span class="no_wrap"><label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"></span>
 </p>
 
-<p class="form_elements1">
+<p class="form_elements2">
 <label for="number_format"><strong>Number Format:</strong></label>
 <select id="number_format" onchange="process_sankey();">
 <option value=",." selected="selected">1,000,000.00</option>
