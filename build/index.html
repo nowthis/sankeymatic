@@ -290,6 +290,25 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 <table id="messages">
 <tr><td id="messages_area"></td></tr>
 </table>
+<h2 class="ui_head" onclick="toggle_panel('layout_options');">
+<span id="layout_options_indicator" class="indicator">&dArr;</span>
+Layout Options<span id="layout_options_hint">...</span></h2>
+<div id="layout_options" class="form_chunk" style="display: none;">
+<div class="form_elements1" style="text-align: center;">
+
+<table style="width: 100%; padding: 0px;"><tr>
+<td style="text-align: left;">
+<input type="checkbox" id="justify_origins" value="1" onchange="process_sankey();">
+<label for="justify_origins">Force all flow <strong>origins</strong> to the left edge</label>
+</td>
+<td style="text-align: right;">
+<label for="justify_ends">Force all flow <strong>endpoints</strong> to the right edge</label>
+<input type="checkbox" id="justify_ends" value="1" onchange="process_sankey();">
+</td>
+</tr></table>
+<small>(Note: these options only apply to complex diagrams with 3 or more columns of nodes.)</small>
+</div>
+</div>
 
 <p id="chart">
 <svg id="sankey_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>

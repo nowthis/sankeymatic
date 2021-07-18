@@ -1,4 +1,4 @@
-Copyright (c) 2014-2015, Steve Bogart, <sbogart@sankeymatic.com>
+Copyright (c) 2014-2021, Steve Bogart, <sbogart@sankeymatic.com>
 
 # ISC (Internet Software Consortium) License:
 

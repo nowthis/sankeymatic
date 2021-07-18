@@ -315,7 +315,9 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .nodes(the_clean_json.nodes)
         .links(the_clean_json.links)
         .curvature(curvature)
-        .layout(50);
+        .rightJustifyEndpoints(config_in.justify_ends)
+        .leftJustifyOrigins(config_in.justify_origins)
+        .layout(50); // Note: The 'layout()' step must be LAST.
 
     // flow is a function returning coordinates and specs for each flow area
     flow = sankey.link();
@@ -640,6 +642,8 @@ glob.process_sankey = function () {
         node_padding: 18,
         node_border:   0,
         reverse_graph: 0,
+        justify_origins: 0,
+        justify_ends: 0,
         curvature: 0.5,
         default_flow_inherit: "target",
         default_flow_color: "#666666",
@@ -903,7 +907,8 @@ glob.process_sankey = function () {
 
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
-        "show_labels", "background_transparent"]).forEach( function(field_name) {
+        "show_labels", "background_transparent", "justify_origins",
+        "justify_ends"]).forEach( function(field_name) {
         approved_config[field_name] = document.getElementById(field_name).checked;
     });
 
