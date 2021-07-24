@@ -2,29 +2,40 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>SankeyMATIC (BETA): Build a diagram</title>
+<title>SankeyMATIC: Build a Sankey Diagram</title>
 <link rel="stylesheet" href="build.css">
 <link rel="stylesheet" href="../main.css">
-</head>
-<body>
-
-<!-- script src="http://d3js.org/d3.v2.min.js?2.9.1"></script -->
+<link rel="stylesheet" href="../nav.css">
 <script src="d3.v2.js"></script>
 <script src="sankey.js"></script>
 <script src="canvg.js"></script>
 <script src="rgbcolor.js"></script>
 <script src="sankeymatic.js"></script>
-
+</head>
+<body>
 <header>
-<table id="nav">
-<tr>
-<td><strong><a title="SankeyMATIC home page" href="/">SankeyMATIC (BETA)</a></strong></td>
-<td class="active_tab"><strong>Build a Sankey Diagram</strong></td>
-<td><a class="button" title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></td>
-<td><a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></td>
-<td><a class="button" title="Frequently Asked Questions" href="/faq/">FAQ</a></td>
-</tr></table>
+<nav id="top_nav" class="main_nav_behavior">
+  <label for="top_nav_checkbox" id="top_nav_icon" class="main_nav_icon">&#9776; &nbsp; SankeyMATIC</label>
+  <input id="top_nav_checkbox" class="main_nav_checkbox" type="checkbox" />
+  <!-- [MENU ITEMS] -->
+  <div id="top_nav_items" class="main_nav_items">
+<ul>
+	<li><a class="button" title="SankeyMATIC home page" href="/"><strong>SankeyMATIC</strong> Home</a></li>
+	<li><a class="button" title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></li>
+	<li><a class="button" title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
+	<li><a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></li>
+	<li><a class="button" title="About SankeyMATIC and how to support the site" href="/about/">About/Donate</a></li>
+</ul>
+  </div>
+</nav>
 </header>
+<div style="text-align: center;  margin-top: 1px; margin-bottom: 16px;">
+<span style="background-color: #E3FF9F; padding: 2px 20px; font-size: 90%; border-width: 0px 1px 1px; border-style: dotted; border-color: #6AE58B;">
+If you find SankeyMATIC useful, please consider <a href="../about/" target="_blank">donating to support further development</a>. Thanks!</span>
+</div>
+
+<main>
+
 <div class="center_basic">
 
 <table><tr><td>
@@ -324,46 +335,53 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 <p id="chart">
 <svg id="sankey_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>
 </p>
-<canvas id="png_preview" height="600" width="600" style="background-color: transparent; display:none;"></canvas>
+<canvas id="png_preview" height="600" width="600" style="background-color: transparent; display: none;"></canvas>
 <div id="chartfooter">
 </div>
 </td></tr></table>
 
 </div>
-<hr>
-<div id="footer">
-<div id="footer-inner">
-<div id="footer-content">
-<p>
-<strong><a title="SankeyMATIC home page" href="/">SankeyMATIC</a></strong> |
-<strong>Build a Sankey Diagram</strong> |
+<!-- ====================== Bottom Matter ====================== -->
 
-<a class="button" title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a> |
-<a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a> |
-<a class="button" title="Frequently Asked Questions" href="/faq/">FAQ</a>
-</p>
+</main>
 
-<p>
-<small>
-SankeyMATIC (Twitter: <a href="https://twitter.com/SankeyMATIC" target="_blank">@SankeyMATIC</a>) is produced by
-<a href="http://nowthis.com/" target="_blank">Steve Bogart</a>
-(Twitter: <a href="https://twitter.com/nowthis" target="_blank">@nowthis</a>).<br />
 
-The SankeyMATIC code is <a href="https://github.com/nowthis/sankeymatic" target="_blank">available on github</a>.
-It is built on top of the
-<a href="https://github.com/nowthis/d3-plugin-captain-sankey" target="_blank">Sankey library</a> of
-<a href="http://d3js.org/" target="_blank">D3.js</a>.<br />
-
-Tips welcome <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&amp;business=sbogart@sankeymatic.com&amp;currency_code=USD&amp;item_name=Tip" target="_blank">via PayPal</a>.
-See <a href="/faq/" target="_blank">the FAQ</a> for more details.
-</small>
-</p>
-        </div>
-    </div>
+<div style="text-align: center; margin-top: 12px; margin-bottom: 1px;">
+<span style="background-color: #E3FF9F; padding: 2px 20px; font-size: 90%; border-width: 1px 1px 0px; border-style: dotted; border-color: #6AE58B;">
+<!-- <div style="text-align: center; background-color: #ECFF60; font-size: 90%; padding: 4px; "> -->
+If you find SankeyMATIC useful, please consider <a href="../about/" target="_blank">donating to support further development</a>. Thanks!</span>
 </div>
 
+<footer>
+
+<nav id="footer_nav" class="main_nav_behavior">
+  <input id="footer_nav_checkbox" class="main_nav_checkbox" type="checkbox" checked="checked" />
+  <!-- [MENU ITEMS] -->
+  <div id="footer_nav_items" class="main_nav_items">
+<ul>
+	<li><a class="button" title="SankeyMATIC home page" href="/"><strong>SankeyMATIC</strong> Home</a></li>
+	<li><a class="button" title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></li>
+	<li><a class="button" title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
+	<li><a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></li>
+	<li><a class="button" title="About SankeyMATIC and how to support the site" href="/about/">About/Donate</a></li>
+</ul>
+  </div>
+</nav>
+
+<p>
+<strong>SankeyMATIC</strong> (Twitter: <a href="https://twitter.com/SankeyMATIC" target="_blank">@SankeyMATIC</a>)<br />
+ is produced by <a href="http://nowthis.com/" target="_blank">Steve Bogart</a>
+(Twitter: <a href="https://twitter.com/nowthis" target="_blank">@nowthis</a>).
+</p>
+<p>
+It is built on top of the
+<a href="https://github.com/nowthis/d3-plugin-captain-sankey" target="_blank">Sankey library</a> of <a
+href="http://d3js.org/" target="_blank">D3.js</a>.
+</p>
+</footer>
 <script>
 process_sankey(); // render on page load
 </script>
 
-</body></html>
+</body>
+</html>
