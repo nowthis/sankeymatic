@@ -40,25 +40,27 @@
 Inputs<span id="input_options_hint">:</span></h2>
 
 <div id="input_options">
-    <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">' Type a list of Flows, like this:
-'     SOURCE [AMOUNT] TARGET
+    <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">' Type a list of Flows between Nodes, like:
+'     Source [AMOUNT] Target
 ' Examples:
-
 Wages [2000] Budget
 Interest [25] Budget
+
 Budget [500] Taxes
 Budget [450] Housing
 Budget [310] Food
 Budget [205] Transportation
 Budget [400] Health Care
-Budget [160] Other Necessities
 
-' After your Flows are entered, use the
+' You can set a specific color for a Node:
+:Taxes #CC66FF
+'                                    ...and for a Flow:
+Budget [160] Other Necessities #00CC00
+' Visit the 'Manual' link for more!
+
+' After entering your data, use the
 ' controls below to customize your
-' diagram's appearance.
-
-' For even finer control over presentation,
-' see the Manual (linked above).</textarea>
+' diagram's appearance.</textarea>
 
 <p class="center_basic"><button id="preview_graph" type="submit">Preview</button></p>
 </div>
