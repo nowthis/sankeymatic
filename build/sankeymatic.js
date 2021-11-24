@@ -198,9 +198,9 @@ function produce_svg_code() {
   return;
 }
 
-// render_updated_outputs: After the SVG is updated, kick off a re-render of the static image
-// Called by the original drawing routine or when the user chooses a new PNG resolution
-glob.render_updated_outputs = function () {
+// render_exportable_outputs: After the diagram is updated (or when the user 
+// changes their preferred resolution), kick off a re-render of the image & SVG.
+glob.render_exportable_outputs = function () {
     // Reset the existing export output areas:
     var png_link_el   = document.getElementById("download_png_link"),
         svg_export_el = document.getElementById("svg_for_export");
@@ -222,7 +222,10 @@ glob.render_updated_outputs = function () {
 // render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
 function render_sankey(nodes_in, flows_in, config_in) {
     var graph_width, graph_height, colorset,
-        units_format, d3_color_scale, svg, sankey, flow, link, node,
+        units_format, d3_color_scale, svg, sankey,
+        link,       // reference to all the flow paths drawn
+        flow_paths, // holds the path-generating function
+        node,       // reference to all the nodes drawn
         node_width    = config_in.node_width,
         node_padding  = config_in.node_padding,
         total_width   = config_in.canvas_width,
@@ -234,6 +237,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         curvature     = config_in.curvature,
         separators    = config_in.seps;
 
+    // make sure valid values are in these fields:
     config_in.unit_prefix =
         ( typeof config_in.unit_prefix === "undefined"
             ||   config_in.unit_prefix === null )
@@ -319,15 +323,15 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .leftJustifyOrigins(config_in.justify_origins)
         .layout(50); // Note: The 'layout()' step must be LAST.
 
-    // flow is a function returning coordinates and specs for each flow area
-    flow = sankey.link();
+    // flow_paths is a function returning coordinates and specs for each flow
+    flow_paths = sankey.link();
 
     link = svg.append("g").selectAll(".link")
         .data(the_clean_json.links)
         .enter()
         .append("path")
         .attr("class", "link")
-        .attr("d", flow) // embed coordinates
+        .attr("d", flow_paths) // embed coordinates
         .style("fill", "none") // ensure no line gets drawn, just stroke
         .style("stroke-width", function (d) { return Math.max(1, d.dy); })
         // custom stroke color; defaulting to gray if not specified:
@@ -356,7 +360,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
             d3.select(this).style( "stroke-opacity",
                 d.opacity || config_in.default_flow_opacity );
             })
-        // sets the order of display, seems like:
+        // sets the order of rendering from largest to smallest, seems like:
         .sort(function (a, b) { return b.dy - a.dy; });
 
     // TODO make tooltips a separate option
@@ -379,9 +383,10 @@ function render_sankey(nodes_in, flows_in, config_in) {
         // Recalculate the flows between the links' new positions:
         sankey.relayout();
         // Put that new information in the SVG:
-        link.attr("d", flow);
+        link.attr("d", flow_paths);
         // Regenerate the export versions, now incorporating the drag:
-        glob.render_updated_outputs();
+        glob.render_exportable_outputs();
+        return null;
     }
 
     // Set up NODE info, including drag behavior:
@@ -873,7 +878,7 @@ glob.process_sankey = function () {
             approved_config.background_transparent);
 
         // Also clear out any leftover export output by rendering the currently-blank canvas:
-        glob.render_updated_outputs();
+        glob.render_exportable_outputs();
 
         // No point in proceeding any further. Return to the browser:
         return null;
@@ -905,6 +910,8 @@ glob.process_sankey = function () {
         }
         approved_config.seps = seps;
     });
+
+    // RADIO VALUES:
 
     // Direction of flow color inheritance:
     // Allowed values = source|target|none
@@ -1048,7 +1055,7 @@ glob.process_sankey = function () {
     document.getElementById("scale_figures").innerHTML = scale_report;
 
     // Re-make the PNG+SVG outputs in the background so they are ready to use:
-    glob.render_updated_outputs();
+    glob.render_exportable_outputs();
 
     // All done. Give control back to the browser:
     return null;
