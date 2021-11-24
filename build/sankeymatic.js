@@ -1004,13 +1004,13 @@ glob.process_sankey = function () {
     });
 
     // Reflect summary stats to the user, including an overview of any cross-checks:
-    status_message = "Showing: <strong>" + approved_flows.length +
+    status_message = "About this diagram:<br /><strong>" + approved_flows.length +
         " Flows</strong> between <strong>" + approved_nodes.length +
         " Nodes</strong>.";
     total_difference = total_inflow - total_outflow;
     if ( Math.abs(total_difference) < epsilon_difference ) {
         status_message +=
-            " Diagram Total IN = Total OUT = <strong>"
+            " <br />Diagram Total IN = Total OUT = <strong>"
             + unit_fy(total_inflow) + "</strong>.";
     } else if (do_cross_checking) {
         // Leave out the differing totals from the status message, issue a
@@ -1030,7 +1030,7 @@ glob.process_sankey = function () {
 
     if (do_cross_checking) {
         if ( cross_check_error_ct === 0 ) {
-            status_message += " No imbalances found.";
+            status_message += " <br />All nodes are balanced.";
         }
     } else {
         status_message
