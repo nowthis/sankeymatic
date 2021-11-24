@@ -424,12 +424,12 @@ function render_sankey(nodes_in, flows_in, config_in) {
         // Put in NODE labels
         node.append("text")
             // x,y = offsets relative to the node rectangle
-            // Default to anchoring the text on the left, ending at the node:
             .attr("x", -6)
             .attr("y", function (d) { return d.dy / 2; })
             // move letters down by 1/3 of a wide letter's width
             // (makes them look vertically centered)
             .attr("dy", ".35em")
+            // Default to anchoring the text to the left, ending at the node:
             .attr("text-anchor", "end")
             .attr("transform", null)
             .text(
@@ -446,21 +446,23 @@ function render_sankey(nodes_in, flows_in, config_in) {
                 "font-weight": config_in.font_weight,
                 fill:          config_in.font_color
                 } )
-            // Refine placement of nodes:
+            // Refine the placement of nodes:
             .filter(
-                // If this function returns TRUE, then the lines after this
-                // step are executed.
+                // (filter = If this function returns TRUE, then the lines
+                // after this step are executed.)
+                // Check if this label should be right-of-node instead:
                 function (d) {
-                    // First check if the user has set a rule for all labels.
-                    // If not: When the x-coordinate of the data point is <
-                    // (half the width of the diagram), relocate the label to
-                    // the RIGHT of the node.
+                    // First check if the user has set a simple rule for all:
                     return config_in.label_pos === "all_left"  ? 0
                         :  config_in.label_pos === "all_right" ? 1
-                        // Also, adjust x by a node_width to make the center of
-                        // the diagram place labels on the left:
+                        // Otherwise: if the x-coordinate of the item is in the
+                        // left half of the graph, relocate the label to begin
+                        // to the RIGHT of the node.
+                        // Here x is adjusted by a node_width to make the
+                        // *exact* middle of the diagram put labels to the left:
                         :  (( d.x + node_width ) < ( graph_width / 2 ));
                 })
+            // Here is where the label is actually moved to the right:
             .attr("x", 6 + node_width)
             .attr("text-anchor", "start");
     }
