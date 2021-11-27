@@ -38,9 +38,10 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 
 <div class="center_basic">
 
+<form onsubmit="process_sankey(); return false;">
+
 <table><tr><td>
 
-<form onsubmit="process_sankey(); return false;">
 
 <table class="center_basic">
 <tr>
@@ -305,10 +306,9 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 </tr>
 </table>
 
-</form>
-
 </td><td id="grapharea">
 
+<div class="expandable_box">
 <h2 class="ui_head" onclick="toggle_panel('layout_options');">
 <span id="layout_options_indicator" class="indicator">&dArr;</span>
 Layout Options<span id="layout_options_hint">...</span></h2>
@@ -320,12 +320,13 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 <input type="checkbox" id="justify_origins" value="1" onchange="process_sankey();">
 <label for="justify_origins">Force all flow <strong>origins</strong> to the left edge</label>
 </td>
-<td style="text-align: right;">
+<td style="text-align: right; padding-left: 2em;">
 <label for="justify_ends">Force all flow <strong>endpoints</strong> to the right edge</label>
 <input type="checkbox" id="justify_ends" value="1" onchange="process_sankey();">
 </td>
 </tr></table>
-<small>(Note: these options only apply to complex diagrams with 3 or more columns of nodes.)</small>
+<small>(Note: these options only apply to diagrams with 3 or more columns of nodes.)</small>
+</div>
 </div>
 </div>
 
@@ -335,10 +336,11 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 <canvas id="png_preview" height="600" width="600" style="background-color: transparent; display: none;"></canvas>
 <div id="chartfooter">
 </div>
-<table id="messages" class="center_basic">
+<table id="messages" class="expandable_box">
 <tr><td id="messages_area"></td></tr>
 </table>
 </td></tr></table>
+</form>
 
 </div>
 <!-- ====================== Bottom Matter ====================== -->

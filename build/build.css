@@ -104,6 +104,20 @@ h3.ui_head:hover {
     background-color: #3399DD;
 }
 
+#messages h4 {
+	margin: 0 0 0.2em;
+	text-decoration: underline;
+}
+
+#messages_area {
+	padding: 0.5em 1em;
+}
+
+.expandable_box {
+	max-width: fit-content;
+	min-width: 25em;
+}
+
 .form_chunk {
     color: #002244;
     background-color: #FBFEFF;

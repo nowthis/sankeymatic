@@ -495,7 +495,7 @@ glob.process_sankey = function () {
 
     // add_message: Put a message on the page using the specified class:
     function add_message( msg_class, msg_html, put_at_beginning ) {
-        var new_msg = '<p class="' + msg_class + '">' + msg_html + '</p>';
+        var new_msg = '<div class="' + msg_class + '">' + msg_html + '</div>';
         messages_el.innerHTML
             = put_at_beginning
                 ? (new_msg + messages_el.innerHTML)
@@ -980,7 +980,7 @@ glob.process_sankey = function () {
                 // First time through the loop, make sure we get a header:
                 if ( cross_check_error_ct === 0 ) {
                     add_message( "cautionmessage",
-                        "The Flow Cross-Checker found some <strong>Imbalances:</strong>",
+                        "Some nodes have <strong>Imbalances:</strong>",
                         false );
                 }
                 // If we don't round the outputs to match the maximum precision
@@ -1004,37 +1004,38 @@ glob.process_sankey = function () {
     });
 
     // Reflect summary stats to the user, including an overview of any cross-checks:
-    status_message = "About this diagram:<br /><strong>" + approved_flows.length +
+    status_message = "<h4>About this diagram</h4><strong>" + approved_flows.length +
         " Flows</strong> between <strong>" + approved_nodes.length +
-        " Nodes</strong>.";
+        " Nodes</strong>";
     total_difference = total_inflow - total_outflow;
     if ( Math.abs(total_difference) < epsilon_difference ) {
         status_message +=
-            " <br />Diagram Total IN = Total OUT = <strong>"
-            + unit_fy(total_inflow) + "</strong>.";
+            " <br />Total IN = <strong>" + unit_fy(total_inflow) 
+            + "</strong> = Total OUT";
     } else if (do_cross_checking) {
-        // Leave out the differing totals from the status message, issue a
+        // Leave out the differing totals from the 'ok' status message, issue a
         // Caution instead:
         add_message( "cautionmessage",
-            "<strong>Diagram Total IN</strong> (" +
+            "<strong>Total IN</strong> (" +
             unit_fy(total_inflow) +
             ") &ne; <strong>Total OUT</strong> (" +
             unit_fy(total_outflow) + "). " + show_delta(total_difference),
             false );
     } else {
+        // There's a mismatch but the user doesn't care. Just give the summary:
         status_message +=
-            " Diagram Total <strong>IN</strong> = <strong>"
+            " <br />Total <strong>IN</strong> = <strong>"
             + unit_fy(total_inflow) + "</strong>. Total <strong>OUT</strong> = <strong>"
-            + unit_fy(total_outflow) + "</strong>.";
+            + unit_fy(total_outflow) + "</strong>";
     }
 
     if (do_cross_checking) {
         if ( cross_check_error_ct === 0 ) {
-            status_message += " <br />All nodes are balanced.";
+            status_message += " <br />All nodes are balanced";
         }
     } else {
         status_message
-            += ' <span class="importanttext">Flow Cross-Check is <strong>OFF</strong>.</span>';
+            += '<br /><span class="importanttext">Flow Cross-Check is <strong>OFF</strong></span>';
     }
     add_message( "okmessage", status_message, true ); // always display main status line first
 
