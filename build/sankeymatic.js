@@ -21,7 +21,7 @@ glob.toggle_panel = function (el_id) {
         hiding_now = ( el.style.display !== "none" );
     el.style.display       = hiding_now ? "none"   : "";
     hint_el.innerHTML      = hiding_now ? "..."    : ":";
-    indicator_el.innerHTML = hiding_now ? "&dArr;" : "&uArr;";
+    indicator_el.innerHTML = hiding_now ? "+" : "&ndash;";
     return null;
 };
 
