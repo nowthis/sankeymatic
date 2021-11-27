@@ -1,6 +1,6 @@
 body {
   font-family: sans-serif;
-  background-color: #fbfdfd;
+  background-color: #FBFDFD;
   margin: 0;
 }
 
@@ -47,7 +47,7 @@ td {
 
 footer,
 #footer-content {
-  background-color: #eef8ff;
+  background-color: #EEF8FF;
   text-align: center;
 }
 
@@ -65,7 +65,7 @@ header td {
 }
 
 header td.active_tab {
-  background-color: #adf;
+  background-color: #ADF;
   color: #036;
   border-bottom: #069 1px dotted;
 }

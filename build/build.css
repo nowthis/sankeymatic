@@ -4,136 +4,141 @@ body { font-size: 13px; }
 .narrowslider { width: 75px; }
 
 .errormessage {
-    background-color: pink;
-    color: #660000;
-    border: 1px solid red;
-    padding: 4px;
-    margin: -1px;
+  background-color: pink;
+  color: #600;
+  border: 1px solid red;
+  padding: 4px;
+  margin: -1px;
 }
 
 .cautionmessage {
-    background-color: #FFFF99;
-    color: darkred;
-    border: 1px solid darkred;
-    padding: 4px;
-    margin: -1px;
+  background-color: #FF9;
+  color: darkred;
+  border: 1px solid darkred;
+  padding: 4px;
+  margin: -1px;
 }
 
 .okmessage {
-    text-align: center;
-    background-color: #DDEEFF;
-    color: #003366;
-    border: 1px solid #006699;
-    padding: 4px;
-    margin: -1px;
+  text-align: center;
+  background-color: #DEF;
+  color: #036;
+  border: 1px solid #069;
+  padding: 4px;
+  margin: -1px;
 }
 
 .importanttext {
-    color: darkred;
-    background-color: inherit;
-    text-decoration: underline;
+  color: darkred;
+  background-color: inherit;
+  text-decoration: underline;
 }
 
 dfn {
-    font-style: normal;
-    border-bottom: 1px dotted;
+  font-style: normal;
+  border-bottom: 1px dotted;
 }
 
 .center_basic {
-/* centering, in 2014: :-\ */
-    margin: 0px auto;
-    display: table;
+  /* centering, in 2014: :-\ */
+  margin: 0 auto;
+  display: table;
 }
 
 .center_para {
-    margin: 0px auto 4px auto;
-    display: table;
-    padding-top: 4px;
-    padding-bottom: 4px;
+  margin: 0 auto 4px;
+  display: table;
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 .indicator {
-    float: right;
+  float: right;
 }
 
 textarea#flows_in {
-	border: 1px solid #006699;
-    padding: 3px;
-    margin: 4px;
-	font-family: sans-serif;
-	font-size: small;
+  border: 1px solid #069;
+  padding: 3px;
+  margin: 4px;
+  font-family: sans-serif;
+  font-size: small;
 }
 
 .form_elements {
-    margin: 2px 3px 5px;
-}
-.form_elements1 {
-    background-color: inherit;
-    margin: 2px 3px 5px;
-    padding: 2px 3px;
-}
-.form_elements2 {
-    background-color: #DDF0FF;
-    margin: 2px 3px 5px;
-    padding: 2px 3px;
+  margin: 2px 3px 5px;
 }
 
-/* for items which need leftward breathing room:*/
-.spaced_label, .spaced_checkbox { margin-left: 12px; }
+.form_elements1 {
+  background-color: inherit;
+  margin: 2px 3px 5px;
+  padding: 2px 3px;
+}
+
+.form_elements2 {
+  background-color: #DDF0FF;
+  margin: 2px 3px 5px;
+  padding: 2px 3px;
+}
+
+/* for items which need leftward breathing room: */
+.spaced_label,
+.spaced_checkbox { margin-left: 12px; }
 
 .ui_head {
-    padding: 3px 6px 2px;
-    margin: 2px 0px 0px;
-    color: white;
-    text-align: left;
+  padding: 3px 6px 2px;
+  margin: 2px 0 0;
+  color: white;
+  text-align: left;
 }
 
 h2.ui_head {
-    font-size: 14px;
-    background-color: #004477;
+  font-size: 14px;
+  background-color: #047;
 }
+
 h2.ui_head:hover {
-    background-color: #006699;
+  background-color: #069;
 }
 
 h3.ui_head {
-    font-size: 12px;
-    background-color: #3377BB;
+  font-size: 12px;
+  background-color: #37B;
 }
+
 h3.ui_head:hover {
-    background-color: #3399DD;
+  background-color: #39D;
 }
 
 #messages h4 {
-	margin: 0 0 0.2em;
-	text-decoration: underline;
+  margin: 0 0 0.2em;
+  text-decoration: underline;
 }
 
 #messages_area {
-	padding: 0.5em 1em;
+  padding: 0.5em 1em;
 }
 
 .expandable_box {
-	max-width: fit-content;
-	min-width: 25em;
+  max-width: fit-content;
+  min-width: 25em;
 }
 
 .form_chunk {
-    color: #002244;
-    background-color: #FBFEFF;
-    margin: 0px 3px 6px;
-    padding: 2px 2px 2px;
-    border-width: 0px 1px 1px 1px;
-    border-color: #9AC;
-    border-style: solid;
+  color: #024;
+  background-color: #FBFEFF;
+  margin: 0 3px 6px;
+  padding: 2px;
+  border-width: 0 1px 1px;
+  border-color: #9AC;
+  border-style: solid;
 }
 
 p#chart {
-    width: 600px;
-    height: 500px;
-    border: 1px dotted #666666;
-    margin: 10px auto;
-    background-color: white;
+  width: 600px;
+  height: 500px;
+  border: 1px dotted #666;
+  margin: 10px auto;
+  background-color: white;
 }
 
 .node rect {
@@ -151,54 +156,55 @@ p#chart {
    The stroke styling is now done in the JS, not the overall CSS. */
 
 td#other_entry {
-    padding: 0px 2px;
-    background-color: #CCE8FF;
-    vertical-align: middle;
+  padding: 0 2px;
+  background-color: #CCE8FF;
+  vertical-align: middle;
 }
 
 td#grapharea {
-    padding: 0px;
-    margin: 0px;
+  padding: 0;
+  margin: 0;
 }
 
 th#title {
-    padding: 5px 10px;
-    background-color: #88BBCC;
-    font-size: large;
+  padding: 5px 10px;
+  background-color: #8BC;
+  font-size: large;
 }
 
 div#input_options {
-    text-align: center;
+  text-align: center;
 }
 
 td#flows_entry {
-    padding: 0px 2px;
-    background-color: #BBDDEE;
-    text-align: center;
-    vertical-align: middle;
+  padding: 0 2px;
+  background-color: #BDE;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .download_link {
-    margin-top: 8px;
+  margin-top: 8px;
 }
+
 .download_link a {
-    background-color: #acf;
-    border: 1px solid #069;
-    padding: 5px 8px;
+  background-color: #ACF;
+  border: 1px solid #069;
+  padding: 5px 8px;
 }
 
 #img_tag_hint {
-    background-color: white;
-    padding: 3px;
-    margin: 3px;
-    border: 1px dotted #999;
+  background-color: white;
+  padding: 3px;
+  margin: 3px;
+  border: 1px dotted #999;
 }
 
 #svg_for_export {
-    border: 1px solid #ccc;
-    background: #f2f2f2;
-    color: #666;
-    overflow: auto;
-    text-align: left;
-    margin: auto;
+  border: 1px solid #CCC;
+  background: #F2F2F2;
+  color: #666;
+  overflow: auto;
+  text-align: left;
+  margin: auto;
 }
