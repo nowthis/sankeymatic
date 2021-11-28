@@ -232,22 +232,17 @@ Advanced<span id="advanced_options_hint">...</span></h2>
 
 <div id="advanced_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
-<input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked">
-<label for="flow_cross_check"><strong>Flow Cross-Check:</strong> Verify that the graph adds up.</label><br />
-</p>
-
-<p class="form_elements2">
 <strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
 (For fair comparisons between diagrams, make their<br />
 Units and Scale match as closely as possible.)
 </p>
 
-<p class="form_elements1">
+<p class="form_elements2">
 <strong>Note:</strong> You can <u>drag</u> Nodes around to reposition them<br />
 before export. (However, changing any inputs will<br />
 re-draw/reset the whole diagram.)</p>
 
-<p class="form_elements2">
+<p class="form_elements1">
 <label for="default_node_opacity"><strong>Node Opacity:</strong></label>
 <span class="no_wrap"><span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
 
@@ -262,7 +257,7 @@ re-draw/reset the whole diagram.)</p>
 </select>
 </p>
 
-<p class="form_elements1">
+<p class="form_elements2">
 <input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">
 <label for="reverse_graph"><strong>Reverse the graph</strong> (flow right-to-left)</label>
 </p>
@@ -337,7 +332,19 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 <div id="chartfooter">
 </div>
 <table id="messages" class="expandable_box">
-<tr><td id="messages_area"></td></tr>
+<tr><td><div id="messages_area"><h4>About this diagram</h4>
+<div id="messages_container"></div>
+</div></td></tr>
+<tr><td id="imbalances">
+<div id="imbalance_control">
+<label>When Total Inputs &ne; Total Outputs:
+<input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked" />
+list the differences</label>.
+</div>
+<div id="imbalance_messages">
+
+</div>
+</td></tr>
 </table>
 </td></tr></table>
 </form>

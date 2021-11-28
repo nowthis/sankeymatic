@@ -3,27 +3,14 @@ body { font-size: 13px; }
 .smalllabel { font-size: 11px; }
 .narrowslider { width: 75px; }
 
+[aria-disabled="true"] {
+  opacity: 0.5;
+}
+
 .errormessage {
   background-color: pink;
   color: #600;
   border: 1px solid red;
-  padding: 4px;
-  margin: -1px;
-}
-
-.cautionmessage {
-  background-color: #FF9;
-  color: darkred;
-  border: 1px solid darkred;
-  padding: 4px;
-  margin: -1px;
-}
-
-.okmessage {
-  text-align: center;
-  background-color: #DEF;
-  color: #036;
-  border: 1px solid #069;
   padding: 4px;
   margin: -1px;
 }
@@ -36,7 +23,7 @@ body { font-size: 13px; }
 
 dfn {
   font-style: normal;
-  border-bottom: 1px dotted;
+  border-bottom: 1px dashed;
 }
 
 .center_basic {
@@ -109,18 +96,60 @@ h3.ui_head:hover {
   background-color: #39D;
 }
 
+#imbalance_control {
+  padding: 0.4em 0.5em;
+  background-color: #DEF;
+  color: #036;
+  border: 1px solid #069;
+  margin-top: 0.3em;
+}
+
+#imbalance_msg {
+  background-color: #FFA;
+  color: darkred;
+  text-align: center;
+  border: 1px solid #069;
+  padding: 0.4em;
+  margin-top: -1px;
+}
+
+#imbalance_msg table {
+  border-spacing: 0.75em 0;
+  border-collapse: separate;
+}
+
+#imbalance_msg table th {
+  padding: 0.1em 0.2em;
+  text-align: right;
+  border-bottom: 1px solid darkred;
+}
+
+#imbalance_msg table td {
+  padding: 0.2em;
+  text-align: right;
+}
+
+#imbalance_msg table td.nodename {
+  text-align: left;
+  font-weight: bold;
+}
+
+#messages_area {
+  padding: 0.4em;
+  text-align: center;
+  background-color: #DEF;
+  color: #036;
+  border: 1px solid #069;
+}
+
 #messages h4 {
   margin: 0 0 0.2em;
   text-decoration: underline;
 }
 
-#messages_area {
-  padding: 0.5em 1em;
-}
-
 .expandable_box {
   max-width: fit-content;
-  min-width: 25em;
+  min-width: 30em;
 }
 
 .form_chunk {
