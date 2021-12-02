@@ -10,6 +10,7 @@
 <script src="sankey.js"></script>
 <script src="canvg.js"></script>
 <script src="rgbcolor.js"></script>
+<script src="sample_diagrams.js"></script>
 <script src="sankeymatic.js"></script>
 </head>
 <body>
@@ -29,19 +30,32 @@
   </div>
 </nav>
 </header>
-<div style="text-align: center;  margin-top: 1px; margin-bottom: 16px;">
-<span style="background-color: #E3FF9F; padding: 2px 20px; font-size: 90%; border-width: 0px 1px 1px; border-style: dotted; border-color: #6AE58B;">
-If you find SankeyMATIC useful, please consider <a href="../about/" target="_blank">donating to support further development</a>. Thanks!</span>
-</div>
+
+<div class="callout_container"><span class="callout">
+If you find SankeyMATIC useful, please consider <a href="../about/" target="_blank">donating to support further development</a>. Thanks!
+</span></div>
 
 <main>
-
 <div class="center_basic">
 
 <form onsubmit="process_sankey(); return false;">
+<div id="example_diagrams" class="center_text">
+<h4>Sample Diagrams:
+<button type="button" id="load_example_job_search" onclick="reset_graph('job_search'); return false;">Job Search</button>
+<button type="button" id="load_example_election" onclick="reset_graph('election'); return false;">Ranked Election</button>
+<!-- <button type="button" id="load_example_energy_all" onclick="reset_graph('energy_flows_all'); return false;">Energy Flows</button> &nbsp; -->
+<button type="button" id="load_example_basic_budget" onclick="reset_graph('default_budget'); return false;">Basic Budget (Default)</button>
+</h4>
+
+<p id="reset_graph_warning" style="display: none;">
+<em>This will <strong>erase</strong> your changes. Are you sure?</em>
+<input type="hidden" id="demo_graph_chosen" value="" />
+<button type="button" id="reset_graph_yes" onclick="reset_graph_confirmed(); return false;">Yes, reset the diagram</button>
+<button type="button" id="reset_graph_no" onclick="cancel_reset_graph(); return false;">Cancel</button>
+</p>
+</div>
 
 <table><tr><td>
-
 
 <table class="center_basic">
 <tr>
@@ -51,28 +65,29 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 <span id="input_options_indicator" class="indicator">&ndash;</span>
 Inputs<span id="input_options_hint">:</span></h2>
 
-<div id="input_options">
-    <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">' Type a list of Flows between Nodes, like:
+<div id="input_options" class="center_text">
+    <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">' Enter Flows between Nodes, like this:
 '     Source [AMOUNT] Target
-' Examples:
-Wages [2000] Budget
-Interest [25] Budget
 
-Budget [500] Taxes
-Budget [450] Housing
-Budget [310] Food
-Budget [205] Transportation
-Budget [400] Health Care
+Wages [1500] Budget
+Other [250] Budget
+
+Budget [450] Taxes
+Budget [420] Housing
+Budget [400] Food
+Budget [295] Transportation
+Budget [25] Savings
 
 ' You can set a specific color for a Node:
-:Taxes #CC66FF
-'                                    ...and for a Flow:
-Budget [160] Other Necessities #00CC00
-' Visit the 'Manual' link for more!
+:Taxes #90C
+'                          ...and for a single Flow:
+Budget [160] Other Necessities #0F0
 
 ' After entering your data, use the
 ' controls below to customize your
-' diagram's appearance.</textarea>
+' diagram's appearance.
+
+' Visit the 'Manual' link for more!</textarea>
 
 <p class="center_basic"><button id="preview_graph" type="submit">Preview</button></p>
 </div>
@@ -86,7 +101,7 @@ Size, Spacing &amp; Shape<span id="diagram_options_hint">:</span></h2>
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1">
 <label for="canvas_width"><strong>Diagram Width:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
+<span class="no_wrap"><input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="700" onchange="process_sankey();"> px</span>
 <label for="canvas_height" class="spaced_label"><strong>Height:</strong></label>
 <span class="no_wrap"><input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
 </p>
@@ -304,7 +319,7 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 </td><td id="grapharea">
 
 <div class="expandable_box">
-<h2 class="ui_head" onclick="toggle_panel('layout_options');">
+<h2 id="layout_options_section" class="ui_head" onclick="toggle_panel('layout_options');">
 <span id="layout_options_indicator" class="indicator">+</span>
 Layout Options<span id="layout_options_hint">...</span></h2>
 <div id="layout_options" class="form_chunk" style="display: none;">
@@ -355,9 +370,8 @@ list the differences</label>.
 </main>
 
 
-<div style="text-align: center; margin-top: 12px; margin-bottom: 1px;">
-<span style="background-color: #E3FF9F; padding: 2px 20px; font-size: 90%; border-width: 1px 1px 0px; border-style: dotted; border-color: #6AE58B;">
-<!-- <div style="text-align: center; background-color: #ECFF60; font-size: 90%; padding: 4px; "> -->
+<div class="callout_container">
+<span class="callout">
 If you find SankeyMATIC useful, please consider <a href="../about/" target="_blank">donating to support further development</a>. Thanks!</span>
 </div>
 

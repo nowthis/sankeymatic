@@ -198,8 +198,9 @@ function produce_svg_code() {
   return;
 }
 
-// render_exportable_outputs: After the diagram is updated (or when the user
-// changes their preferred resolution), kick off a re-render of the image & SVG.
+// render_exportable_outputs: Kick off a re-render of the static image and the
+// user-copyable SVG code.
+// Called after the initial draw & when the user chooses a new PNG resolution
 glob.render_exportable_outputs = function () {
     // Reset the existing export output areas:
     var png_link_el   = document.getElementById("download_png_link"),
@@ -215,6 +216,81 @@ glob.render_exportable_outputs = function () {
     // so we can give control back asap:
     setTimeout( render_png, 0 );
     setTimeout( produce_svg_code, 0 );
+
+    return null;
+};
+
+function hide_reset_warning() {
+    // Hide the overwrite-warning paragraph (if it's showing)
+    const warning_el = document.getElementById("reset_graph_warning");
+    warning_el.style.display = "none";
+    return null;
+}
+
+glob.cancel_reset_graph = function () {
+    hide_reset_warning();
+    return null;
+}
+
+glob.reset_graph_confirmed = function () {
+    const graphname = document.getElementById("demo_graph_chosen").value;
+    const replacement_flow_data = (
+        sample_diagram_recipes.hasOwnProperty(graphname)
+            ? sample_diagram_recipes[graphname].flows.replace("\\n","\n")
+            : "Requested sample diagram not found"
+    );
+    const flows_el = document.getElementById("flows_in")
+
+    hide_reset_warning();
+
+    // Select all the text...
+    flows_el.focus();
+    flows_el.select();
+    // ... then replace it with the new content.
+    flows_el.setRangeText(replacement_flow_data,
+        0, flows_el.selectionEnd, 'start');
+
+    // Draw the new diagram immediately:
+    process_sankey();
+    // Put the cursor in the input field afresh:
+    flows_el.focus();
+    return null;
+}
+
+glob.reset_graph = function (graphname) {
+    // Is there a recipe with the given key? If so, let's proceed.
+    if (sample_diagram_recipes.hasOwnProperty(graphname)) {
+        // Set the 'demo_graph_chosen' value according to the user's click:
+        const chosen_el = document.getElementById("demo_graph_chosen");
+        chosen_el.value = graphname;
+
+        // Test the user's current input against the saved samples:
+        const user_input = document.getElementById("flows_in").value;
+        let flows_match_a_sample = false;
+        Object.keys(sample_diagram_recipes).forEach(
+            graph => {
+                if (user_input == sample_diagram_recipes[graph].flows) {
+                    flows_match_a_sample = true;
+                }
+            }
+        );
+        if (flows_match_a_sample) {
+            // If the user has NOT changed the input from one of the samples,
+            // just go ahead with the change:
+            reset_graph_confirmed();
+        } else {
+            // Otherwise, show the warning and do NOT reset the graph:
+            const warning_el = document.getElementById("reset_graph_warning");
+            warning_el.style.display = "";
+            const yes_button_el = document.getElementById("reset_graph_yes");
+            yes_button_el.innerHTML = `Yes, replace the graph with '${sample_diagram_recipes[graphname].name}'`;
+        }
+    } else {
+        console.log('graph name not found');
+        // the graph name wasn't valid.
+        // (this shouldn't happen unless the user is messing around in the DOM)
+        // give the user some feedback?
+    }
 
     return null;
 };

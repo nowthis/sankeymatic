@@ -166,7 +166,7 @@ p#chart {
   width: 600px;
   height: 500px;
   border: 1px dotted #666;
-  margin: 10px auto;
+  margin: 0.4em auto;
   background-color: white;
 }
 
@@ -201,7 +201,7 @@ th#title {
   font-size: large;
 }
 
-div#input_options {
+.center_text {
   text-align: center;
 }
 
@@ -236,4 +236,54 @@ td#flows_entry {
   overflow: auto;
   text-align: left;
   margin: auto;
+}
+
+#example_diagrams {
+  background-color: #F3F4FF;
+  border: 1px dotted #069;
+  width: 75%;
+  border-radius: 0.7em;
+  margin: 0.4em auto 1.1em;
+  padding: 0.5em;
+  box-shadow: 0.2em 0.2em 0.6em gray;
+}
+
+#example_diagrams h4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+#example_diagrams button {
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+#reset_graph_warning {
+  background-color: #FFA;
+  color: darkred;
+  margin: 0.2em 3em 0;
+  padding: 0.3em;
+  border-radius: 0.5em;
+}
+
+#reset_graph_yes {
+  color: darkred;
+}
+
+.callout_container {
+  text-align: center;
+  margin: 0.3em;
+}
+
+.callout {
+  background-color: #E3FF9F;
+  padding: 0.3em 1.5em;
+  font-size: 90%;
+  border-style: dotted;
+  border-color: #6AE58B;
+  border-width: 1px;
+}
+
+#layout_options_section {
+  margin-top: 4px;
 }
