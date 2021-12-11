@@ -66,8 +66,8 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 Inputs<span id="input_options_hint">:</span></h2>
 
 <div id="input_options" class="center_text">
-    <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">' Enter Flows between Nodes, like this:
-'     Source [AMOUNT] Target
+    <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">// Enter Flows between Nodes, like this:
+//         Source [AMOUNT] Target
 
 Wages [1500] Budget
 Other [250] Budget
@@ -78,18 +78,18 @@ Budget [400] Food
 Budget [295] Transportation
 Budget [25] Savings
 
-' You can set a specific color for a Node:
+// You can set a specific color for a Node:
 :Taxes #90C
-'                          ...and for a single Flow:
+
+//                         ...and for a single Flow:
 Budget [160] Other Necessities #0F0
 
-' After entering your data, use the
-' controls below to customize your
-' diagram's appearance.
+// After entering your data, use the
+// controls below to customize your
+// diagram's appearance.</textarea>
 
-' Visit the 'Manual' link for more!</textarea>
-
-<p class="center_basic"><button id="preview_graph" type="submit">Preview</button></p>
+<button id="preview_graph" type="submit">Show &gt;</button>
+<p class="center_basic"><em>Visit the <a href="../manual/" target="_blank">Manual</a> for a detailed guide</em></p>
 </div>
 
 <!-- SIZE & SPACING -->

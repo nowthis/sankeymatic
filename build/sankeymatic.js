@@ -252,8 +252,9 @@ glob.reset_graph_confirmed = function () {
 
     // Draw the new diagram immediately:
     process_sankey();
-    // Put the cursor in the input field afresh:
-    flows_el.focus();
+    // Un-focus the input field (on tablets, keeps the keyboard from
+    // auto-popping-up):
+    flows_el.blur();
     return null;
 }
 
@@ -654,7 +655,8 @@ glob.process_sankey = function () {
         // Does this line match the basic format?
         line_in = source_lines[line_ix].trim();
         // Is it a comment? Skip it entirely:
-        if ( line_in.match(/^'/) ) {
+        // Currently comments can start with ' or // :
+        if ( line_in.match(/^'/) || line_in.match(/^\/\//) ) {
             continue;
         }
         // Try to match the line to a Node spec:
