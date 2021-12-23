@@ -1,7 +1,43 @@
 body { font-size: 13px; }
 
 .smalllabel { font-size: 11px; }
-.narrowslider { width: 75px; }
+.narrowslider { width: 6em; }
+
+.font_sans { font-family: sans-serif; }
+.font_serif { font-family: serif; }
+.font_mono { font-family: monospace; }
+
+.font_lighter { font-weight: lighter; }
+.font_bolder { font-weight: bolder; }
+
+.text_right { text-align: right; }
+.text_left { text-align: left; }
+.text_center { text-align: center; }
+
+/* START WEBKIT TWEAKS
+   Make WebKit (Safari/Chrome) sliders a tiny bit more accessible:
+   (Firefox doesn't have this issue.) */
+
+/* 1. Replace the regular slider track with a color-customizable one: */
+input[type="range"]::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  height: 4px;
+  background-color: #AAA;
+}
+
+/* 2. Align the 'thumb' with the revised slider track: */
+input[type="range"]::-webkit-slider-thumb {
+  margin-top: -6px;
+}
+
+/* 3. When selected with the keyboard OR mouse, highlight the slider
+      background with an accent color: */
+input[type="range"]:focus::-webkit-slider-runnable-track,
+input[type="range"]:active::-webkit-slider-runnable-track {
+  background-color: #06C;
+}
+
+/* END WEBKIT TWEAKS */
 
 [aria-disabled="true"] {
   opacity: 0.5;
@@ -43,12 +79,18 @@ dfn {
   float: right;
 }
 
-textarea#flows_in {
+/* The textarea where the user is typing: */
+#flows_in {
   border: 1px solid #069;
-  padding: 3px;
-  margin: 4px;
-  font-family: sans-serif;
+  padding: 0.25em;
+  margin: 0.25em;
   font-size: small;
+  vertical-align: middle;
+}
+
+/* Center the preview button vertically relative to the textarea: */
+#preview_graph {
+  vertical-align: middle;
 }
 
 .form_elements {
@@ -69,7 +111,7 @@ textarea#flows_in {
 
 /* for items which need leftward breathing room: */
 .spaced_label,
-.spaced_checkbox { margin-left: 12px; }
+.spaced_checkbox { margin-left: 1em; }
 
 .ui_head {
   padding: 3px 6px 2px;
@@ -201,17 +243,6 @@ th#title {
   font-size: large;
 }
 
-.center_text {
-  text-align: center;
-}
-
-td#flows_entry {
-  padding: 0 2px;
-  background-color: #BDE;
-  text-align: center;
-  vertical-align: middle;
-}
-
 .download_link {
   margin-top: 8px;
 }
@@ -243,9 +274,9 @@ td#flows_entry {
   border: 1px dotted #069;
   width: 75%;
   border-radius: 0.7em;
-  margin: 0.4em auto 1.1em;
+  margin: 0.4em auto 1em;
   padding: 0.5em;
-  box-shadow: 0.2em 0.2em 0.6em gray;
+  box-shadow: 0.1em 0.1em 0.3em gray;
 }
 
 #example_diagrams h4 {

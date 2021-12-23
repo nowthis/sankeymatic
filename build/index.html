@@ -39,7 +39,7 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 <div class="center_basic">
 
 <form onsubmit="process_sankey(); return false;">
-<div id="example_diagrams" class="center_text">
+<div id="example_diagrams" class="text_center">
 <h4>Sample Diagrams:
 <button type="button" id="load_example_job_search" onclick="reset_graph('job_search'); return false;">Job Search</button>
 <button type="button" id="load_example_election" onclick="reset_graph('election'); return false;">Ranked Election</button>
@@ -65,8 +65,8 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 <span id="input_options_indicator" class="indicator">&ndash;</span>
 Inputs<span id="input_options_hint">:</span></h2>
 
-<div id="input_options" class="center_text">
-    <textarea id="flows_in" rows="22" cols="40" onchange="process_sankey();">// Enter Flows between Nodes, like this:
+<div id="input_options" class="text_center">
+    <textarea id="flows_in" rows="19" cols="40" class="font_sans" onchange="process_sankey();">// Enter Flows between Nodes, like this:
 //         Source [AMOUNT] Target
 
 Wages [1500] Budget
@@ -80,13 +80,11 @@ Budget [25] Savings
 
 // You can set a specific color for a Node:
 :Taxes #90C
-
-//                         ...and for a single Flow:
+//                    ...and for a single Flow:
 Budget [160] Other Necessities #0F0
 
-// After entering your data, use the
-// controls below to customize your
-// diagram's appearance.</textarea>
+// Use the controls below to customize
+// your diagram's appearance...</textarea>
 
 <button id="preview_graph" type="submit">Show &gt;</button>
 <p class="center_basic"><em>Visit the <a href="../manual/" target="_blank">Manual</a> for a detailed guide</em></p>
@@ -96,39 +94,26 @@ Budget [160] Other Necessities #0F0
 
 <h2 class="ui_head" onclick="toggle_panel('diagram_options');">
 <span id="diagram_options_indicator" class="indicator">&ndash;</span>
-Size, Spacing &amp; Shape<span id="diagram_options_hint">:</span></h2>
+Size &amp; Margins<span id="diagram_options_hint">:</span></h2>
 
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1">
-<label for="canvas_width"><strong>Diagram Width:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="700" onchange="process_sankey();"> px</span>
-<label for="canvas_height" class="spaced_label"><strong>Height:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
+<span class="no_wrap"><label for="canvas_width"><strong>Diagram Width:</strong></label>
+<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
+<span class="no_wrap"><label for="canvas_height" class="spaced_label"><strong>Height:</strong></label>
+<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
 </p>
 
 <p class="form_elements2">
 <strong>Margins:</strong>
 <span class="no_wrap"><label for="left_margin">Left</label>
-<input type="text" class="wholenumber" id="left_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
-<span class="no_wrap"><label for="right_margin">Right</label>
+<input type="text" class="wholenumber" id="left_margin" size="3" maxlength="5" value="12" onchange="process_sankey();">
+<label for="right_margin">Right</label>
 <input type="text" class="wholenumber" id="right_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="top_margin">Top</label>
-<input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
-<span class="no_wrap"><label for="bottom_margin">Bot</label>
+<input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="12" onchange="process_sankey();">
+<label for="bottom_margin">Bot</label>
 <input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
-</p>
-
-<p class="form_elements1">
-<label for="node_padding"><strong>Vertical Space between Nodes:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="18" onchange="process_sankey();"> px</span>
-</p>
-
-<p class="form_elements2">
-<label for="node_width"><strong>Node Width:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="10" onchange="process_sankey();"> px</span>
-
-<label for="curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
-<span class="no_wrap">|<input id="curvature" type="range" min="0.05" max="0.8" step="0.15" value="0.5" onchange="process_sankey();" class="narrowslider">(</span><br />
 </p>
 
 </div>
@@ -136,41 +121,68 @@ Size, Spacing &amp; Shape<span id="diagram_options_hint">:</span></h2>
 <!-- COLORS -->
 
 <h2 class="ui_head" onclick="toggle_panel('color_options');">
-<span id="color_options_indicator" class="indicator">+</span>
-Colors<span id="color_options_hint">...</span></h2>
+<span id="color_options_indicator" class="indicator">&ndash;</span>
+Colors &amp; Appearance<span id="color_options_hint">:</span></h2>
 
-<div id="color_options" class="form_chunk" style="display: none;">
+<div id="color_options" class="form_chunk">
+<h3 id="node_options_head" class="ui_head" tabindex="0" onclick="toggle_panel('node_options');"><span id="node_options_indicator" class="indicator">&ndash;</span>Nodes<span id="node_options_hint">:</span></h3>
+<div id="node_options" class="form_chunk">
+<p class="form_elements1">
+<label for="node_padding"><strong>Space between Nodes:</strong></label>
+<span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="18" onchange="process_sankey();"> px</span>
+
+<span class="no_wrap"><label for="node_width" class="spaced_label"><strong>Width:</strong></label>
+<input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="8" onchange="process_sankey();"> px</span>
+</p>
+
 <p class="form_elements2">
+<strong>Default Colors:</strong>
+<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use a single color:</label>
+<input type="color" id="default_node_color" size="7" maxlength="7" value="#004477" onchange="process_sankey();"><br />
+or use
+<input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" /><label for="node_use_set_a">Theme A</label>
+&nbsp; <input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" /><label for="node_use_set_b">Theme B</label>
+&nbsp; <input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" checked="checked" /><label for="node_use_set_c">Theme C</label><br />
+</p>
+
+<p class="form_elements1">
+<span class="no_wrap"><label for="default_node_opacity"><strong>Opacity:</strong></label>
+<span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.05" value="1.0" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
+
+<span class="no_wrap"><label for="node_border" class="spaced_label"><strong>Border:</strong></label>
+<span class="smalllabel">0</span><input id="node_border" type="range" min="0" max="9" step="1" value="0" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">9</span></span>
+</p>
+</div>
+
+<h3 class="ui_head" onclick="toggle_panel('flow_options');"><span id="flow_options_indicator" class="indicator">&ndash;</span>Flows<span id="flow_options_hint">:</span></h3>
+<div id="flow_options" class="form_chunk">
+<p class="form_elements1">
+<span class="no_wrap"><label for="default_flow_opacity"><strong>Opacity:</strong></label>
+<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.05" value="0.4" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
+
+<span class="no_wrap"><label for="curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
+|<input id="curvature" type="range" min="0.1" max="0.9" step="0.05" value="0.5" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider">(</span>
+</p>
+
+<p class="form_elements2">
+<strong>Default Colors:</strong><br />
+<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" />
+<label for="flow_use_color">Use a single color:</label>
+<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();" /><br />
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" />
+<label for="flow_inherit_from_source">Use the Source Node's color</label><br />
+<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" checked="checked" />
+<label for="flow_inherit_from_target">Use the Target Node's color</label><br />
+</p>
+
+</div>
+
+<p class="form_elements1">
 <label for="background_color"><strong>Background Color:</strong></label>
 <input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
 <input type="checkbox" id="background_transparent" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="background_transparent">Transparent</label><br />
 </p>
 
-<p class="form_elements1">
-<strong>Node Colors:</strong>
-Use theme:
-<input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" /><label for="node_use_set_a">A</label>
-<input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" /><label for="node_use_set_b">B</label>
-<input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" checked="checked" /><label for="node_use_set_c">C</label><br />
-<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use a single color:</label>
-<input type="color" id="default_node_color" size="7" maxlength="7" value="#004477" onchange="process_sankey();"><br />
-</p>
-
-<p class="form_elements2">
-<strong>Flow Colors:</strong><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" />
-<label for="flow_inherit_from_source">Use the Source Node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" checked="checked" />
-<label for="flow_inherit_from_target">Use the Target Node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" />
-<label for="flow_use_color">Use a single color:</label>
-<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();">
-</p>
-
-<p class="form_elements1">
-<label for="default_flow_opacity"><strong>Flow Opacity:</strong></label>
-<span class="no_wrap"><span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.1" value="0.4" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
-</p>
 </div>
 
 <!-- LABELS -->
@@ -198,9 +210,9 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <span class="no_wrap"><input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="15" onchange="process_sankey();"> <label for="font_size">px</label></span>
 
 <strong class="spaced_label">Face:</strong>
-<span class="no_wrap"><input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" style="font-family: sans-serif;">sans</label></span>
-<span class="no_wrap"><input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" style="font-family: serif;">serif</label></span>
-<span class="no_wrap"><input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" style="font-family: monospace;">mono</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="font_sans">sans</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="font_serif">serif</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="font_mono">mono</label></span>
 
 </p>
 
@@ -209,7 +221,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <span class="no_wrap"><label for="label_pos_left">Left side</label><input name="label_pos" type="radio" id="label_pos_left" value="all_left" onchange="process_sankey();" /></span>&nbsp;
 <span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_auto" value="auto" onchange="process_sankey();" checked="checked" /><label for="label_pos_auto">Automatic</label></span>&nbsp;
 <span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_right" value="all_right" onchange="process_sankey();" /><label for="label_pos_right">Right side</label></span><br />
-<div style="text-align: right;"><small id="label_pos_note"></small></div>
+<div class="text_right"><small id="label_pos_note"></small></div>
 </div>
 
 <p class="form_elements2">
@@ -217,7 +229,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
 
 <label for="font_weight" class="spaced_label"><strong>Weight:</strong></label>
-<span class="no_wrap"><span style="font-weight: lighter;" class="smalllabel">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" onchange="process_sankey();" class="narrowslider"><span style="font-weight: bolder;" class="smalllabel">Bold</span></span><br />
+<span class="no_wrap"><span class="smalllabel font_light">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel font_bolder">Bold</span></span><br />
 </p>
 
 <p class="form_elements1">
@@ -239,44 +251,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 </p>
 </div>
 
-<!-- ADVANCED -->
-
-<h2 class="ui_head" onclick="toggle_panel('advanced_options');">
-<span id="advanced_options_indicator" class="indicator">+</span>
-Advanced<span id="advanced_options_hint">...</span></h2>
-
-<div id="advanced_options" class="form_chunk" style="display: none;">
-<p class="form_elements1">
-<strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
-(For fair comparisons between diagrams, make their<br />
-Units and Scale match as closely as possible.)
-</p>
-
-<p class="form_elements2">
-<strong>Note:</strong> You can <u>drag</u> Nodes around to reposition them<br />
-before export. (However, changing any inputs will<br />
-re-draw/reset the whole diagram.)</p>
-
-<p class="form_elements1">
-<label for="default_node_opacity"><strong>Node Opacity:</strong></label>
-<span class="no_wrap"><span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.1" value="0.9" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
-
-<label for="node_border" class="spaced_label"><strong>Border:</strong></label>
-<select id="node_border" onchange="process_sankey();">
-<option value="0" selected="selected">0px</option>
-<option value="1">1px</option>
-<option value="2">2px</option>
-<option value="3">3px</option>
-<option value="4">4px</option>
-<option value="5">5px</option>
-</select>
-</p>
-
-<p class="form_elements2">
-<input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">
-<label for="reverse_graph"><strong>Reverse the graph</strong> (flow right-to-left)</label>
-</p>
-</div>
+<!-- EXPORT -->
 
 <h2 class="ui_head" onclick="toggle_panel('export_options');">
 <span id="export_options_indicator" class="indicator">&ndash;</span>
@@ -311,6 +286,29 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 
 </div>
 
+<!-- ADVANCED -->
+
+<h2 class="ui_head" onclick="toggle_panel('advanced_options');">
+<span id="advanced_options_indicator" class="indicator">+</span>
+Advanced<span id="advanced_options_hint">...</span></h2>
+
+<div id="advanced_options" class="form_chunk" style="display: none;">
+<p class="form_elements1">
+<strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
+(For fair comparisons between diagrams, make their<br />
+Units and Scale match as closely as possible.)
+</p>
+
+<p class="form_elements2">
+<strong>Note:</strong> You can <u>drag</u> Nodes around to reposition them<br />
+before export. (However, changing any inputs will<br />
+re-draw/reset the whole diagram.)</p>
+
+<p class="form_elements1">
+<input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">
+<label for="reverse_graph"><strong>Reverse the graph</strong> (flow right-to-left)</label>
+</p>
+</div>
 
 </td>
 </tr>
@@ -323,15 +321,15 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 <span id="layout_options_indicator" class="indicator">+</span>
 Layout Options<span id="layout_options_hint">...</span></h2>
 <div id="layout_options" class="form_chunk" style="display: none;">
-<div class="form_elements1" style="text-align: center;">
+<div class="form_elements1 text_center">
 
-<table style="width: 100%; padding: 0px;"><tr>
-<td style="text-align: left;">
+<table style="width: 100%; padding: 0;"><tr>
+<td class="text_left">
 <input type="checkbox" id="justify_origins" value="1" onchange="process_sankey();">
 <label for="justify_origins">Force all flow <strong>origins</strong> to the left edge</label>
 </td>
-<td style="text-align: right; padding-left: 2em;">
-<label for="justify_ends">Force all flow <strong>endpoints</strong> to the right edge</label>
+<td class="text_right">
+<label for="justify_ends" class="spaced_label">Force all flow <strong>endpoints</strong> to the right edge</label>
 <input type="checkbox" id="justify_ends" value="1" onchange="process_sankey();">
 </td>
 </tr></table>
