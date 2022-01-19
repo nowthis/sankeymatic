@@ -5,7 +5,11 @@ by Steve Bogart (@nowthis; http://nowthis.com/; sbogart@sankeymatic.com)
 
 Requires:
     D3.js
-    canvg.js (+ rgbcolor.js)
+      - https://github.com/d3/d3 v2.10.3
+    canvg.js
+      - https://github.com/canvg/canvg v1.3 (Jun 14, 2013)
+    rgbcolor.js
+      - http://www.phpied.com/rgb-color-parser-in-javascript/
 */
 
 (function (glob) {
@@ -88,52 +92,52 @@ function radio_value(radio_input_name) {
     return radio_result;
 }
 
-// background_clause:
-//  Generate the style clause for either a transparent or color background
-function background_clause(color_spec, transparent) {
-    return ( transparent
-            ? 'background-color: transparent; background-image: url(transparent_bg.png); background-repeat: repeat;'
-            : 'background-color: ' + color_spec + ';');
+// svg_background_class:
+//  Generate the class clause for the svg's background:
+function svg_background_class(transparent) {
+    return 'svg_background_' + (transparent ? 'transparent' : 'default');
 }
 
 // make_diagram_blank: reset the SVG tag to be empty, with the user's chosen background
-function make_diagram_blank(w, h, background_color, background_transparent) {
+function make_diagram_blank(w, h, background_transparent) {
     // Simply emptying the SVG tag doesn't seem to work well in Safari,
     // so we remake the whole tag instead:
     document.getElementById('chart').innerHTML =
         '<svg id="sankey_svg" height="' + h + '" width="' + w + '" '
         + 'xmlns="http://www.w3.org/2000/svg" version="1.1" '
-        + 'style="'
-        + background_clause( background_color, background_transparent )
-        + '"></svg>';
+        + 'class="' + svg_background_class(background_transparent) + '">'
+        + '</svg>';
     return;
 }
 
-
-// render_png: Build the PNG file in the background
+// render_png: Build a PNG file in the background
 function render_png() {
-    // Since 'innerHTML' isn't supposed to work for XML (SVG) nodes (though it
-    // does seem to in Firefox), we string together the node contents to submit
-    // to the canvas converter:
-    var svg_el       = document.getElementById("sankey_svg"),
-        svg_content  = ( new XMLSerializer() ).serializeToString(svg_el),
-        canvas_el    = document.getElementById("png_preview"),
-        png_link_el  = document.getElementById("download_png_link"),
-        chart_el     = document.getElementById("chart"),
-        img_tag_el   = document.getElementById("img_tag_hint"),
-        // Do any scaling necessary --
-        scale_factor = radio_value("scale_x") || 1,
-        // Btw, this is a horrible way to get the original size of the chart:
+    let chart_el = document.getElementById("chart"),
+        // Btw, this is a horrible way to get the original size of the chart...
         orig_w = Number( chart_el.style.width.replace(/px/,'') ),
         orig_h = Number( chart_el.style.height.replace(/px/,'') ),
+        // What scale does the user want (1,2,4)?:
+        scale_factor = radio_value("scale_x") || 1,
         png_w = orig_w * scale_factor,
         png_h = orig_h * scale_factor,
+        // Find the (hidden) canvas element in our page:
+        canvas_el = document.getElementById("png_preview"),
+        // Set up the values Canvg will need:
         canvas_context = canvas_el.getContext("2d"),
-        svg_as_png_url = '',
-        svg_bgcolor = svg_el.style.backgroundColor || '';
+        svg_el = document.getElementById("sankey_svg"),
+        svg_content  = ( new XMLSerializer() ).serializeToString(svg_el),
+        // More targets we'll be changing on the page:
+        png_link_el = document.getElementById("download_png_link"),
+        img_tag_w_el = document.getElementById("img_tag_hint_w"),
+        img_tag_h_el = document.getElementById("img_tag_hint_h");
 
+    // Set the canvas element to the final height/width we want:
     canvas_el.width  = png_w;
     canvas_el.height = png_h;
+
+    // Update img tag hint with user's original dimensions:
+    img_tag_w_el.innerHTML = orig_w;
+    img_tag_h_el.innerHTML = orig_h;
 
     // Draw the svg contents on the canvas:
     canvg( canvas_el, svg_content, {
@@ -144,28 +148,13 @@ function render_png() {
         scaleHeight: png_h
         } );
 
-    // Color the background correctly by drawing a canvas-sized rect underneath.
-    // Credit to Mike Chambers (@mesh) for this approach.
-    canvas_context.globalCompositeOperation = "destination-over";
-    canvas_context.fillStyle = svg_bgcolor;
-    canvas_context.fillRect(0,0,png_w,png_h);
-
-    // Convert canvas image to a PNG:
-    svg_as_png_url = canvas_el.toDataURL('image/png');
-    // make it downloadable (Firefox, Chrome)
-    // svg_as_png_url = svg_as_png_url.replace('image/png','image/octet-stream');
-    png_link_el.setAttribute( "href", svg_as_png_url );
+    // Convert canvas image to a URL-encoded PNG and update the link:
+    png_link_el.setAttribute( "href", canvas_el.toDataURL('image/png') );
     png_link_el.setAttribute( "target", "_blank" );
 
     // update download link & filename with dimensions:
     png_link_el.innerHTML = "Export " + png_w + " x " + png_h + " PNG";
     png_link_el.setAttribute( "download", "sankeymatic_" + png_w + "x" + png_h + ".png" );
-
-    // update img tag hint
-    img_tag_el.innerHTML =
-        "<code>&lt;img width=&quot;<strong>" + orig_w
-        + "</strong>&quot; height=&quot;<strong>" + orig_h
-        + "</strong>&quot; ... /&gt;</code>";
 
     return;
 }
@@ -176,21 +165,19 @@ function produce_svg_code() {
   var svg_export_el = document.getElementById("svg_for_export"),
       svg_el        = document.getElementById("sankey_svg");
 
-  // Hack to put in a placeholder title & comment & background rectangle
+  // For the user-consumable SVG code, put in a title placeholder & credit:
   var svg_for_copying =
-      document.getElementById("chart")
-        .innerHTML
-        // Take out the 1st style declaration (may contain transparency-hint image):
-        .replace(/ style="[^"]+"/, '')
-        // Insert some business in front of the first <g> tag:
-        .replace(/><g/,
-          "><title>Your Diagram Title</title>" +
-          "<!-- Generated with SankeyMATIC on " + (new Date()) + "-->" +
-          "<g><rect width=\"100%\" height=\"100%\" fill=\"" +
-          // Note, this value might be "transparent", not a color:
-          svg_el.style.backgroundColor + "\"></rect><g")
-        // Close the extra <g> tag added above:
-        .replace(/<\/svg>/,"</g></svg>");
+      // Read the live SVG structure and tweak it:
+      document.getElementById("chart").innerHTML
+        // Take out the class declaration for the background:
+        .replace(/ class="svg_background_[a-z]+"/, '')
+        // Insert some helpful tags in front of the first inner tag:
+        .replace(/>/,
+          ">\n<title>Your Diagram Title</title>\n" +
+          "<!-- Generated with SankeyMATIC on " + (new Date()) + " -->\n")
+        // Add some line breaks to highlight where [g]roups start/end
+        // and where each [path] is:
+        .replaceAll(/<(g|\/g|path)/g, "\n<$1");
 
   // Escape that whole batch of tags and put it in the <div> for copying:
   svg_export_el.innerHTML = escape_html(svg_for_copying);
@@ -376,16 +363,28 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // Clear out any old contents:
     make_diagram_blank(
       total_width, total_height,
-      config_in.background_color,
       config_in.background_transparent);
 
     // Select the svg canvas, set the defined dimensions:
     svg = d3.select("#sankey_svg")
         .attr("width", total_width)
         .attr("height", total_height)
-        .attr("style",
-            background_clause(config_in.background_color, config_in.background_transparent))
-        .append("g")
+        .attr("class",
+            svg_background_class(config_in.background_transparent));
+
+    // If a background color is defined, add a backing rectangle with that color:
+    if (config_in.background_transparent != 1) {
+        // Note: This just adds the rectangle *without* changing the selection
+        // stored in svg:
+        svg.append("rect")
+            .attr("height", total_height)
+            .attr("width", total_width)
+            .attr("fill", config_in.background_color);
+    }
+
+    // Add a [g]roup which moves the remaining diagram inward based on the
+    // user's margins:
+    svg = svg.append("g")
         .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
 
     // create a sankey object & its properties..
@@ -459,7 +458,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
         );
         // Recalculate the flows between the links' new positions:
         sankey.relayout();
-        // Put that new information in the SVG:
+        // For each link, update its 'd' path attribute with the new
+        // calculated path:
         link.attr("d", flow_paths);
         // Regenerate the export versions, now incorporating the drag:
         glob.render_exportable_outputs();
@@ -959,7 +959,6 @@ glob.process_sankey = function () {
         make_diagram_blank(
             approved_config.canvas_width,
             approved_config.canvas_height,
-            approved_config.background_color,
             approved_config.background_transparent);
 
         // Also clear out any leftover export output by rendering the currently-blank canvas:
