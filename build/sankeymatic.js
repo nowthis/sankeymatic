@@ -7,9 +7,7 @@ Requires:
     D3.js
       - https://github.com/d3/d3 v2.10.3
     canvg.js
-      - https://github.com/canvg/canvg v1.3 (Jun 14, 2013)
-    rgbcolor.js
-      - http://www.phpied.com/rgb-color-parser-in-javascript/
+      - https://github.com/canvg/canvg v3.0.9
 */
 
 (function (glob) {
@@ -118,8 +116,8 @@ function render_png() {
         orig_h = Number( chart_el.style.height.replace(/px/,'') ),
         // What scale does the user want (1,2,4)?:
         scale_factor = radio_value("scale_x") || 1,
-        png_w = orig_w * scale_factor,
-        png_h = orig_h * scale_factor,
+        scaled_w = orig_w * scale_factor,
+        scaled_h = orig_h * scale_factor,
         // Find the (hidden) canvas element in our page:
         canvas_el = document.getElementById("png_preview"),
         // Set up the values Canvg will need:
@@ -129,32 +127,42 @@ function render_png() {
         // More targets we'll be changing on the page:
         png_link_el = document.getElementById("download_png_link"),
         img_tag_w_el = document.getElementById("img_tag_hint_w"),
-        img_tag_h_el = document.getElementById("img_tag_hint_h");
+        img_tag_h_el = document.getElementById("img_tag_hint_h"),
+        // Canvg 3 needs interesting offsets added when scaling up:
+        x_offset = (scaled_w - orig_w) / (2 * scale_factor),
+        y_offset = (scaled_h - orig_h) / (2 * scale_factor),
+        canvg_obj;
 
-    // Set the canvas element to the final height/width we want:
-    canvas_el.width  = png_w;
-    canvas_el.height = png_h;
+    // Set the canvas element to the final height/width the user wants:
+    canvas_el.width  = scaled_w;
+    canvas_el.height = scaled_h;
 
     // Update img tag hint with user's original dimensions:
     img_tag_w_el.innerHTML = orig_w;
     img_tag_h_el.innerHTML = orig_h;
 
-    // Draw the svg contents on the canvas:
-    canvg( canvas_el, svg_content, {
-        ignoreMouse: true,
-        ignoreAnimation: true,
-        ignoreDimensions: true, // DON'T make the canvas size match the svg's
-        scaleWidth:  png_w,
-        scaleHeight: png_h
-        } );
+    // Give Canvg what it needs to produce a rendered image:
+    canvg_obj = canvg.Canvg.fromString(
+        canvas_context,
+        svg_content, {
+            ignoreMouse: true,
+            ignoreAnimation: true,
+            ignoreDimensions: true, // DON'T make the canvas size match the svg
+            scaleWidth:  scaled_w,
+            scaleHeight: scaled_h,
+            offsetX: x_offset,
+            offsetY: y_offset
+        });
+    canvg_obj.render();
 
     // Convert canvas image to a URL-encoded PNG and update the link:
     png_link_el.setAttribute( "href", canvas_el.toDataURL('image/png') );
     png_link_el.setAttribute( "target", "_blank" );
 
     // update download link & filename with dimensions:
-    png_link_el.innerHTML = "Export " + png_w + " x " + png_h + " PNG";
-    png_link_el.setAttribute( "download", "sankeymatic_" + png_w + "x" + png_h + ".png" );
+    png_link_el.innerHTML = `Export ${scaled_w} x ${scaled_h} PNG`;
+    png_link_el.setAttribute( "download",
+        `sankeymatic_${scaled_w}x${scaled_h}.png` );
 
     return;
 }
