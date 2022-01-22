@@ -109,7 +109,7 @@ function make_diagram_blank(w, h, background_transparent) {
 }
 
 // render_png: Build a PNG file in the background
-function render_png() {
+function render_png(curdate) {
     let chart_el = document.getElementById("chart"),
         // Btw, this is a horrible way to get the original size of the chart...
         orig_w = Number( chart_el.style.width.replace(/px/,'') ),
@@ -128,6 +128,11 @@ function render_png() {
         png_link_el = document.getElementById("download_png_link"),
         img_tag_w_el = document.getElementById("img_tag_hint_w"),
         img_tag_h_el = document.getElementById("img_tag_hint_h"),
+        // Generate yyyymmdd_hhmmss string:
+        filename_timestamp =
+            (curdate.toISOString().replace(/T.+$/,'_') +
+             curdate.toTimeString().replace(/ .+$/,''))
+            .replace(/[:-]/g,''),
         // Canvg 3 needs interesting offsets added when scaling up:
         x_offset = (scaled_w - orig_w) / (2 * scale_factor),
         y_offset = (scaled_h - orig_h) / (2 * scale_factor),
@@ -162,13 +167,14 @@ function render_png() {
     // update download link & filename with dimensions:
     png_link_el.innerHTML = `Export ${scaled_w} x ${scaled_h} PNG`;
     png_link_el.setAttribute( "download",
-        `sankeymatic_${scaled_w}x${scaled_h}.png` );
+        `sankeymatic_${filename_timestamp}_${scaled_w}x${scaled_h}.png` );
 
     return;
 }
 
-// produce_svg_code: take the current state of 'sankey_svg' and hand it nicely to the user
-function produce_svg_code() {
+// produce_svg_code: take the current state of 'sankey_svg' and
+// relay it nicely to the user
+function produce_svg_code(curdate) {
   // Prep for filling in the code area
   var svg_export_el = document.getElementById("svg_for_export"),
       svg_el        = document.getElementById("sankey_svg");
@@ -182,10 +188,10 @@ function produce_svg_code() {
         // Insert some helpful tags in front of the first inner tag:
         .replace(/>/,
           ">\n<title>Your Diagram Title</title>\n" +
-          "<!-- Generated with SankeyMATIC on " + (new Date()) + " -->\n")
+          `<!-- Generated with SankeyMATIC: ${curdate.toLocaleString()} -->\n`)
         // Add some line breaks to highlight where [g]roups start/end
         // and where each [path] is:
-        .replaceAll(/<(g|\/g|path)/g, "\n<$1");
+        .replace(/<(g|\/g|path)/g, "\n<$1");
 
   // Escape that whole batch of tags and put it in the <div> for copying:
   svg_export_el.innerHTML = escape_html(svg_for_copying);
@@ -199,7 +205,8 @@ function produce_svg_code() {
 glob.render_exportable_outputs = function () {
     // Reset the existing export output areas:
     var png_link_el   = document.getElementById("download_png_link"),
-        svg_export_el = document.getElementById("svg_for_export");
+        svg_export_el = document.getElementById("svg_for_export"),
+        current_date = new Date();
 
     // Clear out the old image link, cue user that the graphic isn't yet ready:
     png_link_el.innerHTML = '...creating downloadable graphic...';
@@ -209,8 +216,8 @@ glob.render_exportable_outputs = function () {
 
     // Fire off asynchronous events for generating the export output,
     // so we can give control back asap:
-    setTimeout( render_png, 0 );
-    setTimeout( produce_svg_code, 0 );
+    setTimeout( render_png(current_date), 0 );
+    setTimeout( produce_svg_code(current_date), 0 );
 
     return null;
 };
