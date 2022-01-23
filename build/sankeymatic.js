@@ -176,8 +176,7 @@ function render_png(curdate) {
 // relay it nicely to the user
 function produce_svg_code(curdate) {
   // Prep for filling in the code area
-  var svg_export_el = document.getElementById("svg_for_export"),
-      svg_el        = document.getElementById("sankey_svg");
+  var svg_export_el = document.getElementById("svg_for_export");
 
   // For the user-consumable SVG code, put in a title placeholder & credit:
   var svg_for_copying =
@@ -301,9 +300,9 @@ glob.reset_graph = function (graphname) {
 // render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
 function render_sankey(nodes_in, flows_in, config_in) {
     var graph_width, graph_height, colorset,
-        units_format, d3_color_scale, svg, sankey,
+        units_format, d3_color_scale, main_diagram, sankey_obj,
         link,       // reference to all the flow paths drawn
-        flow_paths, // holds the path-generating function
+        flow_path_fn, // holds the path-generating function
         node,       // reference to all the nodes drawn
         node_width    = config_in.node_width,
         node_padding  = config_in.node_padding,
@@ -313,8 +312,12 @@ function render_sankey(nodes_in, flows_in, config_in) {
         margin_bottom = config_in.bottom_margin,
         margin_left   = config_in.left_margin,
         margin_right  = config_in.right_margin,
+        separators    = config_in.seps,
         curvature     = config_in.curvature,
-        separators    = config_in.seps;
+        // Drawing curves with curvature of <= 0.1 looks bad and produces visual
+        // artifacts, so let's just take the lowest value on the slider (0.1)
+        // and call that 0/flat:
+        flat_flows    = (curvature <= 0.1);
 
     // make sure valid values are in these fields:
     config_in.unit_prefix =
@@ -381,7 +384,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
       config_in.background_transparent);
 
     // Select the svg canvas, set the defined dimensions:
-    svg = d3.select("#sankey_svg")
+    main_diagram = d3.select("#sankey_svg")
         .attr("width", total_width)
         .attr("height", total_height)
         .attr("class",
@@ -391,7 +394,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
     if (config_in.background_transparent != 1) {
         // Note: This just adds the rectangle *without* changing the selection
         // stored in svg:
-        svg.append("rect")
+        main_diagram.append("rect")
             .attr("height", total_height)
             .attr("width", total_width)
             .attr("fill", config_in.background_color);
@@ -399,11 +402,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
     // Add a [g]roup which moves the remaining diagram inward based on the
     // user's margins:
-    svg = svg.append("g")
+    main_diagram = main_diagram.append("g")
         .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
 
     // create a sankey object & its properties..
-    sankey = d3.sankey()
+    sankey_obj = d3.sankey()
         .nodeWidth(node_width)
         .nodePadding(node_padding)
         .size([graph_width, graph_height])
@@ -414,45 +417,71 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .leftJustifyOrigins(config_in.justify_origins)
         .layout(50); // Note: The 'layout()' step must be LAST.
 
-    // flow_paths is a function returning coordinates and specs for each flow
-    flow_paths = sankey.link();
+    // flow_path_fn is a function returning coordinates and specs for each flow
+    // The function when flows are flat is different from the curve function.
+    flow_path_fn = flat_flows
+        ? sankey_obj.flatFlowPathGenerator()
+        : sankey_obj.curvedFlowPathGenerator();
 
-    link = svg.append("g").selectAll(".link")
+    // What color is a flow?
+    function flow_final_color(f) {
+        // Stroke Color priority order:
+        // 1. color defined specifically for the flow
+        // 2. single-inheritance-from-source (or target)
+        // 3. default-inheritance-from-source (or target)
+        // 4. default flow color
+        return f.color ? f.color
+            : f.source.inherit_right ? f.source.color
+            : f.target.inherit_left  ? f.target.color
+            : config_in.default_flow_inherit === "source" ? f.source.color
+            : config_in.default_flow_inherit === "target" ? f.target.color
+            : config_in.default_flow_color;
+    }
+
+    // What is the normal opacity for a flow?
+    function flow_normal_opacity(f) {
+        return f.opacity || config_in.default_flow_opacity;
+    }
+
+    // What is the opacity when a user hovers over this flow?
+    function flow_hover_opacity(f) {
+        return f.opacity_on_hover ||
+            ( Number(config_in.default_flow_opacity) + 1 ) / 2;
+    }
+
+    // Set up the rendered flows in SVG:
+    link = main_diagram.append("g").selectAll(".link")
         .data(the_clean_json.links)
         .enter()
         .append("path")
         .attr("class", "link")
-        .attr("d", flow_paths) // embed coordinates
-        .style("fill", "none") // ensure no line gets drawn, just stroke
-        .style("stroke-width", function (d) { return Math.max(1, d.dy); })
-        // custom stroke color; defaulting to gray if not specified:
-        .style("stroke", function (d) {
-            // Priority order:
-            // 1. color defined specifically for the flow
-            // 2. single-inherit-from-source (or target)
-            // 3. all-inherit-from-source (or target)
-            // 4. default flow color
-            return d.color ? d.color
-                : d.source.inherit_right ? d.source.color
-                : d.target.inherit_left  ? d.target.color
-                : config_in.default_flow_inherit === "source" ? d.source.color
-                : config_in.default_flow_inherit === "target" ? d.target.color
-                : config_in.default_flow_color; })
-        .style("stroke-opacity", function (d) {
-            return d.opacity || config_in.default_flow_opacity;
-            })
-        // add hover behavior:
+        .attr("d", flow_path_fn) // set the SVG path for each flow
+        .style("stroke", function (d) { return flow_final_color(d); })
+        .style("opacity", function (d) { return flow_normal_opacity(d); })
+        // add emphasis-on-hover behavior:
         .on('mouseover', function(d){
-            d3.select(this).style( "stroke-opacity",
-                d.opacity_on_hover
-                || ( ( Number(config_in.default_flow_opacity) + 1 ) / 2 ) );
+            d3.select(this).style( "opacity", flow_hover_opacity(d));
             })
         .on('mouseout', function(d){
-            d3.select(this).style( "stroke-opacity",
-                d.opacity || config_in.default_flow_opacity );
+            d3.select(this).style( "opacity", flow_normal_opacity(d));
             })
-        // sets the order of rendering from largest to smallest, seems like:
-        .sort(function (a, b) { return b.dy - a.dy; });
+        // Sort flows to be rendered from largest to smallest
+        // (so if flows cross, the smaller are drawn on top of the larger):
+        .sort(function (a, b) { return b.dy - a.dy; })
+
+    if (flat_flows) {
+        // When flows have no curvature at all, they're really parallelograms.
+        // The fill is the main source of color then:
+       link.style("fill", function (d) { return flow_final_color(d); })
+            // We add a little bit of a stroke because the outermost flows look
+            // overly thin otherwise. (They still can, even with this addition.)
+           .style("stroke-width", 0.5);
+    } else {
+        // When curved, there is no fill, only stroke-width:
+        link.style("fill", "none")
+            // Make sure any flow, no matter how small, is visible (1px wide):
+            .style("stroke-width", function (d) { return Math.max(1, d.dy); });
+    }
 
     // TODO make tooltips a separate option
     if ( config_in.show_labels ) {
@@ -472,17 +501,18 @@ function render_sankey(nodes_in, flows_in, config_in) {
             "transform", "translate(" + d.x + "," + d.y + ")"
         );
         // Recalculate the flows between the links' new positions:
-        sankey.relayout();
+        sankey_obj.relayout();
         // For each link, update its 'd' path attribute with the new
         // calculated path:
-        link.attr("d", flow_paths);
+        link.attr("d", flow_path_fn);
+
         // Regenerate the export versions, now incorporating the drag:
         glob.render_exportable_outputs();
         return null;
     }
 
     // Set up NODE info, including drag behavior:
-    node = svg.append("g").selectAll(".node")
+    node = main_diagram.append("g").selectAll(".node")
         .data(the_clean_json.nodes)
         .enter()
         .append("g")

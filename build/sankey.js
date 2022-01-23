@@ -317,25 +317,44 @@ d3.sankey = function() {
     }
   }
 
-  // SVG path data generator, to be used as "d" attribute on "path" element selection.
-  sankey.link = function() {
-    function link(d) {
-      var x0 = d.source.x + d.source.dx, // x-end of prior-node
-          x1 = d.target.x,               // x-beginning of next-node
-          // construct a function for interpolating between the above two values:
-          xi = d3.interpolateNumber(x0, x1),
-          // pick two points given the curvature and its converse:
-          x2 = xi(curvature),
-          x3 = xi(1 - curvature),
-          y0 = d.source.y + d.sy + d.dy / 2,
-          y1 = d.target.y + d.ty + d.dy / 2;
-      return "M" + x0 + "," + y0
-           + "C" + x2 + "," + y0
-           + " " + x3 + "," + y1
-           + " " + x1 + "," + y1;
+  // SVG curved path generator.
+  // Used for the "d" attribute on a "path" element when curvature > 0
+  sankey.curvedFlowPathGenerator = function() {
+    function svgPathSpec(flow) {
+      const xs = flow.source.x + flow.source.dx, // trailing edge of source node
+        xt = flow.target.x,                      // leading edge of target node
+        ys = flow.source.y + flow.sy + flow.dy/2, // center of source flow
+        yt = flow.target.y + flow.ty + flow.dy/2, // center of target flow
+        // Set up a function for interpolating between the two x values:
+        xinterpolate = d3.interpolateNumber(xs, xt),
+        // Pick 2 curve control points given the curvature & its converse:
+        xc1 = xinterpolate(curvature),
+        xc2 = xinterpolate(1 - curvature);
+      // This SVG Path spec means:
+      // [M]ove to xs,ys, then draw a Bezier [C]urve using xc1,ys + xc2,yt,
+      // ending at xt,yt
+      return `M${xs} ${ys}C${xc1} ${ys} ${xc2} ${yt} ${xt} ${yt}`;
     }
+    return svgPathSpec;
+  };
 
-    return link;
+  // SVG flat path generator.
+  // Used for the "d" attribute on a "path" element when curvature = 0
+  sankey.flatFlowPathGenerator = function() {
+    function svgPathSpec(flow) {
+      const xs = flow.source.x + flow.source.dx, // trailing edge of source node
+        xt = flow.target.x,                      // leading edge of target node
+        ys_top = flow.source.y + flow.sy,           // top of source flow
+        ys_bot = flow.source.y + flow.sy + flow.dy, // bottom of source flow
+        yt_top = flow.target.y + flow.ty,           // top of target flow;
+        yt_bot = flow.target.y + flow.ty + flow.dy; // bottom of target flow;
+      // This SVG Path spec means:
+      // [M]ove to the flow source's top, then draw [L]ines to:
+      // the target's top, the target's bottom, the source's bottom, then
+      // [z] = close the figure where it started.
+      return `M${xs} ${ys_top}L${xt} ${yt_top}L${xt} ${yt_bot}L${xs} ${ys_bot}z`;
+    }
+    return svgPathSpec;
   };
 
   sankey.layout = function(iterations) {
