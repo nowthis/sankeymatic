@@ -200,8 +200,8 @@ function produce_svg_code(curdate) {
           ">\n<title>Your Diagram Title</title>\n" +
           `<!-- Generated with SankeyMATIC: ${curdate.toLocaleString()} -->\n`)
         // Add some line breaks to highlight where [g]roups start/end
-        // and where each [path] is:
-        .replace(/<(g|\/g|path)/g, "\n<$1");
+        // and where each [path] and [text] start:
+        .replace(/<(g|\/g|path|text)/g, "\n<$1");
 
   // Escape that whole batch of tags and put it in the <div> for copying:
   svg_export_el.innerHTML = escape_html(svg_for_copying);
@@ -396,6 +396,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
             ? "." : separators.decimal;
 
     // Set the dimensions of the space:
+    // (This will get much more complicated once we start auto-fitting labels.)
     graph_width  = total_width  - margin_left - margin_right;
     graph_height = total_height - margin_top  - margin_bottom;
 
@@ -413,8 +414,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
     // If a background color is defined, add a backing rectangle with that color:
     if (config_in.background_transparent != 1) {
-        // Note: This just adds the rectangle *without* changing the selection
-        // stored in svg:
+        // Note: This just adds the rectangle *without* changing the d3
+        // selection stored in main_diagram:
         main_diagram.append("rect")
             .attr("height", total_height)
             .attr("width", total_width)
@@ -499,7 +500,9 @@ function render_sankey(nodes_in, flows_in, config_in) {
         : curvedFlowPathFunction(curvature);
 
     // Set up the rendered flows in SVG:
-    link = main_diagram.append("g").selectAll(".link")
+    link = main_diagram.append("g")
+        .attr("id","sankey_flows")
+        .selectAll(".link")
         .data(final_json.links)
         .enter()
         .append("path")
@@ -610,8 +613,19 @@ function render_sankey(nodes_in, flows_in, config_in) {
         });
 
     if ( config_in.show_labels ) {
-        // Put in NODE labels
-        node.append("text")
+        // Add labels in a layer on the top (so nodes can't cover them up)
+        main_diagram.append("g")
+            .attr("id","sankey_labels")
+            .style( {   // These font spec defaults apply to all labels within
+                "font-family": config_in.font_face,
+                "font-size":   config_in.font_size + "px",
+                "font-weight": config_in.font_weight,
+                fill:          config_in.font_color
+                })
+          .selectAll()
+          .data(final_json.nodes)
+          .enter()
+          .append("text")
             .attr( {
                 x: function (d) { return ep(-6 + d.x); },
                 y: function (d) { return ep(d.y + d.dy/2); },
@@ -629,32 +643,25 @@ function render_sankey(nodes_in, flows_in, config_in) {
                             ? ": " + units_format(d.value)
                             : "" );
                 })
-            .style( {   // be explicit about the font specs:
-                "stroke-width": "0", // positive stroke-width makes letters fuzzy
-                "font-family": config_in.font_face,
-                "font-size":   config_in.font_size + "px",
-                "font-weight": config_in.font_weight,
-                fill:          config_in.font_color
-                } )
-            // Move the labels, potentially:
-            .filter(
-                // (filter = If this function returns TRUE, then the lines
-                // after this step are executed.)
-                // Check if this label should be right-of-node instead:
-                function (d) {
-                    // First, has the user set a simple rule for all?
-                    return config_in.label_pos === "all_left"  ? 0
-                        :  config_in.label_pos === "all_right" ? 1
-                        // Otherwise: if the node's x-coordinate is in the
-                        // left half of the graph, relocate the label to
-                        // appear to the RIGHT of the node.
-                        // (Here x is nudged by a node_width to make the
-                        // *exact* middle of the diagram have left labels:
-                        :  (( d.x + node_width ) < ( graph_width / 2 ));
-                })
-                // Here is where the label is actually moved to the right:
-                .attr("x", function(d) { return ep(d.x + node_width + 6); })
-                .attr("text-anchor", "start");
+          // Move the labels, potentially:
+          .filter(
+            // (filter = If this function returns TRUE, then the lines
+            // after this step are executed.)
+            // Check if this label should be right-of-node instead:
+            function (d) {
+                // First, has the user set a simple rule for all?
+                return config_in.label_pos === "all_left"  ? 0
+                    :  config_in.label_pos === "all_right" ? 1
+                    // Otherwise: if the node's x-coordinate is in the
+                    // left half of the graph, relocate the label to
+                    // appear to the RIGHT of the node.
+                    // (Here x is nudged by a node_width to make the
+                    // *exact* middle of the diagram have left labels:
+                    :  (( d.x + node_width ) < ( graph_width / 2 ));
+            })
+            // Here is where the label is actually moved to the right:
+            .attr("x", function(d) { return ep(d.x + node_width + 6); })
+            .attr("text-anchor", "start");
     }
 }  // end of render_sankey
 
