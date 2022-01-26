@@ -417,9 +417,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
         // Note: This just adds the rectangle *without* changing the d3
         // selection stored in main_diagram:
         main_diagram.append("rect")
-            .attr("height", total_height)
-            .attr("width", total_width)
-            .attr("fill", config_in.background_color);
+            .attr({
+                height: total_height,
+                width: total_width,
+                fill: config_in.background_color
+                });
     }
 
     // Add a [g]roup which moves the remaining diagram inward based on the
@@ -502,24 +504,28 @@ function render_sankey(nodes_in, flows_in, config_in) {
     // Set up the rendered flows in SVG:
     link = main_diagram.append("g")
         .attr("id","sankey_flows")
-        .selectAll(".link")
-        .data(final_json.links)
-        .enter()
-        .append("path")
-        .attr("class", "link")
-        .attr("d", flow_path_fn) // set the SVG path for each flow
-        .style("stroke", function (d) { return flow_final_color(d); })
-        .style("opacity", function (d) { return flow_normal_opacity(d); })
-        // add emphasis-on-hover behavior:
-        .on('mouseover', function(d){
-            d3.select(this).style( "opacity", flow_hover_opacity(d));
+      .selectAll(".link")
+      .data(final_json.links)
+      .enter()
+      .append("path")
+        .attr({
+            "class": "link",
+            d: flow_path_fn // set the SVG path for each flow
             })
-        .on('mouseout', function(d){
-            d3.select(this).style( "opacity", flow_normal_opacity(d));
+        .style({
+            stroke: function (d) { return flow_final_color(d); },
+            opacity: function (d) { return flow_normal_opacity(d); }
             })
-        // Sort flows to be rendered from largest to smallest
-        // (so if flows cross, the smaller are drawn on top of the larger):
-        .sort(function (a, b) { return b.dy - a.dy; });
+      // add emphasis-on-hover behavior:
+      .on('mouseover', function(d){
+          d3.select(this).style( "opacity", flow_hover_opacity(d));
+          })
+      .on('mouseout', function(d){
+          d3.select(this).style( "opacity", flow_normal_opacity(d));
+          })
+      // Sort flows to be rendered from largest to smallest
+      // (so if flows cross, the smaller are drawn on top of the larger):
+      .sort(function (a, b) { return b.dy - a.dy; });
 
     if (flat_flows) {
         // When flows have no curvature at all, they're really parallelograms.
@@ -535,14 +541,11 @@ function render_sankey(nodes_in, flows_in, config_in) {
             .style("stroke-width", function (d) { return ep(Math.max(1, d.dy)); });
     }
 
-    // TODO make tooltips a separate option
-    if ( config_in.show_labels ) {
-        link.append("title") // Make tooltips for FLOWS
-            .text(function (d) {
-                return d.source.name + " → " + d.target.name + ":\n"
-                    + units_format(d.value);
-            });
-    }
+    // Add a tooltip for each flow:
+    link.append("title")
+        .text(function (d) {
+            return `${d.source.name} → ${d.target.name}:\n${units_format(d.value)}`;
+        });
 
     // Node-drag function definition:
     function dragmove(d) {
@@ -607,9 +610,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
       // Add tooltips showing node totals:
       .append("title")
         .text(function (d) {
-            return config_in.show_labels
-                ? d.name + ":\n" + units_format(d.value)
-                : "";
+            return `${d.name}:\n${units_format(d.value)}`;
         });
 
     if ( config_in.show_labels ) {
