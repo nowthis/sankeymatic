@@ -308,6 +308,13 @@ d3.sankey = function() {
       resolveCollisions();
       computeLinkDepths();
     }
+
+    // After the last layout step, store the original node coordinates
+    // (to support drag moves):
+    nodes.forEach(function (node) {
+        node.orig_x = node.x;
+        node.orig_y = node.y;
+    });
   }
 
   sankey.layout = function(iterations) {

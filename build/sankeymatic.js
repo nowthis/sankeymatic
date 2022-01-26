@@ -543,13 +543,21 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
     // Node-drag function definition:
     function dragmove(d) {
-        // Calculate new position:
+        // Move the node to where the drag has taken it (halting at the edges
+        // of the graph):
         d.x = Math.max(0, Math.min(graph_width - d.dx, d3.event.x));
         d.y = Math.max(0, Math.min(graph_height - d.dy, d3.event.y));
-        d3.select(this).attr("transform", `translate(${ep(d.x)},${ep(d.y)})`);
-        // Recalculate the flows between the links' new positions:
+        // Calculate the offsets for the new position:
+        const move_x = d.x - d.orig_x,
+            move_y = d.y - d.orig_y;
+        // Find everything which shares the class of the dragged node and
+        // translate it by the offsets:
+        // (Currently this means the node and its label, if present.)
+        d3.selectAll(`#sankey_svg .for_r${d.index}`)
+            .attr("transform", `translate(${ep(move_x)},${ep(move_y)})`);
+        // Recalculate all flow positions given this node's new position:
         sankey_obj.relayout();
-        // For each link, update its 'd' path attribute with the new
+        // For every flow, update its 'd' path attribute with the new
         // calculated path:
         link.attr("d", flow_path_fn);
 
@@ -559,13 +567,13 @@ function render_sankey(nodes_in, flows_in, config_in) {
     }
 
     // Set up NODE info, including drag behavior:
-    node = main_diagram.append("g").selectAll(".node")
+    node = main_diagram.append("g")
+        .attr("id","sankey_nodes")
+        .selectAll(".node")
         .data(final_json.nodes)
         .enter()
         .append("g")
         .attr("class", "node")
-        .attr("transform", function (d) {
-            return `translate(${ep(d.x)},${ep(d.y)})`; })
         .call(d3.behavior.drag()
             .origin(function (d) { return d; })
             .on("dragstart", function () { this.parentNode.appendChild(this); })
@@ -574,44 +582,52 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
     // Construct the actual rectangles for NODEs:
     node.append("rect")
-        .attr("height", function (d) { return ep(d.dy); })
-        .attr("width", node_width)
-        // Give a unique ID to each rect that we can reference (for scale calc)
-        .attr("id", function(d) { return "r" + d.index; })
-        // we made sure above there will be a color defined:
-        .style("fill", function (d) { return d.color; })
-        .attr( "shape-rendering", "crispEdges" )
-        .style("fill-opacity",
-            function (d) {
-                return d.opacity || config_in.default_node_opacity;
+        .attr( {
+            x: function (d) { return ep(d.x); },
+            y: function (d) { return ep(d.y); },
+            height: function (d) { return ep(d.dy); },
+            width: node_width,
+            // Give a unique ID & class to each rect that we can reference:
+            id: function(d) { return "r" + d.index; },
+            "class": function(d) { return "for_r" + d.index },
+            "shape-rendering": "crispEdges"
             })
-        .style( "stroke-width", config_in.node_border || 0 )
-        .style( "stroke", function (d) { return d3.rgb(d.color).darker(2); } )
-        .append("title")    // Add tooltips for NODES
-        .text(
-            function (d) {
-                return config_in.show_labels
-                    ? d.name + ":\n" + units_format(d.value)
-                    : "";
-            });
+        // we made sure above there will be a color defined:
+        .style({
+            fill: function (d) { return d.color; },
+            "fill-opacity": function (d) {
+                return d.opacity || config_in.default_node_opacity;
+                },
+            "stroke-width": config_in.node_border || 0,
+            stroke: function (d) { return d3.rgb(d.color).darker(2); }
+            })
+      // Add tooltips showing node totals:
+      .append("title")
+        .text(function (d) {
+            return config_in.show_labels
+                ? d.name + ":\n" + units_format(d.value)
+                : "";
+        });
 
     if ( config_in.show_labels ) {
         // Put in NODE labels
         node.append("text")
-            // x,y = offsets relative to the node rectangle
-            .attr("x", -6)
-            .attr("y", function (d) { return ep(d.dy/2); })
-            // move letters down by 1/3 of a wide letter's width
-            // (makes them look vertically centered)
-            .attr("dy", ".35em")
-            // Default to anchoring the text to the left, ending at the node:
-            .attr("text-anchor", "end")
-            .text(
-                function (d) {
-                    return d.name
-                            + ( config_in.include_values_in_node_labels
-                                ? ": " + units_format(d.value)
-                                : "" );
+            .attr( {
+                x: function (d) { return ep(-6 + d.x); },
+                y: function (d) { return ep(d.y + d.dy/2); },
+                // Move letters down by 1/3 of a wide letter's width
+                // (makes them look vertically centered)
+                dy: ".35em",
+                // Anchor the text to the left, ending at the node:
+                "text-anchor": "end",
+                // Associate this label with its node:
+                "class": function(d) { return "for_r" + d.index }
+                })
+            .text(function (d) {
+                return d.name
+                        + ( config_in.include_values_in_node_labels
+                            ? ": " + units_format(d.value)
+                            : "" );
                 })
             .style( {   // be explicit about the font specs:
                 "stroke-width": "0", // positive stroke-width makes letters fuzzy
@@ -620,25 +636,25 @@ function render_sankey(nodes_in, flows_in, config_in) {
                 "font-weight": config_in.font_weight,
                 fill:          config_in.font_color
                 } )
-            // Refine the placement of nodes:
+            // Move the labels, potentially:
             .filter(
                 // (filter = If this function returns TRUE, then the lines
                 // after this step are executed.)
                 // Check if this label should be right-of-node instead:
                 function (d) {
-                    // First check if the user has set a simple rule for all:
+                    // First, has the user set a simple rule for all?
                     return config_in.label_pos === "all_left"  ? 0
                         :  config_in.label_pos === "all_right" ? 1
-                        // Otherwise: if the x-coordinate of the item is in the
-                        // left half of the graph, relocate the label to begin
-                        // to the RIGHT of the node.
-                        // Here x is adjusted by a node_width to make the
-                        // *exact* middle of the diagram put labels to the left:
+                        // Otherwise: if the node's x-coordinate is in the
+                        // left half of the graph, relocate the label to
+                        // appear to the RIGHT of the node.
+                        // (Here x is nudged by a node_width to make the
+                        // *exact* middle of the diagram have left labels:
                         :  (( d.x + node_width ) < ( graph_width / 2 ));
                 })
-            // Here is where the label is actually moved to the right:
-            .attr("x", 6 + node_width)
-            .attr("text-anchor", "start");
+                // Here is where the label is actually moved to the right:
+                .attr("x", function(d) { return ep(d.x + node_width + 6); })
+                .attr("text-anchor", "start");
     }
 }  // end of render_sankey
 
