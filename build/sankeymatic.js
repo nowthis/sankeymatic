@@ -574,11 +574,15 @@ function render_sankey(nodes_in, flows_in, config_in) {
 
     // Set up NODE info, including drag behavior:
     node = main_diagram.append("g")
-        .attr("id","sankey_nodes")
-        .selectAll(".node")
-        .data(final_json.nodes)
-        .enter()
-        .append("g")
+        .attr({
+            id: "sankey_nodes",
+            "shape-rendering": "crispEdges"
+            })
+        .style("stroke-width", config_in.node_border || 0)
+      .selectAll(".node")
+      .data(final_json.nodes)
+      .enter()
+      .append("g")
         .attr("class", "node")
         .call(d3.behavior.drag()
             .origin(function (d) { return d; })
@@ -595,8 +599,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
             width: node_width,
             // Give a unique ID & class to each rect that we can reference:
             id: function(d) { return "r" + d.index; },
-            "class": function(d) { return "for_r" + d.index },
-            "shape-rendering": "crispEdges"
+            "class": function(d) { return "for_r" + d.index }
             })
         // we made sure above there will be a color defined:
         .style({
@@ -604,7 +607,6 @@ function render_sankey(nodes_in, flows_in, config_in) {
             "fill-opacity": function (d) {
                 return d.opacity || config_in.default_node_opacity;
                 },
-            "stroke-width": config_in.node_border || 0,
             stroke: function (d) { return d3.rgb(d.color).darker(2); }
             })
       // Add tooltips showing node totals:
