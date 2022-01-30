@@ -75,25 +75,19 @@ function ep(x) { return Number(x.toFixed(5)).toString(); }
 function fix_separators(n, seps) {
     // If desired format is not the US default, perform hacky-but-functional swap:
     return ( seps.thousands !== ","
-        ?  // 3-step swap using ! as the placeholder:
-            n.replace(/,/g, "!")
-             .replace(/\./g, seps.decimal)
-             .replace(/!/g, seps.thousands)
+        // 3-step swap using ! as the placeholder:
+        ? n.replace(/,/g, "!")
+           .replace(/\./g, seps.decimal)
+           .replace(/!/g, seps.thousands)
         : n );
 }
 
 // format_a_value: produce a fully prefixed, suffixed, & separated number for display:
 function format_a_value(number_in, places, separators, prefix, suffix,
     display_full_precision) {
-    var number_portion =
-        fix_separators(
-            d3.format( ",." + places + "f" )(number_in),
-            separators );
-    return prefix
-        + ( display_full_precision
-            ? number_portion
-            : remove_zeroes(number_portion) )
-        + suffix;
+    let n = d3.format(`,.${places}f`)(number_in);
+    if (!display_full_precision) { n = remove_zeroes(n); }
+    return prefix + fix_separators(n, separators) + suffix;
 }
 
 // radio_value: given a field name, get the value of the checked radio button
@@ -128,9 +122,8 @@ function make_diagram_blank(w, h, background_transparent) {
 // render_png: Build a PNG file in the background
 function render_png(curdate) {
     let chart_el = document.getElementById("chart"),
-        // Btw, this is a horrible way to get the original size of the chart...
-        orig_w = Number( chart_el.style.width.replace(/px/,'') ),
-        orig_h = Number( chart_el.style.height.replace(/px/,'') ),
+        orig_w = chart_el.clientWidth,
+        orig_h = chart_el.clientHeight,
         // What scale does the user want (1,2,4,6)?:
         scale_factor = clamp(document.getElementById("scale_x").value,1,6),
         scaled_w = orig_w * scale_factor,
@@ -1088,19 +1081,18 @@ glob.process_sankey = function () {
 
     // Interpret user's number format settings:
     (["number_format"]).forEach( function(field_name) {
-        var seps = { thousands: ",", decimal: "." },
-            field_val = document.getElementById(field_name).value;
+        var field_val = document.getElementById(field_name).value;
         if (field_val.length === 2 && ( /^[,.\ X][,.]$/.exec(field_val) ) ) {
             // Grab the 1st character if it's a valid 'thousands' value:
-            seps.thousands = (/^[,.\ X]/.exec(field_val))[0];
-            // Handle the case of No Separator:
-            if (seps.thousands === "X") { seps.thousands = ""; }
+            const new_thousands = (/^[,.\ X]/.exec(field_val))[0];
+            // No Separator (X) is a special case:
+            approved_config.seps.thousands =
+               new_thousands === "X" ? "" : new_thousands;
             // Grab the 2nd character if it's a valid 'decimal' value:
-            seps.decimal = (/^.([,.])/.exec(field_val))[1];
+            approved_config.seps.decimal = (/^.([,.])/.exec(field_val))[1];
         } else {
             reset_field(field_name);
         }
-        approved_config.seps = seps;
     });
 
     // RADIO VALUES:
