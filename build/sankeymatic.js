@@ -102,7 +102,7 @@ function radio_value(radio_input_name) {
 }
 
 // svg_background_class:
-//  Generate the class clause for the svg's background:
+// Generate the class clause for the svg's background:
 function svg_background_class(transparent) {
     return 'svg_background_' + (transparent ? 'transparent' : 'default');
 }
@@ -134,7 +134,7 @@ function render_png(curdate) {
         // Set up the values Canvg will need:
         canvas_context = canvas_el.getContext("2d"),
         svg_el = document.getElementById("sankey_svg"),
-        svg_content  = ( new XMLSerializer() ).serializeToString(svg_el),
+        svg_content = ( new XMLSerializer() ).serializeToString(svg_el),
         // More targets we'll be changing on the page:
         png_link_el = document.getElementById("download_png_link"),
         img_tag_w_el = document.getElementById("img_tag_hint_w"),
@@ -150,7 +150,7 @@ function render_png(curdate) {
         canvg_obj;
 
     // Set the canvas element to the final height/width the user wants:
-    canvas_el.width  = scaled_w;
+    canvas_el.width = scaled_w;
     canvas_el.height = scaled_h;
 
     // Update img tag hint with user's original dimensions:
@@ -164,7 +164,7 @@ function render_png(curdate) {
             ignoreMouse: true,
             ignoreAnimation: true,
             ignoreDimensions: true, // DON'T make the canvas size match the svg
-            scaleWidth:  scaled_w,
+            scaleWidth: scaled_w,
             scaleHeight: scaled_h,
             offsetX: x_offset,
             offsetY: y_offset
@@ -252,7 +252,7 @@ function flatFlowPathMaker(f) {
 // Called after the initial draw & when the user chooses a new PNG resolution
 glob.render_exportable_outputs = function () {
     // Reset the existing export output areas:
-    var png_link_el   = document.getElementById("download_png_link"),
+    var png_link_el = document.getElementById("download_png_link"),
         svg_export_el = document.getElementById("svg_for_export"),
         current_date = new Date();
 
@@ -346,88 +346,77 @@ glob.reset_graph = function (graphname) {
     return null;
 };
 
-// render_sankey: given nodes, flows, and other config, UPDATE THE DIAGRAM:
-function render_sankey(nodes_in, flows_in, config_in) {
-    var graph_width, graph_height, colorset,
-        d3_color_scale, main_diagram, sankey_obj,
-        link,       // reference to all the flow paths drawn
+// render_sankey: given nodes, flows, and other config, MAKE THE SVG DIAGRAM:
+function render_sankey(all_nodes, all_flows, cfg) {
+    var graph_w, graph_h, sankey_obj, d3_color_scale_fn,
         flow_path_fn, // holds the path-generating function
-        node,       // reference to all the nodes drawn
-        node_width    = config_in.node_width,
-        node_padding  = config_in.node_padding,
-        total_width   = config_in.canvas_width,
-        total_height  = config_in.canvas_height,
-        margin_top    = config_in.top_margin,
-        margin_bottom = config_in.bottom_margin,
-        margin_left   = config_in.left_margin,
-        margin_right  = config_in.right_margin,
-        separators    = config_in.seps,
-        curvature     = config_in.curvature,
+        diag_main,    // primary d3 selection of the graph
+        diag_flows,   // d3 selection of all flow paths
+        diag_nodes,   // ...all nodes
         // Drawing curves with curvature of <= 0.1 looks bad and produces visual
         // artifacts, so let's just take the lowest value on the slider (0.1)
         // and call that 0/flat:
-        flat_flows    = (curvature <= 0.1);
+        flat_flows = (cfg.curvature <= 0.1);
 
     // units_format: produce a fully prefixed/suffixed/separated number string:
     function units_format(n) {
         return format_a_value(n,
-            config_in.max_places, separators,
-            config_in.unit_prefix, config_in.unit_suffix,
-            config_in.display_full_precision);
+            cfg.max_places, cfg.seps,
+            cfg.unit_prefix, cfg.unit_suffix,
+            cfg.display_full_precision);
     };
 
     // make sure valid values are in these fields:
-    config_in.unit_prefix =
-        ( typeof config_in.unit_prefix === "undefined"
-            ||   config_in.unit_prefix === null )
-            ? "" : config_in.unit_prefix;
-    config_in.unit_suffix =
-        ( typeof config_in.unit_suffix === "undefined"
-            ||   config_in.unit_suffix === null)
-            ? "" : config_in.unit_suffix;
+    cfg.unit_prefix =
+        ( typeof cfg.unit_prefix === "undefined"
+            ||   cfg.unit_prefix === null )
+            ? "" : cfg.unit_prefix;
+    cfg.unit_suffix =
+        ( typeof cfg.unit_suffix === "undefined"
+            ||   cfg.unit_suffix === null)
+            ? "" : cfg.unit_suffix;
 
-    separators.thousands =
-        ( typeof separators.thousands === "undefined"
-            ||   separators.thousands === null )
-            ? "," : separators.thousands;
-    separators.decimal =
-        ( typeof separators.decimal === "undefined"
-            ||   separators.decimal === null )
-            ? "." : separators.decimal;
+    cfg.seps.thousands =
+        ( typeof cfg.seps.thousands === "undefined"
+            ||   cfg.seps.thousands === null )
+            ? "," : cfg.seps.thousands;
+    cfg.seps.decimal =
+        ( typeof cfg.seps.decimal === "undefined"
+            ||   cfg.seps.decimal === null )
+            ? "." : cfg.seps.decimal;
 
     // Set the dimensions of the space:
     // (This will get much more complicated once we start auto-fitting labels.)
-    graph_width  = total_width  - margin_left - margin_right;
-    graph_height = total_height - margin_top  - margin_bottom;
+    graph_w = cfg.canvas_width  - cfg.left_margin - cfg.right_margin;
+    graph_h = cfg.canvas_height - cfg.top_margin  - cfg.bottom_margin;
 
     // Clear out any old contents:
     make_diagram_blank(
-      total_width, total_height,
-      config_in.background_transparent);
+      cfg.canvas_width, cfg.canvas_height,
+      cfg.background_transparent);
 
     // Select the svg canvas, set the defined dimensions:
-    main_diagram = d3.select("#sankey_svg")
-        .attr("width", total_width)
-        .attr("height", total_height)
-        .attr("class",
-            svg_background_class(config_in.background_transparent));
+    diag_main = d3.select("#sankey_svg")
+        .attr("width", cfg.canvas_width)
+        .attr("height", cfg.canvas_height)
+        .attr("class", svg_background_class(cfg.background_transparent));
 
     // If a background color is defined, add a backing rectangle with that color:
-    if (config_in.background_transparent != 1) {
+    if (cfg.background_transparent != 1) {
         // Note: This just adds the rectangle *without* changing the d3
-        // selection stored in main_diagram:
-        main_diagram.append("rect")
+        // selection stored in diag_main:
+        diag_main.append("rect")
             .attr({
-                height: total_height,
-                width: total_width,
-                fill: config_in.background_color
+                height: cfg.canvas_height,
+                width: cfg.canvas_width,
+                fill: cfg.background_color
                 });
     }
 
     // Add a [g]roup which moves the remaining diagram inward based on the
     // user's margins:
-    main_diagram = main_diagram.append("g")
-        .attr("transform", "translate(" + margin_left + "," + margin_top + ")");
+    diag_main = diag_main.append("g")
+        .attr("transform", "translate(" + cfg.left_margin + "," + cfg.top_margin + ")");
 
     // What color is a flow?
     function flow_final_color(f) {
@@ -438,74 +427,69 @@ function render_sankey(nodes_in, flows_in, config_in) {
         // 4. default flow color
         return f.color ? f.color
             : f.source.inherit_right ? f.source.color
-            : f.target.inherit_left  ? f.target.color
-            : config_in.default_flow_inherit === "source" ? f.source.color
-            : config_in.default_flow_inherit === "target" ? f.target.color
-            : config_in.default_flow_color;
+            : f.target.inherit_left ? f.target.color
+            : cfg.default_flow_inherit === "source" ? f.source.color
+            : cfg.default_flow_inherit === "target" ? f.target.color
+            : cfg.default_flow_color;
     }
 
     // What is the normal opacity for a flow?
     function flow_normal_opacity(f) {
-        return f.opacity || config_in.default_flow_opacity;
+        return f.opacity || cfg.default_flow_opacity;
     }
 
     // What is the opacity when a user hovers over this flow?
     function flow_hover_opacity(f) {
         return f.opacity_on_hover ||
-            ( Number(config_in.default_flow_opacity) + 1 ) / 2;
+            ( Number(cfg.default_flow_opacity) + 1 ) / 2;
     }
 
     // Establish a list of 20 compatible colors to choose from:
-    colorset = config_in.default_node_colorset;
-    d3_color_scale
-        = colorset === "A" ? d3.scale.category20()
-        : colorset === "B" ? d3.scale.category20b()
+    d3_color_scale_fn
+        = cfg.default_node_colorset === "A" ? d3.scale.category20()
+        : cfg.default_node_colorset === "B" ? d3.scale.category20b()
         : d3.scale.category20c();
 
     // Fill in any un-set node colors up front so flows can inherit colors from them:
-    nodes_in.forEach( function(node) {
+    all_nodes.forEach( function(node) {
         if (typeof node.color === 'undefined' || node.color === '') {
-            if (colorset === "none") {
-                node.color = config_in.default_node_color;
+            if (cfg.default_node_colorset === "none") {
+                node.color = cfg.default_node_color;
             } else {
                 // Use the first word of the label as the basis for
                 // finding an already-used color or picking a new one (case sensitive!)
                 // If there are no 'word' characters, substitute a word-ish value
                 // (rather than crash):
                 var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
-                node.color = d3_color_scale(first_word);
+                node.color = d3_color_scale_fn(first_word);
             }
         }
     });
 
-    var final_json = {
-        nodes: nodes_in,
-        links: flows_in
-    };
-
     // Create the sankey object & its properties.
-    // This will MODIFY the nodes and links objects contained in final_json.
+    // NOTE: This will further MODIFY the all_nodes and all_flows objects,
+    // filling in specifics about layout positions, etc.
     sankey_obj = d3.sankey()
-        .nodeWidth(node_width)
-        .nodePadding(node_padding)
-        .size([graph_width, graph_height])
-        .nodes(final_json.nodes)
-        .links(final_json.links)
-        .rightJustifyEndpoints(config_in.justify_ends)
-        .leftJustifyOrigins(config_in.justify_origins)
+        .nodeWidth(cfg.node_width)
+        .nodePadding(cfg.node_padding)
+        .size([graph_w, graph_h])
+        .nodes(all_nodes)
+        .links(all_flows)
+        .rightJustifyEndpoints(cfg.justify_ends)
+        .leftJustifyOrigins(cfg.justify_origins)
         .layout(50); // Note: The 'layout()' step must be LAST.
 
     // flow_path_fn is a function returning coordinates and specs for each flow
     // The function when flows are flat is different from the curve function.
     flow_path_fn = flat_flows
         ? flatFlowPathMaker
-        : curvedFlowPathFunction(curvature);
+        : curvedFlowPathFunction(cfg.curvature);
 
-    // Set up the rendered flows in SVG:
-    link = main_diagram.append("g")
+    // Set up the [g]roup of rendered flows:
+    diag_flows = diag_main.append("g")
         .attr("id","sankey_flows")
       .selectAll(".link")
-      .data(final_json.links)
+      .data(all_flows)
       .enter()
       .append("path")
         .attr({
@@ -530,19 +514,19 @@ function render_sankey(nodes_in, flows_in, config_in) {
     if (flat_flows) {
         // When flows have no curvature at all, they're really parallelograms.
         // The fill is the main source of color then:
-       link.style("fill", function (d) { return flow_final_color(d); })
+       diag_flows.style("fill", function (d) { return flow_final_color(d); })
             // We add a little bit of a stroke because the outermost flows look
             // overly thin otherwise. (They still can, even with this addition.)
            .style("stroke-width", 0.5);
     } else {
         // When curved, there is no fill, only stroke-width:
-        link.style("fill", "none")
+        diag_flows.style("fill", "none")
             // Make sure any flow, no matter how small, is visible (1px wide):
             .style("stroke-width", function (d) { return ep(Math.max(1, d.dy)); });
     }
 
     // Add a tooltip for each flow:
-    link.append("title")
+    diag_flows.append("title")
         .text(function (d) {
             return `${d.source.name} → ${d.target.name}:\n${units_format(d.value)}`;
         });
@@ -551,8 +535,8 @@ function render_sankey(nodes_in, flows_in, config_in) {
     function dragmove(d) {
         // Move the node to where the drag has taken it (halting at the edges
         // of the graph):
-        d.x = Math.max(0, Math.min(graph_width - d.dx, d3.event.x));
-        d.y = Math.max(0, Math.min(graph_height - d.dy, d3.event.y));
+        d.x = Math.max(0, Math.min(graph_w - d.dx, d3.event.x));
+        d.y = Math.max(0, Math.min(graph_h - d.dy, d3.event.y));
         // Calculate the offsets for the new position:
         const move_x = d.x - d.orig_x,
             move_y = d.y - d.orig_y;
@@ -565,22 +549,22 @@ function render_sankey(nodes_in, flows_in, config_in) {
         sankey_obj.relayout();
         // For every flow, update its 'd' path attribute with the new
         // calculated path:
-        link.attr("d", flow_path_fn);
+        diag_flows.attr("d", flow_path_fn);
 
         // Regenerate the export versions, now incorporating the drag:
         glob.render_exportable_outputs();
         return null;
     }
 
-    // Set up NODE info, including drag behavior:
-    node = main_diagram.append("g")
+    // Set up the [g]roup of nodes, including drag behavior:
+    diag_nodes = diag_main.append("g")
         .attr({
             id: "sankey_nodes",
             "shape-rendering": "crispEdges"
             })
-        .style("stroke-width", config_in.node_border || 0)
+        .style("stroke-width", cfg.node_border || 0)
       .selectAll(".node")
-      .data(final_json.nodes)
+      .data(all_nodes)
       .enter()
       .append("g")
         .attr("class", "node")
@@ -591,12 +575,12 @@ function render_sankey(nodes_in, flows_in, config_in) {
             );
 
     // Construct the actual rectangles for NODEs:
-    node.append("rect")
+    diag_nodes.append("rect")
         .attr( {
             x: function (d) { return ep(d.x); },
             y: function (d) { return ep(d.y); },
             height: function (d) { return ep(d.dy); },
-            width: node_width,
+            width: cfg.node_width,
             // Give a unique ID & class to each rect that we can reference:
             id: function(d) { return "r" + d.index; },
             "class": function(d) { return "for_r" + d.index }
@@ -605,7 +589,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
         .style({
             fill: function (d) { return d.color; },
             "fill-opacity": function (d) {
-                return d.opacity || config_in.default_node_opacity;
+                return d.opacity || cfg.default_node_opacity;
                 },
             stroke: function (d) { return d3.rgb(d.color).darker(2); }
             })
@@ -615,18 +599,18 @@ function render_sankey(nodes_in, flows_in, config_in) {
             return `${d.name}:\n${units_format(d.value)}`;
         });
 
-    if ( config_in.show_labels ) {
+    if ( cfg.show_labels ) {
         // Add labels in a layer on the top (so nodes can't cover them up)
-        main_diagram.append("g")
+        diag_main.append("g")
             .attr("id","sankey_labels")
             .style( {   // These font spec defaults apply to all labels within
-                "font-family": config_in.font_face,
-                "font-size":   config_in.font_size + "px",
-                "font-weight": config_in.font_weight,
-                fill:          config_in.font_color
+                "font-family": cfg.font_face,
+                "font-size":   cfg.font_size + "px",
+                "font-weight": cfg.font_weight,
+                fill:          cfg.font_color
                 })
           .selectAll()
-          .data(final_json.nodes)
+          .data(all_nodes)
           .enter()
           .append("text")
             .attr( {
@@ -642,7 +626,7 @@ function render_sankey(nodes_in, flows_in, config_in) {
                 })
             .text(function (d) {
                 return d.name
-                        + ( config_in.include_values_in_node_labels
+                        + ( cfg.include_values_in_node_labels
                             ? ": " + units_format(d.value)
                             : "" );
                 })
@@ -653,20 +637,20 @@ function render_sankey(nodes_in, flows_in, config_in) {
             // Check if this label should be right-of-node instead:
             function (d) {
                 // First, has the user set a simple rule for all?
-                return config_in.label_pos === "all_left"  ? 0
-                    :  config_in.label_pos === "all_right" ? 1
+                return cfg.label_pos === "all_left"  ? 0
+                    :  cfg.label_pos === "all_right" ? 1
                     // Otherwise: if the node's x-coordinate is in the
                     // left half of the graph, relocate the label to
                     // appear to the RIGHT of the node.
                     // (Here x is nudged by a node_width to make the
                     // *exact* middle of the diagram have left labels:
-                    :  (( d.x + node_width ) < ( graph_width / 2 ));
+                    :  (( d.x + cfg.node_width ) < ( graph_w / 2 ));
             })
             // Here is where the label is actually moved to the right:
-            .attr("x", function(d) { return ep(d.x + node_width + 6); })
+            .attr("x", function(d) { return ep(d.x + cfg.node_width + 6); })
             .attr("text-anchor", "start");
     }
-}  // end of render_sankey
+} // end of render_sankey
 
 // MAIN FUNCTION:
 // Gather inputs from user; validate them; render updated diagram
@@ -687,7 +671,7 @@ glob.process_sankey = function () {
         imbalances_el = document.getElementById("imbalances"),
         imbalance_msg_el = document.getElementById("imbalance_messages"),
         flow_cross_check_el = document.getElementById("flow_cross_check"),
-        raw_source  = document.getElementById("flows_in").value;
+        raw_source = document.getElementById("flows_in").value;
 
     // Define utility functions:
 
@@ -715,7 +699,7 @@ glob.process_sankey = function () {
     // 'places' param)
     function unit_fy(number_in, places) {
         return format_a_value(number_in,
-            ( places || max_places ),  approved_config.seps,
+            ( places || max_places ), approved_config.seps,
             approved_config.unit_prefix, approved_config.unit_suffix,
             approved_config.display_full_precision);
     }
@@ -872,7 +856,7 @@ glob.process_sankey = function () {
         default_node_opacity: 0.9,
         node_width: 8,
         node_padding: 18,
-        node_border:   0,
+        node_border: 0,
         reverse_graph: 0,
         justify_origins: 0,
         justify_ends: 0,
