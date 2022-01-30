@@ -365,38 +365,11 @@ function render_sankey(all_nodes, all_flows, cfg) {
             cfg.display_full_precision);
     };
 
-    // Set the dimensions of the space:
-    // (This will get much more complicated once we start auto-fitting labels.)
-    graph_w = cfg.canvas_width  - cfg.left_margin - cfg.right_margin;
-    graph_h = cfg.canvas_height - cfg.top_margin  - cfg.bottom_margin;
-
-    // Clear out any old contents:
-    make_diagram_blank(
-      cfg.canvas_width, cfg.canvas_height,
-      cfg.background_transparent);
-
-    // Select the svg canvas, set the defined dimensions:
-    diag_main = d3.select("#sankey_svg")
-        .attr("width", cfg.canvas_width)
-        .attr("height", cfg.canvas_height)
-        .attr("class", svg_background_class(cfg.background_transparent));
-
-    // If a background color is defined, add a backing rectangle with that color:
-    if (cfg.background_transparent != 1) {
-        // Note: This just adds the rectangle *without* changing the d3
-        // selection stored in diag_main:
-        diag_main.append("rect")
-            .attr({
-                height: cfg.canvas_height,
-                width: cfg.canvas_width,
-                fill: cfg.background_color
-                });
-    }
-
-    // Add a [g]roup which moves the remaining diagram inward based on the
-    // user's margins:
-    diag_main = diag_main.append("g")
-        .attr("transform", "translate(" + cfg.left_margin + "," + cfg.top_margin + ")");
+    // flow_path_fn is a function returning coordinates and specs for each flow
+    // The function when flows are flat is different from the curve function.
+    flow_path_fn = flat_flows
+        ? flatFlowPathMaker
+        : curvedFlowPathFunction(cfg.curvature);
 
     // What color is a flow?
     function flow_final_color(f) {
@@ -446,6 +419,13 @@ function render_sankey(all_nodes, all_flows, cfg) {
         }
     });
 
+    // At this point, all_nodes and all_flows are ready to go.
+
+    // Set the dimensions of the space:
+    // (This will get much more complicated once we start auto-fitting labels.)
+    graph_w = cfg.canvas_width - cfg.left_margin - cfg.right_margin;
+    graph_h = cfg.canvas_height - cfg.top_margin - cfg.bottom_margin;
+
     // Create the sankey object & its properties.
     // NOTE: This will further MODIFY the all_nodes and all_flows objects,
     // filling in specifics about layout positions, etc.
@@ -459,12 +439,40 @@ function render_sankey(all_nodes, all_flows, cfg) {
         .leftJustifyOrigins(cfg.justify_origins)
         .layout(50); // Note: The 'layout()' step must be LAST.
 
-    // flow_path_fn is a function returning coordinates and specs for each flow
-    // The function when flows are flat is different from the curve function.
-    flow_path_fn = flat_flows
-        ? flatFlowPathMaker
-        : curvedFlowPathFunction(cfg.curvature);
+    // Draw!
 
+    // Clear out any old contents:
+    make_diagram_blank(cfg.canvas_width, cfg.canvas_height,
+        cfg.background_transparent);
+
+    // Select the svg canvas, set the defined dimensions:
+    diag_main = d3.select("#sankey_svg")
+        .attr({
+            height: cfg.canvas_height,
+            width: cfg.canvas_width,
+            "class": svg_background_class(cfg.background_transparent)
+            });
+
+    // If a background color is defined, add a backing rectangle with that color:
+    if (cfg.background_transparent != 1) {
+        // Note: This just adds the rectangle *without* changing the d3
+        // selection stored in diag_main:
+        diag_main.append("rect")
+            .attr({
+                height: cfg.canvas_height,
+                width: cfg.canvas_width,
+                fill: cfg.background_color
+                });
+    }
+
+    // Add a [g]roup which moves the remaining diagram inward based on the
+    // user's margins.
+    // d3 hint: We update the diag_main selection with the result here because
+    // all of the rest of the additions to the SVG will be contained *inside*
+    // this group.
+    diag_main = diag_main.append("g")
+        .attr("transform", `translate(${cfg.left_margin},${cfg.top_margin})`);
+ 
     // Set up the [g]roup of rendered flows:
     diag_flows = diag_main.append("g")
         .attr("id","sankey_flows")
@@ -580,7 +588,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         });
 
     if ( cfg.show_labels ) {
-        // Add labels in a layer on the top (so nodes can't cover them up)
+        // Add labels in a distinct layer on the top (so nodes can't block them)
         diag_main.append("g")
             .attr("id","sankey_labels")
             .style( {   // These font spec defaults apply to all labels within
@@ -594,13 +602,13 @@ function render_sankey(all_nodes, all_flows, cfg) {
           .enter()
           .append("text")
             .attr( {
-                x: function (d) { return ep(-6 + d.x); },
+                // Anchor the text to the left, ending at the node:
+                "text-anchor": "end",
+                x: function (d) { return ep(d.x + -6); },
                 y: function (d) { return ep(d.y + d.dy/2); },
                 // Move letters down by 1/3 of a wide letter's width
                 // (makes them look vertically centered)
                 dy: ".35em",
-                // Anchor the text to the left, ending at the node:
-                "text-anchor": "end",
                 // Associate this label with its node:
                 "class": function(d) { return "for_r" + d.index }
                 })
@@ -627,8 +635,10 @@ function render_sankey(all_nodes, all_flows, cfg) {
                     :  (( d.x + cfg.node_width ) < ( graph_w / 2 ));
             })
             // Here is where the label is actually moved to the right:
-            .attr("x", function(d) { return ep(d.x + cfg.node_width + 6); })
-            .attr("text-anchor", "start");
+            .attr({
+                "text-anchor": "start",
+                x: function(d) { return ep(d.x + cfg.node_width + 6); }
+                });
     }
 } // end of render_sankey
 
