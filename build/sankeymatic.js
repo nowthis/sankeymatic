@@ -35,6 +35,12 @@ function is_numeric(n) {
     return n - parseFloat(n) >= 0;
 }
 
+// clamp:
+// Ensure a numeric value is between two limits. Default to min if not numeric.
+function clamp(n, min, max) {
+    return is_numeric(n) ? Math.min(Math.max(n,min),max) : min;
+}
+
 // escape_html: make any input string safe to display
 function escape_html(unsafe_string) {
     return unsafe_string
@@ -125,8 +131,8 @@ function render_png(curdate) {
         // Btw, this is a horrible way to get the original size of the chart...
         orig_w = Number( chart_el.style.width.replace(/px/,'') ),
         orig_h = Number( chart_el.style.height.replace(/px/,'') ),
-        // What scale does the user want (1,2,4)?:
-        scale_factor = radio_value("scale_x") || 1,
+        // What scale does the user want (1,2,4,6)?:
+        scale_factor = clamp(document.getElementById("scale_x").value,1,6),
         scaled_w = orig_w * scale_factor,
         scaled_h = orig_h * scale_factor,
         // Find the (hidden) canvas element in our page:
