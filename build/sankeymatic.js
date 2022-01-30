@@ -214,36 +214,36 @@ function produce_svg_code(curdate) {
 // Used for the "d" attribute on a "path" element when curvature > 0
 function curvedFlowPathFunction(curvature) {
     return function(f) {
-        const xs = f.source.x + f.source.dx, // trailing edge of source node
-            xt = f.target.x,                      // leading edge of target node
-            ys = f.source.y + f.sy + f.dy/2, // center of source flow
-            yt = f.target.y + f.ty + f.dy/2, // center of target flow
+        const xs = f.source.x + f.source.dx,  // source's trailing edge
+            xt = f.target.x,                  // target's leading edge
+            ysc = f.source.y + f.sy + f.dy/2, // source flow center
+            ytc = f.target.y + f.ty + f.dy/2, // target flow center
             // Set up a function for interpolating between the two x values:
             xinterpolate = d3.interpolateNumber(xs, xt),
             // Pick 2 curve control points given the curvature & its converse:
             xc1 = xinterpolate(curvature),
             xc2 = xinterpolate(1 - curvature);
         // This SVG Path spec means:
-        // [M]ove to xs,ys, then draw a Bezier [C]urve using xc1,ys + xc2,yt,
-        // ending at xt,yt
-        return `M${ep(xs)} ${ep(ys)}C${ep(xc1)} ${ep(ys)} ${ep(xc2)} ${ep(yt)} ${ep(xt)} ${ep(yt)}`;
+        // [M]ove to the center of the flow's start
+        // Draw a Bezier [C]urve using control points (xc1,ysc) + (xc2,ytc)
+        // End at the center of the flow's target
+        return `M${ep(xs)} ${ep(ysc)}C${ep(xc1)} ${ep(ysc)}`
+            + ` ${ep(xc2)} ${ep(ytc)} ${ep(xt)} ${ep(ytc)}`;
     }
 };
 
 // FLAT path function:
 // Used for the "d" attribute on a "path" element when curvature = 0
 function flatFlowPathMaker(f) {
-    const xs = f.source.x + f.source.dx, // trailing edge of source node
-        xt = f.target.x,                      // leading edge of target node
-        ys_top = f.source.y + f.sy,           // top of source flow
-        ys_bot = f.source.y + f.sy + f.dy, // bottom of source flow
-        yt_top = f.target.y + f.ty,           // top of target flow;
-        yt_bot = f.target.y + f.ty + f.dy; // bottom of target flow;
+    const xs = f.source.x + f.source.dx,   // source's trailing edge
+        xt = f.target.x,                   // target's leading edge
+        ys_top = f.source.y + f.sy,        // source flow top
+        yt_bot = f.target.y + f.ty + f.dy; // target flow bottom
     // This SVG Path spec means:
-    // [M]ove to the flow source's top, then draw [L]ines to:
-    // the target's top, the target's bottom, the source's bottom, then
-    // [z] = close the figure where it started.
-    return `M${ep(xs)} ${ep(ys_top)}L${ep(xt)} ${ep(yt_top)}L${ep(xt)} ${ep(yt_bot)}L${ep(xs)} ${ep(ys_bot)}z`;
+    // [M]ove to the flow source's top; draw a [v]ertical line down,
+    // a [L]ine to the opposite corner, a [v]ertical line up, then [z] close.
+    return `M${ep(xs)} ${ep(ys_top)}v${ep(f.dy)}`
+        + `L${ep(xt)} ${ep(yt_bot)}v-${ep(f.dy)}z`;
 };
 
 // render_exportable_outputs: Kick off a re-render of the static image and the
@@ -364,25 +364,6 @@ function render_sankey(all_nodes, all_flows, cfg) {
             cfg.unit_prefix, cfg.unit_suffix,
             cfg.display_full_precision);
     };
-
-    // make sure valid values are in these fields:
-    cfg.unit_prefix =
-        ( typeof cfg.unit_prefix === "undefined"
-            ||   cfg.unit_prefix === null )
-            ? "" : cfg.unit_prefix;
-    cfg.unit_suffix =
-        ( typeof cfg.unit_suffix === "undefined"
-            ||   cfg.unit_suffix === null)
-            ? "" : cfg.unit_suffix;
-
-    cfg.seps.thousands =
-        ( typeof cfg.seps.thousands === "undefined"
-            ||   cfg.seps.thousands === null )
-            ? "," : cfg.seps.thousands;
-    cfg.seps.decimal =
-        ( typeof cfg.seps.decimal === "undefined"
-            ||   cfg.seps.decimal === null )
-            ? "." : cfg.seps.decimal;
 
     // Set the dimensions of the space:
     // (This will get much more complicated once we start auto-fitting labels.)
@@ -1072,7 +1053,9 @@ glob.process_sankey = function () {
     // Verify valid plain strings:
     (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
-        if (field_val.length <= 10) {
+        if (typeof field_val !== "undefined"
+            && field_val !== null
+            && field_val.length <= 10) {
             approved_config[field_name] = field_val;
         } else {
             reset_field(field_name);
