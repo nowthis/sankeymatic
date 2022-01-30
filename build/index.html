@@ -110,9 +110,9 @@ Size &amp; Margins<span id="diagram_options_hint">:</span></h2>
 <label for="right_margin">Right</label>
 <input type="text" class="wholenumber" id="right_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="top_margin">Top</label>
-<input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="12" onchange="process_sankey();">
+<input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="18" onchange="process_sankey();">
 <label for="bottom_margin">Bot</label>
-<input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
+<input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="18" onchange="process_sankey();"></span>
 </p>
 
 </div>
@@ -351,6 +351,10 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 </p>
 <canvas id="png_preview" height="600" width="600" style="background-color: transparent; display: none;"></canvas>
 <div id="chartfooter">
+<p class="form_elements1 center_content">
+<label class="smalllabel"><input type="checkbox" id="mention_sankeymatic" value="1" onchange="process_sankey();" checked>
+Include &ldquo;Made with SankeyMATIC&rdquo;</label>
+</p>
 </div>
 <table id="messages" class="expandable_box">
 <tr><td><div id="messages_area"><h4>About this diagram</h4>

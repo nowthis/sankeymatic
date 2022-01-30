@@ -41,6 +41,20 @@ function clamp(n, min, max) {
     return is_numeric(n) ? Math.min(Math.max(n,min),max) : min;
 }
 
+// contrasting_gray_color:
+// Given any hex color, return a grayscale color which is lower-contrast than
+// pure black/white but still sufficient. (Used for less-important text.)
+function contrasting_gray_color(hc) {
+    const c = d3.rgb(hc),
+        yiq = (c.r * 299 + c.g * 587 + c.b * 114)/1000,
+        // Calculate a value sufficiently far away from this color.
+        // If it's bright-ish, make a dark gray; if dark-ish, make a light gray.
+        // This algorithm is far from exact! But it seems good enough.
+        // Lowest/highest values produced are 59 and 241.
+        gray = Math.floor(yiq > 164 ? (0.75 * yiq)-64 : (0.30 * yiq)+192);
+    return d3.rgb(gray, gray, gray);
+}
+
 // escape_html: make any input string safe to display
 function escape_html(unsafe_string) {
     return unsafe_string
@@ -230,7 +244,7 @@ function curvedFlowPathFunction(curvature) {
         return `M${ep(xs)} ${ep(ysc)}C${ep(xc1)} ${ep(ysc)}`
             + ` ${ep(xc2)} ${ep(ytc)} ${ep(xt)} ${ep(ytc)}`;
     }
-};
+}
 
 // FLAT path function:
 // Used for the "d" attribute on a "path" element when curvature = 0
@@ -244,7 +258,7 @@ function flatFlowPathMaker(f) {
     // a [L]ine to the opposite corner, a [v]ertical line up, then [z] close.
     return `M${ep(xs)} ${ep(ys_top)}v${ep(f.dy)}`
         + `L${ep(xt)} ${ep(yt_bot)}v-${ep(f.dy)}z`;
-};
+}
 
 // render_exportable_outputs: Kick off a re-render of the static image and the
 // user-copyable SVG code.
@@ -327,7 +341,7 @@ glob.reset_graph = function (graphname) {
         if (flows_match_a_sample) {
             // If the user has NOT changed the input from one of the samples,
             // just go ahead with the change:
-            reset_graph_confirmed();
+            glob.reset_graph_confirmed();
         } else {
             // Otherwise, show the warning and do NOT reset the graph:
             const warning_el = document.getElementById("reset_graph_warning");
@@ -352,6 +366,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         diag_main,    // primary d3 selection of the graph
         diag_flows,   // d3 selection of all flow paths
         diag_nodes,   // ...all nodes
+        diag_labels,  // ...all labels & titles
         // Drawing curves with curvature of <= 0.1 looks bad and produces visual
         // artifacts, so let's just take the lowest value on the slider (0.1)
         // and call that 0/flat:
@@ -363,7 +378,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
             cfg.max_places, cfg.seps,
             cfg.unit_prefix, cfg.unit_suffix,
             cfg.display_full_precision);
-    };
+    }
 
     // flow_path_fn is a function returning coordinates and specs for each flow
     // The function when flows are flat is different from the curve function.
@@ -587,17 +602,33 @@ function render_sankey(all_nodes, all_flows, cfg) {
             return `${d.name}:\n${units_format(d.value)}`;
         });
 
+    diag_labels = diag_main.append("g")
+        .attr("id","sankey_labels")
+        .style( {   // These font spec defaults apply to all labels within
+            "font-family": cfg.font_face,
+            "font-size":   cfg.font_size + "px",
+            "font-weight": cfg.font_weight,
+            fill:          cfg.font_color
+            });
+    if (cfg.mention_sankeymatic) {
+        diag_labels.append("text")
+            .attr( {
+                // Anchor the text to the midpoint of the graph:
+                "text-anchor": "middle",
+                x: graph_w/2,
+                y: graph_h + cfg.bottom_margin - 5
+                })
+            .style( { // Keep the current font, but make this small & grey:
+                "font-size":   "11px",
+                "font-weight": "400",
+                fill: contrasting_gray_color(cfg.background_color)
+                })
+            .text("Made with SankeyMATIC");
+    }
+
     if ( cfg.show_labels ) {
         // Add labels in a distinct layer on the top (so nodes can't block them)
-        diag_main.append("g")
-            .attr("id","sankey_labels")
-            .style( {   // These font spec defaults apply to all labels within
-                "font-family": cfg.font_face,
-                "font-size":   cfg.font_size + "px",
-                "font-weight": cfg.font_weight,
-                fill:          cfg.font_color
-                })
-          .selectAll()
+        diag_labels.selectAll()
           .data(all_nodes)
           .enter()
           .append("text")
@@ -657,7 +688,6 @@ glob.process_sankey = function () {
         colorset_in = '', labelpos_in = '', fontface_in = '',
         chart_el    = document.getElementById("chart"),
         messages_el = document.getElementById("messages_container"),
-        bgcolor_el  = document.getElementById("background_color"),
         imbalances_el = document.getElementById("imbalances"),
         imbalance_msg_el = document.getElementById("imbalance_messages"),
         flow_cross_check_el = document.getElementById("flow_cross_check"),
@@ -717,14 +747,11 @@ glob.process_sankey = function () {
 
     // MARK: UI updates based on user choices:
 
-    // Checking the 'Transparent' background-color box means that the color-picker is
-    // pointless, so disable that if the box is checked:
-    if (document.getElementById("background_transparent").checked) {
-      bgcolor_el.setAttribute("disabled","disabled");
-    } else {
-      // Re-enable it if the box is *not* checked:
-      bgcolor_el.removeAttribute("disabled");
-    }
+    // Checking the 'Transparent' background-color box *no longer* means that
+    // the color-picker is pointless; it still affects the color value which
+    // will be given to "Made with SankeyMATIC".
+    // Therefore, we no longer disable the Background Color element, even when
+    // 'Transparent' is checked.
 
     // If the user is setting Label positions to either left or right (i.e. not
     // 'auto'), show the margin hint:
@@ -844,6 +871,7 @@ glob.process_sankey = function () {
         top_margin: 12, right_margin: 12, bottom_margin: 12, left_margin: 12,
         default_flow_opacity: 0.4,
         default_node_opacity: 0.9,
+        mention_sankeymatic: 1,
         node_width: 8,
         node_padding: 18,
         node_border: 0,
@@ -1121,7 +1149,7 @@ glob.process_sankey = function () {
     // Checkboxes:
     (["display_full_precision", "include_values_in_node_labels",
         "show_labels", "background_transparent", "justify_origins",
-        "justify_ends"]).forEach( function(field_name) {
+        "justify_ends", "mention_sankeymatic"]).forEach( function(field_name) {
         approved_config[field_name] = document.getElementById(field_name).checked;
     });
 
