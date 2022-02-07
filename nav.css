@@ -1,6 +1,19 @@
+footer nav,
+header nav {
+  background-color: #035;
+  color: white;
+  padding: 3px 5px;
+  font-size: initial;
+}
+
 .manual_title {
   margin-top: 0;
   color: #047;
+}
+
+.skm_logo_small {
+  vertical-align: middle;
+  padding-bottom: 3px;
 }
 
 .main_nav_behavior {
@@ -27,13 +40,13 @@
 
 .main_nav_items ul {
   list-style-type: none;
-  padding: 10px;
+  padding: 0.1em 0.5em;
   margin: 0;
 }
 
 .main_nav_items ul li {
-  width: 20%;
   text-align: center;
+  padding-right: 2.5em;
 }
 
 .main_nav_items li a {
@@ -98,7 +111,7 @@
   .main_nav_behavior label {
     display: inline-block;
     color: white;
-    background: #036;
+    background: #035;
     font-style: normal;
     font-size: 1.2em;
     padding: 10px;
