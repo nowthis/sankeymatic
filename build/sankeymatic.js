@@ -5,7 +5,7 @@ by Steve Bogart (@nowthis; http://nowthis.com/; sbogart@sankeymatic.com)
 
 Requires:
     D3.js
-      - https://github.com/d3/d3 v2.10.3
+      - https://github.com/d3/d3 v7.3.0
     canvg.js
       - https://github.com/canvg/canvg v3.0.9
 */
@@ -412,25 +412,27 @@ function render_sankey(all_nodes, all_flows, cfg) {
             ( Number(cfg.default_flow_opacity) + 1 ) / 2;
     }
 
-    // Establish a list of 20 compatible colors to choose from:
-    d3_color_scale_fn
-        = cfg.default_node_colorset === "A" ? d3.scale.category20()
-        : cfg.default_node_colorset === "B" ? d3.scale.category20b()
-        : d3.scale.category20c();
+    // Establish a list of compatible colors to choose from:
+    if (cfg.default_node_colorset === "none") {
+        // Make a color array with just the one value:
+        d3_color_scale_fn = d3.scaleOrdinal([cfg.default_node_color]);
+    } else {
+        d3_color_scale_fn = d3.scaleOrdinal(
+            cfg.default_node_colorset === "A" ? d3.schemeCategory10
+          : cfg.default_node_colorset === "B" ? d3.schemeTableau10
+          : d3.schemeSet3
+        );
+    }
 
     // Fill in any un-set node colors up front so flows can inherit colors from them:
     all_nodes.forEach( function(node) {
         if (typeof node.color === 'undefined' || node.color === '') {
-            if (cfg.default_node_colorset === "none") {
-                node.color = cfg.default_node_color;
-            } else {
-                // Use the first word of the label as the basis for
-                // finding an already-used color or picking a new one (case sensitive!)
-                // If there are no 'word' characters, substitute a word-ish value
-                // (rather than crash):
-                var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
-                node.color = d3_color_scale_fn(first_word);
-            }
+            // Use the first word of the label as the basis for
+            // finding an already-used color or picking a new one (case sensitive!)
+            // If there are no 'word' characters, substitute a word-ish value
+            // (rather than crash):
+            var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
+            node.color = d3_color_scale_fn(first_word);
         }
     });
 
@@ -462,22 +464,18 @@ function render_sankey(all_nodes, all_flows, cfg) {
 
     // Select the svg canvas, set the defined dimensions:
     diag_main = d3.select("#sankey_svg")
-        .attr({
-            height: cfg.canvas_height,
-            width: cfg.canvas_width,
-            "class": svg_background_class(cfg.background_transparent)
-            });
+        .attr("height", cfg.canvas_height)
+        .attr("width", cfg.canvas_width)
+        .attr("class", svg_background_class(cfg.background_transparent));
 
     // If a background color is defined, add a backing rectangle with that color:
     if (cfg.background_transparent != 1) {
         // Note: This just adds the rectangle *without* changing the d3
         // selection stored in diag_main:
         diag_main.append("rect")
-            .attr({
-                height: cfg.canvas_height,
-                width: cfg.canvas_width,
-                fill: cfg.background_color
-                });
+            .attr("height", cfg.canvas_height)
+            .attr("width", cfg.canvas_width)
+            .attr("fill", cfg.background_color);
     }
 
     // Add a [g]roup which moves the remaining diagram inward based on the
@@ -495,14 +493,10 @@ function render_sankey(all_nodes, all_flows, cfg) {
       .data(all_flows)
       .enter()
       .append("path")
-        .attr({
-            "class": "link",
-            d: flow_path_fn // set the SVG path for each flow
-            })
-        .style({
-            stroke: function (d) { return flow_final_color(d); },
-            opacity: function (d) { return flow_normal_opacity(d); }
-            })
+        .attr("class", "link")
+        .attr("d", flow_path_fn) // set the SVG path for each flow
+        .style("stroke", d => flow_final_color(d))
+        .style("opacity", d => flow_normal_opacity(d))
       // add emphasis-on-hover behavior:
       .on('mouseover', function(d){
           d3.select(this).style( "opacity", flow_hover_opacity(d));
@@ -517,7 +511,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
     if (flat_flows) {
         // When flows have no curvature at all, they're really parallelograms.
         // The fill is the main source of color then:
-       diag_flows.style("fill", function (d) { return flow_final_color(d); })
+        diag_flows.style("fill", d => flow_final_color(d))
             // We add a little bit of a stroke because the outermost flows look
             // overly thin otherwise. (They still can, even with this addition.)
            .style("stroke-width", 0.5);
@@ -525,7 +519,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // When curved, there is no fill, only stroke-width:
         diag_flows.style("fill", "none")
             // Make sure any flow, no matter how small, is visible (1px wide):
-            .style("stroke-width", function (d) { return ep(Math.max(1, d.dy)); });
+            .style("stroke-width", d => ep(Math.max(1, d.dy)));
     }
 
     // Add a tooltip for each flow:
@@ -535,18 +529,18 @@ function render_sankey(all_nodes, all_flows, cfg) {
         });
 
     // Node-drag function definition:
-    function dragmove(d) {
+    function dragmove(event) {
         // Move the node to where the drag has taken it (halting at the edges
         // of the graph):
-        d.x = Math.max(0, Math.min(graph_w - d.dx, d3.event.x));
-        d.y = Math.max(0, Math.min(graph_h - d.dy, d3.event.y));
+        event.subject.x = Math.max(0, Math.min(graph_w - event.subject.dx, event.x));
+        event.subject.y = Math.max(0, Math.min(graph_h - event.subject.dy, event.y));
         // Calculate the offsets for the new position:
-        const move_x = d.x - d.orig_x,
-            move_y = d.y - d.orig_y;
+        const move_x = event.subject.x - event.subject.orig_x,
+            move_y = event.subject.y - event.subject.orig_y;
         // Find everything which shares the class of the dragged node and
         // translate it by the offsets:
         // (Currently this means the node and its label, if present.)
-        d3.selectAll(`#sankey_svg .for_r${d.index}`)
+        d3.selectAll(`#sankey_svg .for_r${event.subject.index}`)
             .attr("transform", `translate(${ep(move_x)},${ep(move_y)})`);
         // Recalculate all flow positions given this node's new position:
         sankey_obj.relayout();
@@ -561,41 +555,29 @@ function render_sankey(all_nodes, all_flows, cfg) {
 
     // Set up the [g]roup of nodes, including drag behavior:
     diag_nodes = diag_main.append("g")
-        .attr({
-            id: "sankey_nodes",
-            "shape-rendering": "crispEdges"
-            })
+        .attr("id", "sankey_nodes")
+        .attr("shape-rendering", "crispEdges")
         .style("stroke-width", cfg.node_border || 0)
       .selectAll(".node")
       .data(all_nodes)
       .enter()
       .append("g")
         .attr("class", "node")
-        .call(d3.behavior.drag()
-            .origin(function (d) { return d; })
-            .on("dragstart", function () { this.parentNode.appendChild(this); })
-            .on("drag", dragmove)
-            );
+        .call(d3.drag().on("drag", dragmove));
 
     // Construct the actual rectangles for NODEs:
     diag_nodes.append("rect")
-        .attr( {
-            x: function (d) { return ep(d.x); },
-            y: function (d) { return ep(d.y); },
-            height: function (d) { return ep(d.dy); },
-            width: cfg.node_width,
-            // Give a unique ID & class to each rect that we can reference:
-            id: function(d) { return "r" + d.index; },
-            "class": function(d) { return "for_r" + d.index }
-            })
+        .attr("x", d => ep(d.x))
+        .attr("y", d => ep(d.y))
+        .attr("height", d => ep(d.dy))
+        .attr("width", cfg.node_width)
+        // Give a unique ID & class to each rect that we can reference:
+        .attr("id", d => "r" + d.index)
+        .attr("class", d => "for_r" + d.index)
         // we made sure above there will be a color defined:
-        .style({
-            fill: function (d) { return d.color; },
-            "fill-opacity": function (d) {
-                return d.opacity || cfg.default_node_opacity;
-                },
-            stroke: function (d) { return d3.rgb(d.color).darker(2); }
-            })
+        .style("fill", d => d.color)
+        .style("fill-opacity", d => d.opacity || cfg.default_node_opacity)
+        .style("stroke", d => d3.rgb(d.color).darker(2))
       // Add tooltips showing node totals:
       .append("title")
         .text(function (d) {
@@ -604,25 +586,21 @@ function render_sankey(all_nodes, all_flows, cfg) {
 
     diag_labels = diag_main.append("g")
         .attr("id","sankey_labels")
-        .style( {   // These font spec defaults apply to all labels within
-            "font-family": cfg.font_face,
-            "font-size":   cfg.font_size + "px",
-            "font-weight": cfg.font_weight,
-            fill:          cfg.font_color
-            });
+        // These font spec defaults apply to all labels within
+        .style("font-family", cfg.font_face)
+        .style("font-size", cfg.font_size + "px")
+        .style("font-weight", cfg.font_weight)
+        .style("fill", cfg.font_color);
     if (cfg.mention_sankeymatic) {
         diag_labels.append("text")
-            .attr( {
-                // Anchor the text to the midpoint of the graph:
-                "text-anchor": "middle",
-                x: graph_w/2,
-                y: graph_h + cfg.bottom_margin - 5
-                })
-            .style( { // Keep the current font, but make this small & grey:
-                "font-size":   "11px",
-                "font-weight": "400",
-                fill: contrasting_gray_color(cfg.background_color)
-                })
+            // Anchor the text to the midpoint of the graph:
+            .attr("text-anchor", "middle")
+            .attr("x", graph_w/2)
+            .attr("y", graph_h + cfg.bottom_margin - 5)
+            // Keep the current font, but make this small & grey:
+            .style("font-size", "11px")
+            .style("font-weight", "400")
+            .style("fill", contrasting_gray_color(cfg.background_color))
             .text("Made with SankeyMATIC");
     }
 
@@ -632,23 +610,19 @@ function render_sankey(all_nodes, all_flows, cfg) {
           .data(all_nodes)
           .enter()
           .append("text")
-            .attr( {
-                // Anchor the text to the left, ending at the node:
-                "text-anchor": "end",
-                x: function (d) { return ep(d.x + -6); },
-                y: function (d) { return ep(d.y + d.dy/2); },
-                // Move letters down by 1/3 of a wide letter's width
-                // (makes them look vertically centered)
-                dy: ".35em",
-                // Associate this label with its node:
-                "class": function(d) { return "for_r" + d.index }
-                })
-            .text(function (d) {
-                return d.name
+            // Anchor the text to the left, ending at the node:
+            .attr("text-anchor", "end")
+            .attr("x", d => ep(d.x + -6))
+            .attr("y", d => ep(d.y + d.dy/2))
+            // Move letters down by 1/3 of a wide letter's width
+            // (makes them look vertically centered)
+            .attr("dy",".35em")
+            // Associate this label with its node:
+            .attr("class", d => "for_r" + d.index)
+            .text(d => d.name
                         + ( cfg.include_values_in_node_labels
                             ? ": " + units_format(d.value)
-                            : "" );
-                })
+                            : "" ))
           // Move the labels, potentially:
           .filter(
             // (filter = If this function returns TRUE, then the lines
@@ -666,10 +640,8 @@ function render_sankey(all_nodes, all_flows, cfg) {
                     :  (( d.x + cfg.node_width ) < ( graph_w / 2 ));
             })
             // Here is where the label is actually moved to the right:
-            .attr({
-                "text-anchor": "start",
-                x: function(d) { return ep(d.x + cfg.node_width + 6); }
-                });
+            .attr("text-anchor", "start")
+            .attr("x", d => ep(d.x + cfg.node_width + 6));
     }
 } // end of render_sankey
 

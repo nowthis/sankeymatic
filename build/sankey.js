@@ -190,12 +190,7 @@ d3.sankey = function() {
   function computeNodeDepths(iterations) {
     var alpha = 1,
         // Group nodes by stage & make an iterator for each set:
-        nodesByStage = d3.nest()
-          // fixed this sort to actually be numeric so the stages are handled in order:
-          .key(function(d) { return d.x; })
-          .sortKeys( function(a,b) { return a - b; } )
-          .entries(nodes)
-          .map(function(d) { return d.values; });
+        nodesByStage = Array.from(d3.group(nodes, d => d.x)).map(d => d[1]);
 
     function initializeNodeDepth() {
       // Calculate vertical scaling factor for all nodes given the diagram height:
