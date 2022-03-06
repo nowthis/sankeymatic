@@ -64,7 +64,7 @@ Budget [295] Transportation
 Budget [25] Savings
 
 // You can set a specific color for a Node:
-:Taxes #90C
+:Wages #95C
 //                    ...and for a single Flow:
 Budget [160] Other Necessities #0F0
 
@@ -84,10 +84,10 @@ Nodes<span id="node_options_hint">:</span></h2>
 <div id="node_options" class="form_chunk">
 <p class="form_elements1">
 <span class="no_wrap"><label for="node_width"><strong>Width:</strong></label>
-<input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="8" onchange="process_sankey();"> px</span>
+<input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="9" onchange="process_sankey();"> px</span>
 
 <label for="node_padding" class="spaced_label"><strong>Space between Nodes:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="18" onchange="process_sankey();"> px</span>
+<span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="24" onchange="process_sankey();"> px</span>
 </p>
 
 <p class="form_elements2">
@@ -173,7 +173,7 @@ Flows<span id="flow_options_hint">:</span></h2>
 <div id="flow_options" class="form_chunk">
 <p class="form_elements1">
 <span class="no_wrap"><label for="default_flow_opacity"><strong>Opacity:</strong></label>
-<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.05" value="0.4" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
+<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.05" value="0.45" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
 
 <span class="no_wrap"><label for="curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
 |<input id="curvature" type="range" min="0.1" max="0.9" step="0.05" value="0.5" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider">(</span>
@@ -404,7 +404,7 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 <span class="no_wrap"><label for="top_margin" class="spaced_label">Top</label>
 <input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="18" onchange="process_sankey();">
 <label for="bottom_margin">Bot</label>
-<input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="18" onchange="process_sankey();"></span>
+<input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="20" onchange="process_sankey();"></span>
 </p>
 
 </div>
