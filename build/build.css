@@ -75,8 +75,19 @@ dfn {
   padding-bottom: 4px;
 }
 
-.indicator {
+.indicator,
+.float_right {
   float: right;
+}
+
+.left_checkbox {
+  float: left;
+  margin-right: 0.5em;
+}
+
+.right_checkbox {
+  float: right;
+  margin-left: 0.5em;
 }
 
 /* The textarea where the user is typing: */
@@ -111,7 +122,9 @@ dfn {
 
 /* for items which need leftward breathing room: */
 .spaced_label,
-.spaced_checkbox { margin-left: 1em; }
+.spaced_checkbox {
+  margin-left: 1em;
+}
 
 .ui_head {
   padding: 3px 6px 2px;
@@ -281,7 +294,7 @@ th#title {
 #example_diagrams {
   background-color: #F3F4FF;
   border: 1px dotted #069;
-  width: 75%;
+  width: 90%;
   border-radius: 0.7em;
   margin: 0.4em auto 1em;
   padding: 0.5em;
@@ -324,6 +337,16 @@ th#title {
   border-width: 1px;
 }
 
-#layout_options_section {
-  margin-top: 4px;
+#color_themes tr td {
+  vertical-align: baseline;
+  padding: 1px 2px;
+}
+
+.theme_container {
+  white-space: nowrap;
+}
+
+input:checked ~ label.ropt,
+.theme_container input:checked ~ * {
+   color: #0077b3;
 }

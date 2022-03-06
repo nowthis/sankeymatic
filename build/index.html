@@ -20,12 +20,12 @@
   <!-- [MENU ITEMS] -->
   <div id="top_nav_items" class="main_nav_items">
 <ul>
-  <li><a class="button" title="SankeyMATIC home page" href="/"><img alt="SankeyMATIC logo" src="../i/SKM-trsp-300.png" height="27" width="27" class="skm_logo_small" />&nbsp;<strong>SankeyMATIC</strong></a></li>
-  <li><a class="button" title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></li>
-  <li><a class="button" title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
-  <li><a class="button" title="What's New with SankeyMATIC'" href="/news/">News</a></li>
-  <li><a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></li>
-  <li><a class="button" title="About SankeyMATIC and how to support the site" href="/about/">About/Donate</a></li>
+  <li><a title="SankeyMATIC home page" href="/"><img alt="SankeyMATIC logo" src="../i/SKM-trsp-300.png" height="27" width="27" class="skm_logo_small" />&nbsp;<strong>SankeyMATIC</strong></a></li>
+  <li><a title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></li>
+  <li><a title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
+  <li><a title="What's New with SankeyMATIC'" href="/news/">News</a></li>
+  <li><a title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></li>
+  <li><a title="About SankeyMATIC and how to support the site" href="/about/">About/Donate</a></li>
 </ul>
   </div>
 </nav>
@@ -39,21 +39,6 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 <div class="center_basic">
 
 <form onsubmit="process_sankey(); return false;">
-<div id="example_diagrams" class="text_center">
-<h4>Sample Diagrams:
-<button type="button" id="load_example_job_search" onclick="reset_graph('job_search'); return false;">Job Search</button>
-<button type="button" id="load_example_election" onclick="reset_graph('election'); return false;">Ranked Election</button>
-<!-- <button type="button" id="load_example_energy_all" onclick="reset_graph('energy_flows_all'); return false;">Energy Flows</button> &nbsp; -->
-<button type="button" id="load_example_basic_budget" onclick="reset_graph('default_budget'); return false;">Basic Budget (Default)</button>
-</h4>
-
-<p id="reset_graph_warning" style="display: none;">
-<em>This will <strong>erase</strong> your changes. Are you sure?</em>
-<input type="hidden" id="demo_graph_chosen" value="" />
-<button type="button" id="reset_graph_yes" onclick="reset_graph_confirmed(); return false;">Yes, reset the diagram</button>
-<button type="button" id="reset_graph_no" onclick="cancel_reset_graph(); return false;">Cancel</button>
-</p>
-</div>
 
 <table><tr><td>
 
@@ -90,71 +75,101 @@ Budget [160] Other Necessities #0F0
 <p class="center_basic"><em>Visit the <a href="../manual/" target="_blank">Manual</a> for a detailed guide</em></p>
 </div>
 
-<!-- SIZE & SPACING -->
+<!-- NODES -->
 
-<h2 class="ui_head" onclick="toggle_panel('diagram_options');">
-<span id="diagram_options_indicator" class="indicator">&ndash;</span>
-Size &amp; Margins<span id="diagram_options_hint">:</span></h2>
-
-<div id="diagram_options" class="form_chunk">
-<p class="form_elements1">
-<span class="no_wrap"><label for="canvas_width"><strong>Diagram Width:</strong></label>
-<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
-<span class="no_wrap"><label for="canvas_height" class="spaced_label"><strong>Height:</strong></label>
-<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"> px</span>
-</p>
-
-<p class="form_elements2">
-<strong>Margins:</strong>
-<span class="no_wrap"><label for="left_margin">Left</label>
-<input type="text" class="wholenumber" id="left_margin" size="3" maxlength="5" value="12" onchange="process_sankey();">
-<label for="right_margin">Right</label>
-<input type="text" class="wholenumber" id="right_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
-<span class="no_wrap"><label for="top_margin">Top</label>
-<input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="18" onchange="process_sankey();">
-<label for="bottom_margin">Bot</label>
-<input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="18" onchange="process_sankey();"></span>
-</p>
-
-</div>
-
-<!-- COLORS -->
-
-<h2 class="ui_head" onclick="toggle_panel('color_options');">
-<span id="color_options_indicator" class="indicator">&ndash;</span>
-Colors &amp; Appearance<span id="color_options_hint">:</span></h2>
-
-<div id="color_options" class="form_chunk">
-<h3 id="node_options_head" class="ui_head" tabindex="0" onclick="toggle_panel('node_options');"><span id="node_options_indicator" class="indicator">&ndash;</span>Nodes<span id="node_options_hint">:</span></h3>
+<h2 class="ui_head" onclick="toggle_panel('node_options');">
+<span id="node_options_indicator" class="indicator">&ndash;</span>
+Nodes<span id="node_options_hint">:</span></h2>
+<!-- tabindex="0" -->
 <div id="node_options" class="form_chunk">
 <p class="form_elements1">
-<label for="node_padding"><strong>Space between Nodes:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="18" onchange="process_sankey();"> px</span>
-
-<span class="no_wrap"><label for="node_width" class="spaced_label"><strong>Width:</strong></label>
+<span class="no_wrap"><label for="node_width"><strong>Width:</strong></label>
 <input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="8" onchange="process_sankey();"> px</span>
+
+<label for="node_padding" class="spaced_label"><strong>Space between Nodes:</strong></label>
+<span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="18" onchange="process_sankey();"> px</span>
 </p>
 
 <p class="form_elements2">
-<strong>Default Colors:</strong>
-<input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">Use a single color:</label>
-<input type="color" id="default_node_color" size="7" maxlength="7" value="#004477" onchange="process_sankey();"><br />
-or use
-<input name="default_node_colorset" type="radio" id="node_use_set_a" value="A" onchange="process_sankey();" /><label for="node_use_set_a">Theme A</label>
-&nbsp; <input name="default_node_colorset" type="radio" id="node_use_set_b" value="B" onchange="process_sankey();" /><label for="node_use_set_b">Theme B</label>
-&nbsp; <input name="default_node_colorset" type="radio" id="node_use_set_c" value="C" onchange="process_sankey();" checked="checked" /><label for="node_use_set_c">Theme C</label><br />
-</p>
-
-<p class="form_elements1">
 <span class="no_wrap"><label for="default_node_opacity"><strong>Opacity:</strong></label>
 <span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.05" value="1.0" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
 
 <span class="no_wrap"><label for="node_border" class="spaced_label"><strong>Border:</strong></label>
 <span class="smalllabel">0</span><input id="node_border" type="range" min="0" max="9" step="1" value="0" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">9</span></span>
 </p>
+
+<fieldset class="form_elements1">
+<legend>Default Node Colors:</legend>
+<div class="fieldset_contents">
+Use <input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">a single color:</label>
+<input type="color" id="default_node_color" size="7" maxlength="7" value="#004477" onchange="process_sankey();"> or a Theme:<br />
+<table id="color_themes">
+<tr>
+<td class="text_left">
+<span id="theme_a" class="theme_container">
+<input name="default_node_colorset" type="radio" id="theme_a_radio" value="a" onchange="process_sankey();" checked="checked" /><label id="theme_a_label" for="theme_a_radio"></label>
+</span>
+</td>
+<td class="text_left">
+<span class="no_wrap">
+<button id="theme_a_rotate_left" type="submit" onclick="update_theme_offset('a',1); return false;">&lt;</button>
+<label id="theme_a_guide" for="theme_a_radio"></label> <input type="hidden" id="theme_a_offset" value="7">
+<button id="theme_a_rotate_right" type="submit" onclick="update_theme_offset('a',-1); return false;">&gt;</button>
+</span>
+</td>
+</tr>
+<tr>
+<td class="text_left">
+<span id="theme_b" class="theme_container">
+<input name="default_node_colorset" type="radio" id="theme_b_radio" value="b" onchange="process_sankey();" /><label id="theme_b_label" for="theme_b_radio"></label>
+</span>
+</td>
+<td class="text_left">
+<span class="no_wrap">
+<button id="theme_b_rotate_left" type="submit" onclick="update_theme_offset('b',1); return false;" title="Rotate colors left">&lt;</button>
+<label id="theme_b_guide" for="theme_b_radio"></label> <input type="hidden" id="theme_b_offset" value="0">
+<button id="theme_b_rotate_right" type="submit" onclick="update_theme_offset('b',-1); return false;" title="Rotate colors right">&gt;</button>
+</span>
+</td>
+</tr>
+<tr>
+<td class="text_left">
+<span id="theme_c" class="theme_container">
+<input name="default_node_colorset" type="radio" id="theme_c_radio" value="c" onchange="process_sankey();" /><label id="theme_c_label" for="theme_c_radio"></label>
+</span>
+</td>
+<td class="text_left">
+<span class="no_wrap">
+<button id="theme_c_rotate_left" type="submit" onclick="update_theme_offset('c',1); return false;">&lt;</button>
+<label id="theme_c_guide" for="theme_c_radio"></label> <input type="hidden" id="theme_c_offset" value="0">
+<button id="theme_c_rotate_right" type="submit" onclick="update_theme_offset('c',-1); return false;">&gt;</button>
+</span>
+</td>
+</tr>
+<tr>
+<td class="text_left">
+<span id="theme_d" class="theme_container">
+<input name="default_node_colorset" type="radio" id="theme_d_radio" value="d" onchange="process_sankey();" /><label id="theme_d_label" for="theme_d_radio"></label>
+</span>
+</td>
+<td class="text_left">
+<span class="no_wrap">
+<button id="theme_d_rotate_left" type="submit" onclick="update_theme_offset('d',1); return false;" title="Rotate colors left">&lt;</button>
+<label id="theme_d_guide" for="theme_d_radio"></label> <input type="hidden" id="theme_d_offset" value="0">
+<button id="theme_d_rotate_right" type="submit" onclick="update_theme_offset('d',-1); return false;" title="Rotate colors right">&gt;</button>
+</span>
+</td>
+</tr>
+</table>
 </div>
 
-<h3 class="ui_head" onclick="toggle_panel('flow_options');"><span id="flow_options_indicator" class="indicator">&ndash;</span>Flows<span id="flow_options_hint">:</span></h3>
+</fieldset>
+</div>
+
+<h2 class="ui_head" onclick="toggle_panel('flow_options');">
+<span id="flow_options_indicator" class="indicator">&ndash;</span>
+Flows<span id="flow_options_hint">:</span></h2>
+
 <div id="flow_options" class="form_chunk">
 <p class="form_elements1">
 <span class="no_wrap"><label for="default_flow_opacity"><strong>Opacity:</strong></label>
@@ -164,24 +179,23 @@ or use
 |<input id="curvature" type="range" min="0.1" max="0.9" step="0.05" value="0.5" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider">(</span>
 </p>
 
-<p class="form_elements2">
-<strong>Default Colors:</strong><br />
-<input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" />
-<label for="flow_use_color">Use a single color:</label>
-<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();" /><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" />
-<label for="flow_inherit_from_source">Use the Source Node's color</label><br />
-<input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" checked="checked" />
-<label for="flow_inherit_from_target">Use the Target Node's color</label><br />
-</p>
+<fieldset class="form_elements2">
+<legend>Default Flow Colors:</legend>
 
+<div class="fieldset_contents">
+
+<!-- <span><input name="default_flow_inherit" type="radio" id="flow_outer_to_inner" value="outer" onchange="process_sankey();" /><label for="flow_outer_to_inner">colors from outer nodes, flowing in</label></span><br /> -->
+
+Use colors from:
+<span><input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label for="flow_inherit_from_source">the Source nodes</label></span>
+<span><input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" checked="checked" /><label for="flow_inherit_from_target">the Target nodes</label></span>
+<br />
+
+<span>or: <input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">a single color:</label>
+<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();" /></span><br />
 </div>
 
-<p class="form_elements1">
-<label for="background_color"><strong>Background Color:</strong></label>
-<input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
-<input type="checkbox" id="background_transparent" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="background_transparent">Transparent</label><br />
-</p>
+</fieldset>
 
 </div>
 
@@ -249,6 +263,28 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <option value="X,">1000000,00</option>
 </select>
 </p>
+</div>
+
+<!-- LAYOUT OPTIONS -->
+
+<h2 class="ui_head" onclick="toggle_panel('layout_options');" id="layout_options_section">
+<span id="layout_options_indicator" class="indicator">+</span>
+Layout Options<span id="layout_options_hint">...</span></h2>
+<div id="layout_options" class="form_chunk" style="display: none;">
+<div class="form_elements1 text_center">
+<small>Note: these options only apply to diagrams<br /> with 3 or more columns of nodes.</small>
+
+<table style="width: 100%;"><tr>
+<td class="text_left">
+<input type="checkbox" id="justify_origins" value="1" onchange="process_sankey();"><br />
+<label for="justify_origins">Place all<br /> flow <strong>origins</strong><br /> at the <strong>left</strong> edge</label>
+</td>
+<td class="text_right">
+<input type="checkbox" id="justify_ends" value="1" onchange="process_sankey();"><br />
+<label for="justify_ends" class="spaced_label">Place all<br /> flow <strong>endpoints</strong><br /> at the <strong>right</strong> edge</label>
+</td>
+</tr></table>
+</div>
 </div>
 
 <!-- EXPORT -->
@@ -324,26 +360,53 @@ re-draw/reset the whole diagram.)</p>
 </table>
 
 </td><td id="grapharea">
+<div id="example_diagrams" class="text_center">
+<h4>Sample Diagrams:
+<button type="button" id="load_example_job_search" onclick="reset_graph('job_search'); return false;">Job Search</button>
+<button type="button" id="load_example_election" onclick="reset_graph('election'); return false;">Ranked Election</button>
+<!-- <button type="button" id="load_example_energy_all" onclick="reset_graph('energy_flows_all'); return false;">Energy Flows</button> &nbsp; -->
+<button type="button" id="load_example_basic_budget" onclick="reset_graph('default_budget'); return false;">Basic Budget (Default)</button>
+</h4>
+
+<p id="reset_graph_warning" style="display: none;">
+<em>This will <strong>erase</strong> your changes. Are you sure?</em><br />
+<input type="hidden" id="demo_graph_chosen" value="" />
+<button type="button" id="reset_graph_yes" onclick="reset_graph_confirmed(); return false;">Yes, reset the diagram</button>
+<button type="button" id="reset_graph_no" onclick="cancel_reset_graph(); return false;">Cancel</button>
+</p>
+</div>
+
+<!-- SIZE & SPACING & BACKGROUND -->
 
 <div class="expandable_box">
-<h2 id="layout_options_section" class="ui_head" onclick="toggle_panel('layout_options');">
-<span id="layout_options_indicator" class="indicator">+</span>
-Layout Options<span id="layout_options_hint">...</span></h2>
-<div id="layout_options" class="form_chunk" style="display: none;">
-<div class="form_elements1 text_center">
+<h2 class="ui_head" onclick="toggle_panel('diagram_options');">
+<span id="diagram_options_indicator" class="indicator">&ndash;</span>
+Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 
-<table style="width: 100%; padding: 0;"><tr>
-<td class="text_left">
-<input type="checkbox" id="justify_origins" value="1" onchange="process_sankey();">
-<label for="justify_origins">Force all flow <strong>origins</strong> to the left edge</label>
-</td>
-<td class="text_right">
-<label for="justify_ends" class="spaced_label">Force all flow <strong>endpoints</strong> to the right edge</label>
-<input type="checkbox" id="justify_ends" value="1" onchange="process_sankey();">
-</td>
-</tr></table>
-<small>(Note: these options only apply to diagrams with 3 or more columns of nodes.)</small>
-</div>
+<div id="diagram_options" class="form_chunk">
+<p class="form_elements1">
+<span class="no_wrap"><label for="canvas_width" title="Diagram Width in pixels"><strong>Width:</strong></label>
+<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="canvas_height" class="spaced_label" title="Diagram Height in pixels"><strong>Height:</strong></label>
+<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"></span>
+
+<label for="background_color" class="spaced_label"><strong>Background Color:</strong></label>
+<input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
+<input type="checkbox" id="background_transparent" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="background_transparent">Transparent</label><br />
+</p>
+
+<p class="form_elements2">
+<strong>Margins:</strong>
+<span class="no_wrap"><label for="left_margin" class="spaced_label">Left</label>
+<input type="text" class="wholenumber" id="left_margin" size="3" maxlength="5" value="12" onchange="process_sankey();">
+<label for="right_margin">Right</label>
+<input type="text" class="wholenumber" id="right_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="top_margin" class="spaced_label">Top</label>
+<input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="18" onchange="process_sankey();">
+<label for="bottom_margin">Bot</label>
+<input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="18" onchange="process_sankey();"></span>
+</p>
+
 </div>
 </div>
 
@@ -393,12 +456,12 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
   <!-- [MENU ITEMS] -->
   <div id="footer_nav_items" class="main_nav_items">
 <ul>
-  <li><a class="button" title="SankeyMATIC home page" href="/"><img alt="SankeyMATIC logo" src="../i/SKM-trsp-300.png" height="27" width="27" class="skm_logo_small" />&nbsp;<strong>SankeyMATIC</strong>&nbsp;Home</a></li>
-  <li><a class="button" title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></li>
-  <li><a class="button" title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
-  <li><a class="button" title="What's New with SankeyMATIC'" href="/news/">News</a></li>
-  <li><a class="button" title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></li>
-  <li><a class="button" title="About SankeyMATIC and how to support the site" href="/about/">About/Donate</a></li>
+  <li><a title="SankeyMATIC home page" href="/"><img alt="SankeyMATIC logo" src="../i/SKM-trsp-300.png" height="27" width="27" class="skm_logo_small" />&nbsp;<strong>SankeyMATIC</strong>&nbsp;Home</a></li>
+  <li><a title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></li>
+  <li><a title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
+  <li><a title="What's New with SankeyMATIC'" href="/news/">News</a></li>
+  <li><a title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></li>
+  <li><a title="About SankeyMATIC and how to support the site" href="/about/">About/Donate</a></li>
 </ul>
   </div>
 </nav>

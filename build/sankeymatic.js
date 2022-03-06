@@ -359,6 +359,56 @@ glob.reset_graph = function (graphname) {
     return null;
 };
 
+glob.color_array_for = {
+    //  0: Official name, 1: Array of colors, 2: Display name:
+    a: [ 'Category10', d3.schemeCategory10, 'Categories' ],
+    b: [ 'Tableau10', d3.schemeTableau10, 'Tableau10' ],
+    c: [ 'Dark2', d3.schemeDark2, 'Dark' ],
+    d: [ 'Set3', d3.schemeSet3, 'Varied' ],
+    // Currently excluding the 'Bold' theme for 2 reasons:
+    // 1. The colors are too different in brightness to be general-purpose (IMO)
+    //    Example: Red #e41a1c vs. Yellow #ffff33 is very stark
+    // 2. Vertical space. 4 themes already take a lot of screen space.
+    // (Might revise this decision when there are ways to mitigate #2.)
+    // e: [ 'Set1', d3.schemeSet1, 'Bold' ],
+};
+
+function approved_color_theme(theme_key) {
+    // Give back an empty array if the key isn't valid:
+    if (!glob.color_array_for.hasOwnProperty(theme_key.toLowerCase())) {
+        return [];
+    }
+    return glob.color_array_for[theme_key.toLowerCase()];
+}
+
+function color_theme_with_offset(theme_key, offset) {
+    const the_theme = approved_color_theme(theme_key),
+        approved_offset = clamp(offset, 0, the_theme[1].length);
+
+    // give back a copy of the array rotated by the offset:
+    return [the_theme[0],
+            the_theme[1].slice(approved_offset)
+                .concat(the_theme[1].slice(0, approved_offset)),
+            the_theme[2]
+        ];
+}
+
+glob.update_theme_offset = function(theme_key, change) {
+    const the_theme = approved_color_theme(theme_key),
+        el_theme_offset = document.getElementById(`theme_${theme_key}_offset`),
+        current_offset = el_theme_offset === null ? 0 : el_theme_offset.value,
+        new_offset = (+current_offset + +change + the_theme[1].length) % the_theme[1].length,
+        el_theme_radio = document.getElementById(`theme_${theme_key}_radio`);
+
+    // Since the user is tweaking a theme, switch to that them if it's not
+    // already selected:
+    el_theme_radio.checked = true;
+    el_theme_offset.value = new_offset;
+
+    process_sankey();
+    return null;
+}
+
 // render_sankey: given nodes, flows, and other config, MAKE THE SVG DIAGRAM:
 function render_sankey(all_nodes, all_flows, cfg) {
     var graph_w, graph_h, sankey_obj, d3_color_scale_fn,
@@ -418,9 +468,9 @@ function render_sankey(all_nodes, all_flows, cfg) {
         d3_color_scale_fn = d3.scaleOrdinal([cfg.default_node_color]);
     } else {
         d3_color_scale_fn = d3.scaleOrdinal(
-            cfg.default_node_colorset === "A" ? d3.schemeCategory10
-          : cfg.default_node_colorset === "B" ? d3.schemeTableau10
-          : d3.schemeSet3
+            color_theme_with_offset(
+                cfg.default_node_colorset,
+                cfg.selected_theme_offset)[1]
         );
     }
 
@@ -485,7 +535,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
     // this group.
     diag_main = diag_main.append("g")
         .attr("transform", `translate(${cfg.left_margin},${cfg.top_margin})`);
- 
+
     // Set up the [g]roup of rendered flows:
     diag_flows = diag_main.append("g")
         .attr("id","sankey_flows")
@@ -711,6 +761,27 @@ glob.process_sankey = function () {
             + '">' + formatted_sum + "</dfn>";
     }
 
+    // Update the display of all known themes given their offsets:
+    function update_theme_lists() {
+        // template string for the color swatches:
+        const make_span_tag = (color, css_class, theme_id) =>
+        `<span style="background-color: ${color};" class="${css_class}" title="${color} from d3 color scheme ${theme_id}">&nbsp;</span>`;
+        Object.keys(glob.color_array_for)
+            .forEach( t => {
+            let theme_offset = document.getElementById(`theme_${t}_offset`).value,
+                the_theme = color_theme_with_offset(t, theme_offset),
+                samples_class = `color_sample_${the_theme[1].length}`,
+                // Show the array rotated properly given the user's offset:
+                rendered_guide = the_theme[1]
+                    .map( c => make_span_tag(c, samples_class, the_theme[0]) )
+                    .join('');
+                // SOMEDAY: Add an indicator for which colors are/are not in use?
+            document.getElementById(`theme_${t}_guide`).innerHTML =
+                rendered_guide;
+            document.getElementById(`theme_${t}_label`).textContent = the_theme[2];
+        });
+    }
+
     // BEGIN by resetting all messages:
     messages_el.innerHTML = '';
 
@@ -840,7 +911,7 @@ glob.process_sankey = function () {
         canvas_height: 600,
         font_size: 15,
         font_weight: 400,
-        top_margin: 12, right_margin: 12, bottom_margin: 12, left_margin: 12,
+        top_margin: 18, right_margin: 12, bottom_margin: 18, left_margin: 12,
         default_flow_opacity: 0.4,
         default_node_opacity: 0.9,
         mention_sankeymatic: 1,
@@ -858,7 +929,10 @@ glob.process_sankey = function () {
         font_color:         "#000000",
         default_node_color: "#006699",
         default_node_colorset: "C",
-        font_face: "sans-serif"
+        font_face: "sans-serif",
+        selected_theme_offset: 0,
+        theme_a_offset: 7, theme_b_offset: 0,
+        theme_c_offset: 0, theme_d_offset: 0
     };
 
     // save_node: Add (or update) a node in the 'unique' list:
@@ -1030,6 +1104,23 @@ glob.process_sankey = function () {
         }
     });
 
+    // Color theme offset fields:
+    Object.keys(glob.color_array_for)
+        .forEach( t => {
+        const field_name = `theme_${t}_offset`,
+              field_val = document.getElementById(field_name).value;
+        // Verify that the number matches up with the possible offset
+        // range for each theme.
+        // It has to be either 1 or 2 digits (some ranges have > 9 options):
+        if (field_val.match(/^\d{1,2}$/)
+            // No '-', so it's at least a positive number. Is it too big?:
+            && Number(field_val) <= (glob.color_array_for[t][1].length - 1)) {
+            approved_config[field_name] = Number(field_val);
+        } else {
+            reset_field(field_name);
+        }
+    });
+
     (["default_flow_color", "background_color", "font_color",
         "default_node_color" ]).forEach( function(field_name) {
         get_color_input(field_name);
@@ -1103,11 +1194,6 @@ glob.process_sankey = function () {
         approved_config.default_flow_inherit = flow_inherit;
     } // otherwise skip & use the default
 
-    colorset_in = radio_value("default_node_colorset");
-    if ( colorset_in.match( /^(?:[ABC]|none)$/ ) ) {
-        approved_config.default_node_colorset = colorset_in;
-    }
-
     labelpos_in = radio_value("label_pos");
     if ( labelpos_in.match( /^(?:all_left|auto|all_right)$/ ) ) {
         approved_config.label_pos = labelpos_in;
@@ -1116,6 +1202,16 @@ glob.process_sankey = function () {
     fontface_in = radio_value("font_face");
     if ( fontface_in.match( /^(?:serif|sans-serif|monospace)$/ ) ) {
         approved_config.font_face = fontface_in;
+    }
+
+    colorset_in = radio_value("default_node_colorset");
+    if ( colorset_in.match( /^(?:[abcd]|none)$/ ) ) {
+        approved_config.default_node_colorset = colorset_in;
+        // Given the selected theme, what's the specific offset for that theme?
+        approved_config.selected_theme_offset =
+            colorset_in === 'none'
+            ? 0
+            : approved_config[`theme_${colorset_in}_offset`];
     }
 
     // Checkboxes:
@@ -1218,6 +1314,7 @@ glob.process_sankey = function () {
     // always display main status line first:
     add_message( "okmessage", status_message, true );
 
+    update_theme_lists();
     // Do the actual rendering:
     render_sankey( approved_nodes, approved_flows, approved_config );
 

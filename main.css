@@ -122,3 +122,51 @@ p.top_padded {
 #news_main figcaption {
   font-size: smaller;
 }
+
+/* Present themes with different color counts.
+   Each color swatch uses one non-breaking space (0.3em) plus padding.
+   12 colors: 12em = (12 * 0.3em) + (12 * .7em)  */
+.color_sample_12 {
+  padding-left: 0.35em;
+  padding-right: 0.35em;
+}
+
+/* 10 colors: 12em = (10 * 0.3em) + (10 * .9em)  */
+.color_sample_10 {
+  padding-left: 0.45em;
+  padding-right: 0.45em;
+}
+
+/*  9 colors: 12em = (9 * 0.3em) + (9 * 1.0333em)  */
+.color_sample_9 {
+  padding-left: 0.517em;
+  padding-right: 0.517em;
+}
+
+/*  8 colors: 12em = (8 * 0.3em) + (8 * 1.2em)
+    0.6em actually made this row appear too wide by a teeny amount,
+    so we use 0.599em instead. :-| */
+.color_sample_8 {
+  padding-left: 0.599em;
+  padding-right: 0.599em;
+}
+
+legend {
+  font-weight: bold;
+  color: black;
+  background-color: #eef8ff;
+  border: 1px solid #9ac;
+  padding: 0.1em 0.4em;
+  margin-bottom: 0;
+}
+
+fieldset {
+  border: 1px solid #9ac;
+}
+
+.fieldset_contents {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  margin-top: 0;
+  padding-top: 0;
+}
