@@ -63,9 +63,9 @@ Budget [400] Food
 Budget [295] Transportation
 Budget [25] Savings
 
-// You can set a specific color for a Node:
+// You can set a Node's color, like this:
 :Wages #95C
-//                    ...and for a single Flow:
+//            ...or a color for a single Flow:
 Budget [160] Other Necessities #0F0
 
 // Use the controls below to customize
@@ -101,13 +101,13 @@ Nodes<span id="node_options_hint">:</span></h2>
 <fieldset class="form_elements1">
 <legend>Default Node Colors:</legend>
 <div class="fieldset_contents">
-Use <input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color">a single color:</label>
+Use <input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color" class="ropt">a single color:</label>
 <input type="color" id="default_node_color" size="7" maxlength="7" value="#004477" onchange="process_sankey();"> or a Theme:<br />
 <table id="color_themes">
 <tr>
 <td class="text_left">
 <span id="theme_a" class="theme_container">
-<input name="default_node_colorset" type="radio" id="theme_a_radio" value="a" onchange="process_sankey();" checked="checked" /><label id="theme_a_label" for="theme_a_radio"></label>
+<input name="default_node_colorset" type="radio" id="theme_a_radio" value="a" onchange="process_sankey();" checked="checked" /><label id="theme_a_label" for="theme_a_radio" class="ropt"></label>
 </span>
 </td>
 <td class="text_left">
@@ -121,7 +121,7 @@ Use <input name="default_node_colorset" type="radio" id="node_use_color" value="
 <tr>
 <td class="text_left">
 <span id="theme_b" class="theme_container">
-<input name="default_node_colorset" type="radio" id="theme_b_radio" value="b" onchange="process_sankey();" /><label id="theme_b_label" for="theme_b_radio"></label>
+<input name="default_node_colorset" type="radio" id="theme_b_radio" value="b" onchange="process_sankey();" /><label id="theme_b_label" for="theme_b_radio" class="ropt"></label>
 </span>
 </td>
 <td class="text_left">
@@ -135,7 +135,7 @@ Use <input name="default_node_colorset" type="radio" id="node_use_color" value="
 <tr>
 <td class="text_left">
 <span id="theme_c" class="theme_container">
-<input name="default_node_colorset" type="radio" id="theme_c_radio" value="c" onchange="process_sankey();" /><label id="theme_c_label" for="theme_c_radio"></label>
+<input name="default_node_colorset" type="radio" id="theme_c_radio" value="c" onchange="process_sankey();" /><label id="theme_c_label" for="theme_c_radio" class="ropt"></label>
 </span>
 </td>
 <td class="text_left">
@@ -149,7 +149,7 @@ Use <input name="default_node_colorset" type="radio" id="node_use_color" value="
 <tr>
 <td class="text_left">
 <span id="theme_d" class="theme_container">
-<input name="default_node_colorset" type="radio" id="theme_d_radio" value="d" onchange="process_sankey();" /><label id="theme_d_label" for="theme_d_radio"></label>
+<input name="default_node_colorset" type="radio" id="theme_d_radio" value="d" onchange="process_sankey();" /><label id="theme_d_label" for="theme_d_radio" class="ropt"></label>
 </span>
 </td>
 <td class="text_left">
@@ -184,14 +184,14 @@ Flows<span id="flow_options_hint">:</span></h2>
 
 <div class="fieldset_contents">
 
-<!-- <span><input name="default_flow_inherit" type="radio" id="flow_outer_to_inner" value="outer" onchange="process_sankey();" /><label for="flow_outer_to_inner">colors from outer nodes, flowing in</label></span><br /> -->
+<!-- <span><input name="default_flow_inherit" type="radio" id="flow_outer_to_inner" value="outer" onchange="process_sankey();" /><label class="ropt" for="flow_outer_to_inner">colors from outer nodes, flowing in</label></span><br /> -->
 
 Use colors from:
-<span><input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label for="flow_inherit_from_source">the Source nodes</label></span>
-<span><input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" checked="checked" /><label for="flow_inherit_from_target">the Target nodes</label></span>
+<span><input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_source">the Source nodes</label></span>
+<span><input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_inherit_from_target">the Target nodes</label></span>
 <br />
 
-<span>or: <input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color">a single color:</label>
+<span>or: <input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color" class="ropt">a single color:</label>
 <input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();" /></span><br />
 </div>
 
@@ -207,15 +207,17 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 
 <div id="label_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
-<input type="checkbox" id="show_labels" value="1" onchange="process_sankey();" checked="checked">
-<label for="show_labels">Show labels</label> <small>(hide to apply your own text to the graph)</small><br />
-
-<input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
-<label for="include_values_in_node_labels">Show Node totals as part of labels</label>
+<span><input type="checkbox" id="show_labels" value="1" onchange="process_sankey();" checked="checked">
+<label for="show_labels" class="ropt">Show labels</label> <small class="rnote">(hide to apply your own text to the graph)</small></span>
 <br />
-<input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();" checked="checked" class="spaced_label">
-<label for="display_full_precision">Always show full precision
-<small>(best for currency)</small></label>
+
+&nbsp;&nbsp;<span><input type="checkbox" id="include_values_in_node_labels" value="1" onchange="process_sankey();" checked="checked">
+<label for="include_values_in_node_labels" class="ropt">Show Node totals as part of labels</label></span>
+<br />
+
+&nbsp;&nbsp;&nbsp;&nbsp;<span><input type="checkbox" id="display_full_precision" value="1" onchange="process_sankey();" checked="checked">
+<label for="display_full_precision" class="ropt">Always show full precision
+<small>(best for currency)</small></label></span>
 <br />
 </p>
 
@@ -224,18 +226,18 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <span class="no_wrap"><input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="15" onchange="process_sankey();"> <label for="font_size">px</label></span>
 
 <strong class="spaced_label">Face:</strong>
-<span class="no_wrap"><input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="font_sans">sans</label></span>
-<span class="no_wrap"><input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="font_serif">serif</label></span>
-<span class="no_wrap"><input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="font_mono">mono</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
 
 </p>
 
 <div class="form_elements1">
 <strong>Position:</strong>&nbsp;
-<span class="no_wrap"><label for="label_pos_left">Left side</label><input name="label_pos" type="radio" id="label_pos_left" value="all_left" onchange="process_sankey();" /></span>&nbsp;
-<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_auto" value="auto" onchange="process_sankey();" checked="checked" /><label for="label_pos_auto">Automatic</label></span>&nbsp;
-<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_right" value="all_right" onchange="process_sankey();" /><label for="label_pos_right">Right side</label></span><br />
-<div class="text_right"><small id="label_pos_note"></small></div>
+<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_left" value="all_left" onchange="process_sankey();" /><label for="label_pos_left" class="ropt">Left side</label></span>&nbsp;
+<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_auto" value="auto" onchange="process_sankey();" checked="checked" /><label for="label_pos_auto" class="ropt">Automatic</label></span>&nbsp;
+<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_right" value="all_right" onchange="process_sankey();" /><label for="label_pos_right" class="ropt">Right side</label></span><br />
+<div class="text_center"><small id="label_pos_note"></small></div>
 </div>
 
 <p class="form_elements2">
@@ -277,11 +279,11 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 <table style="width: 100%;"><tr>
 <td class="text_left">
 <input type="checkbox" id="justify_origins" value="1" onchange="process_sankey();"><br />
-<label for="justify_origins">Place all<br /> flow <strong>origins</strong><br /> at the <strong>left</strong> edge</label>
+<label for="justify_origins" class="ropt">Place all<br /> flow <strong>origins</strong><br /> at the <strong>left</strong> edge</label>
 </td>
 <td class="text_right">
 <input type="checkbox" id="justify_ends" value="1" onchange="process_sankey();"><br />
-<label for="justify_ends" class="spaced_label">Place all<br /> flow <strong>endpoints</strong><br /> at the <strong>right</strong> edge</label>
+<label for="justify_ends" class="spaced_label ropt">Place all<br /> flow <strong>endpoints</strong><br /> at the <strong>right</strong> edge</label>
 </td>
 </tr></table>
 </div>
@@ -351,7 +353,7 @@ re-draw/reset the whole diagram.)</p>
 
 <p class="form_elements1">
 <input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">
-<label for="reverse_graph"><strong>Reverse the graph</strong> (flow right-to-left)</label>
+<label for="reverse_graph" class="ropt"><strong>Reverse the graph</strong> (flow right-to-left)</label>
 </p>
 </div>
 
@@ -392,7 +394,7 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 
 <label for="background_color" class="spaced_label"><strong>Background Color:</strong></label>
 <input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
-<input type="checkbox" id="background_transparent" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="background_transparent">Transparent</label><br />
+<input type="checkbox" id="background_transparent" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="background_transparent" class="ropt">Transparent</label><br />
 </p>
 
 <p class="form_elements2">
@@ -416,8 +418,8 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 <canvas id="png_preview" height="600" width="600" style="background-color: transparent; display: none;"></canvas>
 <div id="chartfooter">
 <p class="form_elements1 center_content">
-<label class="smalllabel"><input type="checkbox" id="mention_sankeymatic" value="1" onchange="process_sankey();" checked>
-Include &ldquo;Made with SankeyMATIC&rdquo;</label>
+<input type="checkbox" id="mention_sankeymatic" value="1" onchange="process_sankey();" checked>
+<label class="smalllabel ropt" for="mention_sankeymatic">Include &ldquo;Made with SankeyMATIC&rdquo;</label>
 </p>
 </div>
 <table id="messages" class="expandable_box">
@@ -426,9 +428,9 @@ Include &ldquo;Made with SankeyMATIC&rdquo;</label>
 </div></td></tr>
 <tr><td id="imbalances">
 <div id="imbalance_control">
-<label>When Total Inputs &ne; Total Outputs:
+<label for="flow_cross_check">When Total Inputs &ne; Total Outputs:</label>
 <input type="checkbox" id="flow_cross_check" value="1" onchange="process_sankey();" checked="checked" />
-list the differences</label>.
+<label class="ropt" for="flow_cross_check">list the differences</label>.
 </div>
 <div id="imbalance_messages">
 

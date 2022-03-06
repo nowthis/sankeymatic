@@ -346,6 +346,13 @@ th#title {
   white-space: nowrap;
 }
 
+/* Customize checkable things (radio & checkbox labels):
+   Mnemonic: "ropt" = "radio option" */
+.ropt,
+.rnote {
+  color: #777;
+}
+
 input:checked ~ label.ropt,
 .theme_container input:checked ~ * {
    color: #0077b3;
