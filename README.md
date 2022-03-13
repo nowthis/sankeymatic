@@ -12,4 +12,4 @@ Produced by Steve Bogart, http://nowthis.com/ ([@nowthis](https://twitter.com/no
 ### Packages used:
 
 * [Canvg](https://github.com/canvg/canvg) 3.0.9
-* [d3.js](https://github.com/d3/d3) 2.10.3
+* [d3.js](https://github.com/d3/d3) 7.3.0

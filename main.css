@@ -114,9 +114,19 @@ p.top_padded {
   margin: 0 1em 0.2em;
 }
 
+/* Sometimes a figure is vertically included rather than set to the side: */
+#news_main figure.no_indent {
+  margin: 0 0 0.2em;
+}
+
 #news_main figure img {
   padding: 0.1em;
   margin: 0.1em;
+  border: 1px dotted #069;
+}
+
+#news_main figure img.no_border {
+  border: none;
 }
 
 #news_main figcaption {
