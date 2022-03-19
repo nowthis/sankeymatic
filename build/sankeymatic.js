@@ -498,7 +498,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
     // filling in specifics about layout positions, etc.
     sankey_obj = d3.sankey()
         .nodeWidth(cfg.node_width)
-        .nodePadding(cfg.node_padding)
+        .nodeSpacingFactor(cfg.node_spacing/100)
         .size([graph_w, graph_h])
         .nodes(all_nodes)
         .links(all_flows)
@@ -916,7 +916,7 @@ glob.process_sankey = function () {
         default_node_opacity: 0.9,
         mention_sankeymatic: 1,
         node_width: 9,
-        node_padding: 24,
+        node_spacing: 24,
         node_border: 0,
         reverse_graph: 0,
         justify_origins: 0,
@@ -1094,7 +1094,7 @@ glob.process_sankey = function () {
     // Whole positive numbers:
     ([ "canvas_width", "canvas_height", "font_size",
         "top_margin",  "right_margin",  "bottom_margin",
-        "left_margin", "font_weight",   "node_padding",
+        "left_margin", "font_weight",   "node_spacing",
         "node_width",  "node_border" ]).forEach( function(field_name) {
         var field_val = document.getElementById(field_name).value;
         if (field_val.length < 10 && field_val.match(/^\d+$/)) {

@@ -23,7 +23,7 @@ var sample_diagram_recipes = {
 // Sample job-hunt flow
 'job_search': {
     name: 'Job Search',
-    flows: '// Sample Job Search diagram:\n\n// Flows:\nApplications [3] Interview\nInterview [2] 2nd Interview\n2nd Interview [2] Offer\nOffer [1] Accepted\nOffer [1] Declined\nInterview [1] No Offer\nApplications [7] Rejected\nApplications [3] No Answer\n\n// Node definitions & Colors:\n:Applications #396\n:Interview #0C0 <<\n:Rejected #F90 <<\n:No Answer #DDD <<\n:No Offer #F90 <<\n:2nd Interview #0C0\n:Offer #0C0\n:Accepted #0C0\n:Declined #96F <<',
+    flows: '// Sample Job Search diagram:\n\n// Flows:\nApplications [4] Interview\nApplications [9] Rejected\nApplications [4] No Answer\n\nInterview [2] No Offer\n\nInterview [2] 2nd Interview\n\n2nd Interview [2] Offer\n\nOffer [1] Declined\nOffer [1] Accepted',
     },
 
 // A variation of the inputs for the original d3 energy diagram, now found

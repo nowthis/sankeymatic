@@ -1,13 +1,14 @@
 d3.sankey = function() {
  "use strict";
   var sankey = {},
-      nodeWidth = 24,
-      nodePadding = 8,
+      nodeWidth = 9,
+      nodeSpacingFactor = 0.5,
       size = [1, 1],
       nodes = [],
       links = [],
       rightJustifyEndpoints = false,
-      leftJustifyOrigins = false;
+      leftJustifyOrigins = false,
+      nodePadding = 0;
 
   // ACCESSORS //
   sankey.nodeWidth = function(x) {
@@ -16,9 +17,9 @@ d3.sankey = function() {
     return sankey;
   };
 
-  sankey.nodePadding = function(x) {
-    if (x === undefined) { return nodePadding; }
-    nodePadding = +x;
+  sankey.nodeSpacingFactor = function(x) {
+    if (x === undefined) { return nodeSpacingFactor; }
+    nodeSpacingFactor = +x;
     return sankey;
   };
 
@@ -54,10 +55,8 @@ d3.sankey = function() {
 
   // FUNCTIONS //
 
-  // valueSum: Add up all the 'value' keys from a list of objects (happens a lot):
-  function valueSum(nodelist) {
-    return d3.sum(nodelist, function(d) { return d.value; });
-  }
+  // valueSum: Add up all the 'value' keys from a list of objects:
+  function valueSum(list) { return d3.sum(list, d => d.value); }
 
   // verticalCenter: Y-position of the middle of a node.
   function verticalCenter(node) { return node.y + node.dy / 2; }
@@ -193,10 +192,29 @@ d3.sankey = function() {
         nodesByStage = Array.from(d3.group(nodes, d => d.x)).map(d => d[1]);
 
     function initializeNodeDepth() {
-      // Calculate vertical scaling factor for all nodes given the diagram height:
+      // How many nodes are in the busiest stage?
+      const greatest_node_count = d3.max(nodesByStage, s => s.length);
+
+      // What if each node in that stage got 1 pixel?
+      // Figure out how many pixels would be left over.
+      // If it's < 2, use 2 because otherwise the slider has nothing to do..
+      const all_available_padding = Math.max(2, size[1] - greatest_node_count);
+
+      // A nodeSpacingFactor of 1 means 'pad as much as possible without making
+      // these nodes less than a pixel tall'.
+      //   padding value for nSF of 1 =
+      //      all_available_padding / (# of spaces in the busiest stage)
+      // Calculate the actual nodePadding value:
+      nodePadding = nodeSpacingFactor
+        * all_available_padding
+        / (greatest_node_count - 1);
+
+      // Finally, calculate the vertical scaling factor for all nodes, given the
+      // derived padding value and the diagram height:
       var ky = d3.min(nodesByStage,
-        function(nodes) {
-          return (size[1] - (nodes.length - 1) * nodePadding) / valueSum(nodes);
+        stage => {
+          return (size[1] - (stage.length - 1) * nodePadding)
+            / valueSum(stage);
         });
 
       nodesByStage.forEach(function(nodes) {

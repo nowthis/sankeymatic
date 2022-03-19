@@ -86,16 +86,20 @@ Nodes<span id="node_options_hint">:</span></h2>
 <span class="no_wrap"><label for="node_width"><strong>Width:</strong></label>
 <input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="9" onchange="process_sankey();"> px</span>
 
-<label for="node_padding" class="spaced_label"><strong>Space between Nodes:</strong></label>
-<span class="no_wrap"><input type="text" class="wholenumber" id="node_padding" size="2" maxlength="4" value="24" onchange="process_sankey();"> px</span>
+&nbsp;
+
+<span class="no_wrap">
+<label for="node_spacing" class="spaced_label"><strong>Spacing:</strong></label>
+<span class="smalllabel">0</span><input id="node_spacing" type="range" min="0" max="100" step="1" value="24" oninput="process_sankey();" onchange="process_sankey();" class="slider_medium"><span class="smalllabel">Max</span>
+</span>
 </p>
 
 <p class="form_elements2">
 <span class="no_wrap"><label for="default_node_opacity"><strong>Opacity:</strong></label>
-<span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.05" value="1.0" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
+<span class="smalllabel">0.0</span><input id="default_node_opacity" type="range" min="0" max="1" step="0.05" value="1.0" oninput="process_sankey();" onchange="process_sankey();" class="slider_narrow"><span class="smalllabel">1.0</span></span>
 
 <span class="no_wrap"><label for="node_border" class="spaced_label"><strong>Border:</strong></label>
-<span class="smalllabel">0</span><input id="node_border" type="range" min="0" max="9" step="1" value="0" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">9</span></span>
+<span class="smalllabel">0</span><input id="node_border" type="range" min="0" max="9" step="1" value="0" oninput="process_sankey();" onchange="process_sankey();" class="slider_narrow"><span class="smalllabel">9</span></span>
 </p>
 
 <fieldset class="form_elements1">
@@ -173,10 +177,10 @@ Flows<span id="flow_options_hint">:</span></h2>
 <div id="flow_options" class="form_chunk">
 <p class="form_elements1">
 <span class="no_wrap"><label for="default_flow_opacity"><strong>Opacity:</strong></label>
-<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.05" value="0.45" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel">1.0</span></span>
+<span class="smalllabel">0.0</span><input id="default_flow_opacity" type="range" min="0" max="1" step="0.05" value="0.45" oninput="process_sankey();" onchange="process_sankey();" class="slider_narrow"><span class="smalllabel">1.0</span></span>
 
 <span class="no_wrap"><label for="curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
-|<input id="curvature" type="range" min="0.1" max="0.9" step="0.05" value="0.5" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider">(</span>
+|<input id="curvature" type="range" min="0.1" max="0.9" step="0.05" value="0.5" oninput="process_sankey();" onchange="process_sankey();" class="slider_narrow">(</span>
 </p>
 
 <fieldset class="form_elements2">
@@ -245,7 +249,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
 
 <label for="font_weight" class="spaced_label"><strong>Weight:</strong></label>
-<span class="no_wrap"><span class="smalllabel font_light">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" oninput="process_sankey();" onchange="process_sankey();" class="narrowslider"><span class="smalllabel font_bolder">Bold</span></span><br />
+<span class="no_wrap"><span class="smalllabel font_light">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" oninput="process_sankey();" onchange="process_sankey();" class="slider_narrow"><span class="smalllabel font_bolder">Bold</span></span><br />
 </p>
 
 <p class="form_elements1">
