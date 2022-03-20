@@ -501,7 +501,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         .nodeSpacingFactor(cfg.node_spacing/100)
         .size([graph_w, graph_h])
         .nodes(all_nodes)
-        .links(all_flows)
+        .flows(all_flows)
         .rightJustifyEndpoints(cfg.justify_ends)
         .leftJustifyOrigins(cfg.justify_origins)
         .layout(50); // Note: The 'layout()' step must be LAST.

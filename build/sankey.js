@@ -5,7 +5,7 @@ d3.sankey = function() {
       nodeSpacingFactor = 0.5,
       size = [1, 1],
       nodes = [],
-      links = [],
+      flows = [],
       rightJustifyEndpoints = false,
       leftJustifyOrigins = false,
       nodePadding = 0;
@@ -29,9 +29,9 @@ d3.sankey = function() {
     return sankey;
   };
 
-  sankey.links = function(x) {
-    if (x === undefined) { return links; }
-    links = x;
+  sankey.flows = function(x) {
+    if (x === undefined) { return flows; }
+    flows = x;
     return sankey;
   };
 
@@ -59,107 +59,111 @@ d3.sankey = function() {
   function valueSum(list) { return d3.sum(list, d => d.value); }
 
   // verticalCenter: Y-position of the middle of a node.
-  function verticalCenter(node) { return node.y + node.dy / 2; }
+  function verticalCenter(n) { return n.y + n.dy / 2; }
 
-  // computeNodeLinks: Populate the sourceLinks and targetLinks for each node.
-  // Also, if the source and target are not objects, assume they are indices.
-  function computeNodeLinks() {
-    nodes.forEach(function(node) {
-      node.sourceLinks = [];  // Links that have this node as source.
-      node.targetLinks = [];  // Links that have this node as target.
+  // connectFlowsToNodes: Populate flowsOut and flowsIn for each node.
+  // When the source and target are not objects, assume they are indices.
+  function connectFlowsToNodes() {
+    // Initialize the flow buckets:
+    nodes.forEach(n => {
+      n.flowsOut = [];  // Flows which use this node as source.
+      n.flowsIn = [];   // Flows which use this node as target.
     });
 
-    links.forEach(function(link) {
-      // Are either of the values just an index? Then convert to nodes:
-      if (typeof link.source === "number") { link.source = nodes[link.source]; }
-      if (typeof link.target === "number") { link.target = nodes[link.target]; }
+    // Connect each flow to its two nodes:
+    flows.forEach(f => {
+      // When a value is an index, convert it to the node object:
+      if (typeof f.source === "number") { f.source = nodes[f.source]; }
+      if (typeof f.target === "number") { f.target = nodes[f.target]; }
 
-      // Add this link to the affected source & target:
-      link.source.sourceLinks.push(link);
-      link.target.targetLinks.push(link);
+      // Add this flow to the affected source & target:
+      f.source.flowsOut.push(f);
+      f.target.flowsIn.push(f);
     });
   }
 
   // computeNodeValues: Compute the value (size) of each node by summing the
-  // associated links.
+  // associated flows.
   function computeNodeValues() {
     // Each node will equal the greater of the flows coming in or out:
-    nodes.forEach(function(node) {
-      node.value = Math.max( valueSum(node.sourceLinks), valueSum(node.targetLinks) );
+    nodes.forEach(n => {
+      n.value = Math.max( valueSum(n.flowsOut), valueSum(n.flowsIn) );
     });
   }
 
-  // computeLinkDepths: Compute the y-offset of the source endpoint (sy) and
-  // target endpoints (ty) of links, relative to the source/target node's y-position.
-  function computeLinkDepths() {
+  // placeFlowsInsideNodes: Compute the y-offset of the source endpoint (sy) and
+  // target endpoints (ty) of flows, relative to the source/target node's y-position.
+  function placeFlowsInsideNodes() {
     function ascendingSourceDepth(a, b) { return a.source.y - b.source.y; }
     function ascendingTargetDepth(a, b) { return a.target.y - b.target.y; }
 
-    nodes.forEach(function(node) {
-      node.sourceLinks.sort(ascendingTargetDepth);
-      node.targetLinks.sort(ascendingSourceDepth);
+    nodes.forEach(n => {
+      n.flowsOut.sort(ascendingTargetDepth);
+      n.flowsIn.sort(ascendingSourceDepth);
     });
 
-    // Now that the links are in order according to where we want them to touch
+    // Now that the flows are in order according to where we want them to touch
     // each node, calculate/store their specific offsets:
-    nodes.forEach(function(node) {
+    nodes.forEach(n => {
       // sy (source y) & ty (target y) are the vertical offsets at each end of
       // a flow, determining where *inside* each node each flow will touch:
       var sy = 0, ty = 0;
-      node.sourceLinks.forEach(function(link) {
-        link.sy = sy;
-        sy += link.dy;
+      n.flowsOut.forEach(f => {
+        f.sy = sy;
+        sy += f.dy;
       });
-      node.targetLinks.forEach(function(link) {
-        link.ty = ty;
-        ty += link.dy;
+      n.flowsIn.forEach(f => {
+        f.ty = ty;
+        ty += f.dy;
       });
     });
   }
 
-  // computeNodeStages: Iteratively assign the stage (x-group) for each node.
-  // Nodes are assigned the maximum stage of their incoming neighbors + 1;
-  // nodes with no incoming links are assigned stage 0, while
-  // nodes with no outgoing links are assigned the maximum stage.
-  function computeNodeStages() {
+  // assignNodesToStages: Iteratively assign the stage (x-group) for each node.
+  // Nodes are assigned the maximum stage of their incoming neighbors + 1.
+  // Nodes with no incoming flows are assigned stage 0, while
+  // Nodes with no outgoing flows are assigned the maximum stage.
+  function assignNodesToStages() {
     var remainingNodes = nodes,
         nextNodes,
         furthestStage = 0;
 
-    function updateNode(node) {
+    // This node needs a stage assigned/updated.
+    function updateNode(n) {
         // Set x-position and width:
-        node.x = furthestStage;
-        node.dx = nodeWidth;
-        node.sourceLinks.forEach(function(link) {
+        n.x = furthestStage;
+        n.dx = nodeWidth;
+        // Make sure its targets will be seen again:
+        n.flowsOut.forEach(f => {
           // Only add it to the nextNodes list if it is not already present:
-          if (nextNodes.indexOf(link.target) === -1) {
-            nextNodes.push(link.target);
+          if (nextNodes.indexOf(f.target) === -1) {
+            nextNodes.push(f.target);
           }
         });
     }
 
     function moveOriginsRight() {
-      nodes.forEach(function(node) {
+      nodes.forEach(n => {
         // If this node is not the target for any others, then it's an origin
-        if (!node.targetLinks.length) {
+        if (!n.flowsIn.length) {
           // Now move it as far right as it can go:
-          node.x = d3.min(node.sourceLinks, function(d) { return d.target.x; }) - 1;
+          n.x = d3.min(n.flowsOut, d => d.target.x) - 1;
         }
       });
     }
 
     function moveSinksRight(lastStage) {
-      nodes.forEach(function(node) {
+      nodes.forEach(n => {
         // If this node is not the source for any others, then it's a dead-end
-        if (!node.sourceLinks.length) {
+        if (!n.flowsOut.length) {
           // Now move it all the way to the right of the diagram:
-          node.x = lastStage;
+          n.x = lastStage;
         }
       });
     }
 
     function scaleNodeStages(kx) {
-      nodes.forEach(function(node) { node.x *= kx; });
+      nodes.forEach(n => { n.x *= kx; });
     }
 
     // Work from left to right.
@@ -167,7 +171,7 @@ d3.sankey = function() {
     // recently-updated nodes.
     while (remainingNodes.length && furthestStage < nodes.length) {
       nextNodes = [];
-      remainingNodes.forEach(updateNode);
+      remainingNodes.forEach(n => updateNode(n));
       remainingNodes = nextNodes;
       furthestStage += 1;
     }
@@ -185,15 +189,15 @@ d3.sankey = function() {
     scaleNodeStages( (size[0] - nodeWidth) / (furthestStage - 1) );
   }
 
-  // computeNodeDepths: Compute the depth (y-position) for each node.
-  function computeNodeDepths(iterations) {
+  // placeNodes: Compute the depth (y-position) for each node.
+  function placeNodes(iterations) {
     var alpha = 1,
-        // Group nodes by stage & make an iterator for each set:
-        nodesByStage = Array.from(d3.group(nodes, d => d.x)).map(d => d[1]);
+        // stages = one array for each stage, containing that stage's nodes:
+        stages = Array.from(d3.group(nodes, d => d.x)).map(d => d[1]);
 
     function initializeNodeDepth() {
       // How many nodes are in the busiest stage?
-      const greatest_node_count = d3.max(nodesByStage, s => s.length);
+      const greatest_node_count = d3.max(stages, s => s.length);
 
       // What if each node in that stage got 1 pixel?
       // Figure out how many pixels would be left over.
@@ -211,30 +215,29 @@ d3.sankey = function() {
 
       // Finally, calculate the vertical scaling factor for all nodes, given the
       // derived padding value and the diagram height:
-      var ky = d3.min(nodesByStage,
-        stage => {
-          return (size[1] - (stage.length - 1) * nodePadding)
-            / valueSum(stage);
+      var ky = d3.min(stages,
+        s => {
+          return (size[1] - (s.length - 1) * nodePadding) / valueSum(s);
         });
 
-      nodesByStage.forEach(function(nodes) {
-        nodes.forEach(function(node, i) {
-          node.y = i; // i = a counter (0 to the # of nodes in this stage)
+      stages.forEach(s => {
+        s.forEach( (n, i) => {
+          n.y = i; // i = a counter (0 to the # of nodes in this stage)
           // scale every node's raw value to the final height in the graph
-          node.dy = node.value * ky;
+          n.dy = n.value * ky;
         });
       });
 
-      // Set links' raw dy value using the scale of the graph
-      links.forEach( function(link) { link.dy = link.value * ky; } );
+      // Set flows' raw dy value using the scale of the graph
+      flows.forEach( f => { f.dy = f.value * ky; } );
     }
 
     function resolveCollisions() {
-      nodesByStage.forEach(function(nodes) {
+      stages.forEach(s => {
         var current_node,
             y_distance,
             current_y = 0,
-            nodes_in_group = nodes.length,
+            nodes_in_group = s.length,
             i;
 
         // sort functions for determining what order items should be processed in:
@@ -242,9 +245,9 @@ d3.sankey = function() {
         // function orderInSource(a, b) { return a.sourceline - b.sourceline; }
 
         // Push any overlapping nodes down.
-        nodes.sort(ascendingDepth);
+        s.sort(ascendingDepth);
         for (i = 0; i < nodes_in_group; i += 1) {
-          current_node = nodes[i];
+          current_node = s[i];
           y_distance = current_y - current_node.y;
           if (y_distance > 0) { current_node.y += y_distance; }
           current_y = current_node.y + current_node.dy + nodePadding;
@@ -258,7 +261,7 @@ d3.sankey = function() {
 
           // From there, push any now-overlapping nodes back up.
           for (i = nodes_in_group - 2; i >= 0; i -= 1) {
-            current_node = nodes[i];
+            current_node = s[i];
             y_distance = current_node.y + current_node.dy + nodePadding - current_y;
             if (y_distance > 0) { current_node.y -= y_distance; }
             current_y = current_node.y;
@@ -268,36 +271,36 @@ d3.sankey = function() {
     }
 
     function relaxLeftToRight(alpha) {
-      function weightedSource(link) {
-        return (link.source.y + link.sy + link.dy / 2) * link.value;
+      function weightedSource(f) {
+        return (f.source.y + f.sy + f.dy / 2) * f.value;
       }
 
-      nodesByStage.forEach(function(nodes) {
-        nodes.forEach(function(node) {
-          if (node.targetLinks.length) {
+      stages.forEach(s => {
+        s.forEach(n => {
+          if (n.flowsIn.length) {
             // Value-weighted average of the y-position of source node centers
             // linked to this node:
-            var y_position = d3.sum(node.targetLinks, weightedSource)
-                / valueSum(node.targetLinks);
-            node.y += (y_position - verticalCenter(node)) * alpha;
+            var y_position = d3.sum(n.flowsIn, weightedSource)
+                / valueSum(n.flowsIn);
+            n.y += (y_position - verticalCenter(n)) * alpha;
           }
         });
       });
     }
 
     function relaxRightToLeft(alpha) {
-      function weightedTarget(link) {
-        return (link.target.y + link.ty + link.dy / 2) * link.value;
+      function weightedTarget(f) {
+        return (f.target.y + f.ty + f.dy / 2) * f.value;
       }
 
-      nodesByStage.slice().reverse().forEach(function(nodes) {
-        nodes.forEach(function(node) {
-          if (node.sourceLinks.length) {
+      stages.slice().reverse().forEach(s => {
+        s.forEach(n => {
+          if (n.flowsOut.length) {
             // Value-weighted average of the y-positions of target node centers
             // linked to this node:
-            var y_position = d3.sum(node.sourceLinks, weightedTarget)
-                / valueSum(node.sourceLinks);
-            node.y += (y_position - verticalCenter(node)) * alpha;
+            var y_position = d3.sum(n.flowsOut, weightedTarget)
+                / valueSum(n.flowsOut);
+            n.y += (y_position - verticalCenter(n)) * alpha;
           }
         });
       });
@@ -306,7 +309,7 @@ d3.sankey = function() {
     //
     initializeNodeDepth();
     resolveCollisions();
-    computeLinkDepths();
+    placeFlowsInsideNodes();
 
     while (iterations > 0) {
       iterations -= 1;
@@ -315,32 +318,32 @@ d3.sankey = function() {
       alpha *= 0.99;
       relaxRightToLeft(alpha);
       resolveCollisions();
-      computeLinkDepths();
+      placeFlowsInsideNodes();
 
       relaxLeftToRight(alpha);
       resolveCollisions();
-      computeLinkDepths();
+      placeFlowsInsideNodes();
     }
 
     // After the last layout step, store the original node coordinates
     // (to support drag moves):
-    nodes.forEach(function (node) {
-        node.orig_x = node.x;
-        node.orig_y = node.y;
+    nodes.forEach(n => {
+        n.orig_x = n.x;
+        n.orig_y = n.y;
     });
   }
 
   sankey.layout = function(iterations) {
-    computeNodeLinks();
+    connectFlowsToNodes();
     computeNodeValues();
-    computeNodeStages();
-    computeNodeDepths(iterations);
+    assignNodesToStages();
+    placeNodes(iterations);
     return sankey;
   };
 
   // Given a new set of node positions, calculate where the flows must now be:
   sankey.relayout = function() {
-    computeLinkDepths();
+    placeFlowsInsideNodes();
     return sankey;
   };
 
