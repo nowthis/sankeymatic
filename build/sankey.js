@@ -197,7 +197,11 @@ d3.sankey = function() {
 
     function initializeNodeDepth() {
       // How many nodes are in the busiest stage?
-      const greatest_node_count = d3.max(stages, s => s.length);
+      // If every stage has only 1 node, this causes a divide-by-0 error..so
+      // make sure this is always at least 2:
+      const greatest_node_count = Math.max(
+        d3.max(stages, s => s.length),
+        2);
 
       // What if each node in that stage got 1 pixel?
       // Figure out how many pixels would be left over.
