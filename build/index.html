@@ -188,11 +188,12 @@ Flows<span id="flow_options_hint">:</span></h2>
 
 <div class="fieldset_contents">
 
-<!-- <span><input name="default_flow_inherit" type="radio" id="flow_outer_to_inner" value="outer" onchange="process_sankey();" /><label class="ropt" for="flow_outer_to_inner">colors from outer nodes, flowing in</label></span><br /> -->
-
 Use colors from:
-<span><input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_source">the Source nodes</label></span>
-<span><input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_inherit_from_target">the Target nodes</label></span>
+<span class="no_wrap"><input name="default_flow_inherit" type="radio" id="flow_outside_in" value="outside_in" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_outside_in">outermost nodes (flowing in)</label></span>
+<br />
+
+<span class="no_wrap"><input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_source">each flow's Source</label></span>
+<span class="no_wrap"><input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_target">each flow's Target</label></span>
 <br />
 
 <span>or: <input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color" class="ropt">a single color:</label>

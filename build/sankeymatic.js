@@ -417,6 +417,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         diag_flows,   // d3 selection of all flow paths
         diag_nodes,   // ...all nodes
         diag_labels,  // ...all labels & titles
+        stagesArr = [], // the array of all stages in the diagram
         // Drawing curves with curvature of <= 0.1 looks bad and produces visual
         // artifacts, so let's just take the lowest value on the slider (0.1)
         // and call that 0/flat:
@@ -441,13 +442,19 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // Stroke Color priority order:
         // 1. color defined specifically for the flow
         // 2. single-inheritance-from-source (or target)
-        // 3. default-inheritance-from-source (or target)
+        // 3. default-inheritance-from-source/target/outside_in
         // 4. default flow color
         return f.color ? f.color
             : f.source.inherit_right ? f.source.color
             : f.target.inherit_left ? f.target.color
-            : cfg.default_flow_inherit === "source" ? f.source.color
-            : cfg.default_flow_inherit === "target" ? f.target.color
+            : cfg.default_flow_inherit === 'source' ? f.source.color
+            : cfg.default_flow_inherit === 'target' ? f.target.color
+            : cfg.default_flow_inherit === 'outside_in' ?
+              // Is the midpoint of the flow in the right half, or left?
+              // (If it's in the exact middle, we use the source color.)
+              ((f.source.stage + f.target.stage)/2 <= (stagesArr.length - 1)/2
+                ? f.source.color
+                : f.target.color)
             : cfg.default_flow_color;
     }
 
@@ -505,6 +512,8 @@ function render_sankey(all_nodes, all_flows, cfg) {
         .rightJustifyEndpoints(cfg.justify_ends)
         .leftJustifyOrigins(cfg.justify_origins)
         .setup();
+
+    stagesArr = sankey_obj.stages();
 
     sankey_obj.layout(50); // Note: The 'layout()' step must be LAST.
 
@@ -924,7 +933,7 @@ glob.process_sankey = function () {
         justify_origins: 0,
         justify_ends: 0,
         curvature: 0.5,
-        default_flow_inherit: "target",
+        default_flow_inherit: "outside_in",
         default_flow_color: "#666666",
         background_color:   "#FFFFFF",
         background_transparent: 0,
@@ -1186,12 +1195,12 @@ glob.process_sankey = function () {
     // Direction of flow color inheritance:
     // Allowed values = source|target|none
     flow_inherit = radio_value("default_flow_inherit");
-    if ( flow_inherit.match( /^(?:source|target|none)$/ ) ) {
+    if ( flow_inherit.match( /^(?:source|target|outside_in|none)$/ ) ) {
         if (reverse_the_graph) {
             flow_inherit
                 = flow_inherit === "source" ? "target"
                 : flow_inherit === "target" ? "source"
-                : "none";
+                : flow_inherit;
         }
         approved_config.default_flow_inherit = flow_inherit;
     } // otherwise skip & use the default
