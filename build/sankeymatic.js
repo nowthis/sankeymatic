@@ -296,44 +296,62 @@ glob.cancel_reset_graph = function () {
 }
 
 glob.reset_graph_confirmed = function () {
-    const graphname = document.getElementById("demo_graph_chosen").value;
-    const replacement_flow_data = (
-        sample_diagram_recipes.hasOwnProperty(graphname)
-            ? sample_diagram_recipes[graphname].flows.replace("\\n","\n")
-            : "Requested sample diagram not found"
-    );
-    const flows_el = document.getElementById("flows_in")
+    const graphName = document.getElementById("demo_graph_chosen").value;
+    const newDiagramSpec = sampleDiagramRecipes.hasOwnProperty(graphName)
+        ? sampleDiagramRecipes[graphName]
+        : null;
+    const newFlowInputs = newDiagramSpec !== null
+        ? newDiagramSpec.flows.replace("\\n","\n")
+        : "Requested sample diagram not found";
+    const newSettings = newDiagramSpec !== null
+        ? newDiagramSpec.settings || {}
+        : {};
 
-    hide_reset_warning();
+    // Update any settings specified in the stored diagram:
+    Object.keys(newSettings).forEach(
+        s => {
+            // Is this a true/false value (i.e. a radio or checkbox to update?)
+            if (newSettings[s] === true || newSettings[s] === false) {
+                document.getElementById(s).checked = newSettings[s];
+            } else {
+                // This is a regular setting:
+                document.getElementById(s).value = newSettings[s];
+            }
+        }
+    );
 
     // Select all the text...
+    const flows_el = document.getElementById("flows_in")
     flows_el.focus();
     flows_el.select();
     // ... then replace it with the new content.
-    flows_el.setRangeText(replacement_flow_data,
-        0, flows_el.selectionEnd, 'start');
+    flows_el.setRangeText(newFlowInputs, 0, flows_el.selectionEnd, 'start');
 
     // Draw the new diagram immediately:
     process_sankey();
+
     // Un-focus the input field (on tablets, keeps the keyboard from
     // auto-popping-up):
     flows_el.blur();
+
+    // If the reset warning is showing, hide it:
+    hide_reset_warning();
     return null;
 }
 
-glob.reset_graph = function (graphname) {
+glob.reset_graph = function (graphName) {
     // Is there a recipe with the given key? If so, let's proceed.
-    if (sample_diagram_recipes.hasOwnProperty(graphname)) {
+    if (sampleDiagramRecipes.hasOwnProperty(graphName)) {
         // Set the 'demo_graph_chosen' value according to the user's click:
         const chosen_el = document.getElementById("demo_graph_chosen");
-        chosen_el.value = graphname;
+        chosen_el.value = graphName;
 
         // Test the user's current input against the saved samples:
         const user_input = document.getElementById("flows_in").value;
         let flows_match_a_sample = false;
-        Object.keys(sample_diagram_recipes).forEach(
+        Object.keys(sampleDiagramRecipes).forEach(
             graph => {
-                if (user_input == sample_diagram_recipes[graph].flows) {
+                if (user_input == sampleDiagramRecipes[graph].flows) {
                     flows_match_a_sample = true;
                 }
             }
@@ -347,7 +365,8 @@ glob.reset_graph = function (graphname) {
             const warning_el = document.getElementById("reset_graph_warning");
             warning_el.style.display = "";
             const yes_button_el = document.getElementById("reset_graph_yes");
-            yes_button_el.innerHTML = `Yes, replace the graph with '${sample_diagram_recipes[graphname].name}'`;
+            yes_button_el.innerHTML =
+                `Yes, replace the graph with '${sampleDiagramRecipes[graphName].name}'`;
         }
     } else {
         console.log('graph name not found');

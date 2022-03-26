@@ -6,24 +6,36 @@
 // They're currently just super-long string literals; I preferred that to making
 // this a very /tall/ file with a difficult-to-follow structure.
 
-var sample_diagram_recipes = {
+var sampleDiagramRecipes = {
 
 // The initial diagram loaded on the page:
 'default_budget': {
     name: 'Basic Budget',
     flows: "// Enter Flows between Nodes, like this:\n//         Source [AMOUNT] Target\n\nWages [1500] Budget\nOther [250] Budget\n\nBudget [450] Taxes\nBudget [420] Housing\nBudget [400] Food\nBudget [295] Transportation\nBudget [25] Savings\n\n// You can set a Node's color, like this:\n:Wages #95C\n//            ...or a color for a single Flow:\nBudget [160] Other Necessities #0F0\n\n// Use the controls below to customize\n// your diagram's appearance...",
+    settings: {
+        node_spacing: 30,
+        flow_outside_in: true,
+        },
     },
 
 // Ranked-choice election
 'election': {
     name: 'Ranked Election',
     flows: '// Sample Ranked Election diagram\n\n// First set up Node orders & colors:\n:GH - Round 1 #F93\n:EF - Round 1 #39F\n:CD - Round 1 #96F\n:AB - Round 1 #3F9\n\n:GH - Round 2 #F93\n:EF - Round 2 #39F\n:CD - Round 2 #96F\n\n:GH - Round 3 #F93\n:EF - Round 3 #39F\n:No further votes #555 <<\n\n// Then list the Flow data:\nAB - Round 1 [20000] No further votes\nAB - Round 1 [10000] GH - Round 2\nAB - Round 1 [20000] CD - Round 2\nAB - Round 1 [25000] EF - Round 2\n\nCD - Round 1 [200000] CD - Round 2\nGH - Round 1 [300000] GH - Round 2\nEF - Round 1 [220000] EF - Round 2\n\nCD - Round 2 [50000] GH - Round 3\nCD - Round 2 [95000] EF - Round 3\nCD - Round 2 [75000] No further votes\n\nGH - Round 2 [310000] GH - Round 3\nEF - Round 2 [245000] EF - Round 3',
+    settings: {
+        node_spacing: 24,
+        flow_inherit_from_source: true,
+        },
     },
 
 // Sample job-hunt flow
 'job_search': {
     name: 'Job Search',
     flows: '// Sample Job Search diagram:\n\n// Flows:\nApplications [4] Interview\nApplications [9] Rejected\nApplications [4] No Answer\n\nInterview [2] No Offer\n\nInterview [2] 2nd Interview\n\n2nd Interview [2] Offer\n\nOffer [1] Declined\nOffer [1] Accepted',
+    settings: {
+        node_spacing: 2,
+        flow_inherit_from_target: true,
+        },
     },
 
 // A variation of the inputs for the original d3 energy diagram, now found
