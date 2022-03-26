@@ -18,6 +18,11 @@ p#buildlink,
   display: table;
 }
 
+.ad_center {
+  margin: 0.5em auto;
+  text-align: center;
+}
+
 ul { text-align: left; }
 
 .indented { margin-left: 5%; }
@@ -45,6 +50,7 @@ footer,
 #footer-content {
   background-color: #EEF8FF;
   text-align: center;
+  clear: both;
 }
 
 header {
@@ -131,6 +137,11 @@ p.top_padded {
 
 #news_main figcaption {
   font-size: smaller;
+}
+
+#news_main hr,
+hr.ad_divider {
+  border-top: 4px double #069;
 }
 
 /* Present themes with different color counts.
