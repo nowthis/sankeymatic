@@ -6,9 +6,11 @@ d3.sankey = function() {
       size = [1, 1],
       nodes = [],
       flows = [],
+      stagesArr = [],
       rightJustifyEndpoints = false,
       leftJustifyOrigins = false,
-      nodePadding = 0;
+      spaceBetweenNodes = 0,
+      furthestStage = 0;
 
   // ACCESSORS //
   sankey.nodeWidth = function(x) {
@@ -53,6 +55,9 @@ d3.sankey = function() {
     return sankey;
   };
 
+  // Getters:
+  sankey.stages = function() { return stagesArr; };
+
   // FUNCTIONS //
 
   // valueSum: Add up all the 'value' keys from a list of objects:
@@ -82,8 +87,8 @@ d3.sankey = function() {
     });
   }
 
-  // computeNodeValues: Compute the value (size) of each node by summing the
-  // associated flows.
+  // computeNodeValues: Compute the value of each node by summing the
+  // associated flows:
   function computeNodeValues() {
     // Each node will equal the greater of the flows coming in or out:
     nodes.forEach(n => {
@@ -125,13 +130,12 @@ d3.sankey = function() {
   // Nodes with no outgoing flows are assigned the maximum stage.
   function assignNodesToStages() {
     var remainingNodes = nodes,
-        nextNodes,
-        furthestStage = 0;
+        nextNodes = [];
 
     // This node needs a stage assigned/updated.
     function updateNode(n) {
         // Set x-position and width:
-        n.x = furthestStage;
+        n.stage = furthestStage;
         n.dx = nodeWidth;
         // Make sure its targets will be seen again:
         n.flowsOut.forEach(f => {
@@ -147,23 +151,19 @@ d3.sankey = function() {
         // If this node is not the target for any others, then it's an origin
         if (!n.flowsIn.length) {
           // Now move it as far right as it can go:
-          n.x = d3.min(n.flowsOut, d => d.target.x) - 1;
+          n.stage = d3.min(n.flowsOut, d => d.target.stage) - 1;
         }
       });
     }
 
-    function moveSinksRight(lastStage) {
+    function moveSinksRight() {
       nodes.forEach(n => {
         // If this node is not the source for any others, then it's a dead-end
         if (!n.flowsOut.length) {
           // Now move it all the way to the right of the diagram:
-          n.x = lastStage;
+          n.stage = furthestStage - 1;
         }
       });
-    }
-
-    function scaleNodeStages(kx) {
-      nodes.forEach(n => { n.x *= kx; });
     }
 
     // Work from left to right.
@@ -182,62 +182,60 @@ d3.sankey = function() {
 
     // Force endpoint nodes all the way to the right?
     // Note: furthestStage at this point is 1 beyond the last actual stage:
-    if (rightJustifyEndpoints) { moveSinksRight(furthestStage - 1); }
+    if (rightJustifyEndpoints) { moveSinksRight(); }
 
-    // Apply a scaling factor to the stages to calculate an exact x-coordinate
-    // for each node:
-    scaleNodeStages( (size[0] - nodeWidth) / (furthestStage - 1) );
+    // Set up stagesArr: an array element for each stage, containing that
+    // stage's nodes:
+    stagesArr = Array.from(d3.group(nodes, d => d.stage)).map(d => d[1]);
+
   }
 
   // placeNodes: Compute the depth (y-position) for each node.
   function placeNodes(iterations) {
-    var alpha = 1,
-        // stages = one array for each stage, containing that stage's nodes:
-        stages = Array.from(d3.group(nodes, d => d.x)).map(d => d[1]);
+    var alpha = 1;
 
     function initializeNodeDepth() {
-      // How many nodes are in the busiest stage?
-      // If every stage has only 1 node, this causes a divide-by-0 error..so
-      // make sure this is always at least 2:
-      const greatest_node_count = Math.max(
-        d3.max(stages, s => s.length),
-        2);
+      // How many nodes are in the 'busiest' stage?
+      // Note: If every stage has only 1 node, this causes a divide-by-0
+      // error..so make sure this is always at least 2:
+      const greatestNodeCount = Math.max(2, d3.max(stagesArr, s => s.length));
 
       // What if each node in that stage got 1 pixel?
       // Figure out how many pixels would be left over.
       // If it's < 2, use 2 because otherwise the slider has nothing to do..
-      const all_available_padding = Math.max(2, size[1] - greatest_node_count);
+      const allAvailablePadding = Math.max(2, size[1] - greatestNodeCount);
 
       // A nodeSpacingFactor of 1 means 'pad as much as possible without making
       // these nodes less than a pixel tall'.
       //   padding value for nSF of 1 =
-      //      all_available_padding / (# of spaces in the busiest stage)
-      // Calculate the actual nodePadding value:
-      nodePadding = nodeSpacingFactor
-        * all_available_padding
-        / (greatest_node_count - 1);
+      //      allAvailablePadding / (# of spaces in the busiest stage)
+      // Calculate the actual spaceBetweenNodes value:
+      spaceBetweenNodes = nodeSpacingFactor * allAvailablePadding
+        / (greatestNodeCount - 1);
 
       // Finally, calculate the vertical scaling factor for all nodes, given the
-      // derived padding value and the diagram height:
-      var ky = d3.min(stages,
+      // derived spaceBetweenNodes value and the diagram's height:
+      var ky = d3.min(stagesArr,
         s => {
-          return (size[1] - (s.length - 1) * nodePadding) / valueSum(s);
+          return (size[1] - (s.length - 1) * spaceBetweenNodes) / valueSum(s);
         });
 
-      stages.forEach(s => {
+      // Start with each node at the TOP of the graph, each starting 1 pixel
+      // lower than the previous. (This will be changed someday soon.):
+      stagesArr.forEach(s => {
         s.forEach( (n, i) => {
           n.y = i; // i = a counter (0 to the # of nodes in this stage)
-          // scale every node's raw value to the final height in the graph
+          // Compute every node's final height in the graph (dy):
           n.dy = n.value * ky;
         });
       });
 
-      // Set flows' raw dy value using the scale of the graph
+      // Compute flows' dy value using the scale of the graph:
       flows.forEach( f => { f.dy = f.value * ky; } );
     }
 
     function resolveCollisions() {
-      stages.forEach(s => {
+      stagesArr.forEach(s => {
         var current_node,
             y_distance,
             current_y = 0,
@@ -254,11 +252,11 @@ d3.sankey = function() {
           current_node = s[i];
           y_distance = current_y - current_node.y;
           if (y_distance > 0) { current_node.y += y_distance; }
-          current_y = current_node.y + current_node.dy + nodePadding;
+          current_y = current_node.y + current_node.dy + spaceBetweenNodes;
         }
 
         // If the last/bottom-most node goes outside the bounds, push it back up.
-        y_distance = current_y - nodePadding - size[1];
+        y_distance = current_y - spaceBetweenNodes - size[1];
         if (y_distance > 0) {
           current_node.y -= y_distance;
           current_y = current_node.y;
@@ -266,7 +264,8 @@ d3.sankey = function() {
           // From there, push any now-overlapping nodes back up.
           for (i = nodes_in_group - 2; i >= 0; i -= 1) {
             current_node = s[i];
-            y_distance = current_node.y + current_node.dy + nodePadding - current_y;
+            y_distance = current_node.y + current_node.dy + spaceBetweenNodes
+              - current_y;
             if (y_distance > 0) { current_node.y -= y_distance; }
             current_y = current_node.y;
           }
@@ -279,7 +278,7 @@ d3.sankey = function() {
         return (f.source.y + f.sy + f.dy / 2) * f.value;
       }
 
-      stages.forEach(s => {
+      stagesArr.forEach(s => {
         s.forEach(n => {
           if (n.flowsIn.length) {
             // Value-weighted average of the y-position of source node centers
@@ -297,7 +296,7 @@ d3.sankey = function() {
         return (f.target.y + f.ty + f.dy / 2) * f.value;
       }
 
-      stages.slice().reverse().forEach(s => {
+      stagesArr.slice().reverse().forEach(s => {
         s.forEach(n => {
           if (n.flowsOut.length) {
             // Value-weighted average of the y-positions of target node centers
@@ -310,7 +309,13 @@ d3.sankey = function() {
       });
     }
 
-    //
+    // Enough preamble. Lay out the nodes:
+
+    // Apply a scaling factor to all stages to calculate the exact x value
+    // for each node:
+    const widthPerStage = (size[0] - nodeWidth) / (furthestStage - 1);
+    nodes.forEach(n => { n.x = widthPerStage * n.stage; });
+
     initializeNodeDepth();
     resolveCollisions();
     placeFlowsInsideNodes();
@@ -337,15 +342,24 @@ d3.sankey = function() {
     });
   }
 
-  sankey.layout = function(iterations) {
+  // setup() = define the *skeleton* of the diagram -- which nodes link to
+  // which, and in which stages -- but no specific positions yet:
+  sankey.setup = function() {
     connectFlowsToNodes();
     computeNodeValues();
     assignNodesToStages();
+    return sankey;
+  };
+
+  // layout() = Given a complete skeleton, use the given total width/height and
+  // set the exact positions of all nodes and flows:
+  sankey.layout = function(iterations) {
     placeNodes(iterations);
     return sankey;
   };
 
-  // Given a new set of node positions, calculate where the flows must now be:
+  // relayout() = Given a complete diagram with some new node positions,
+  // calculate where the flows must now start/end:
   sankey.relayout = function() {
     placeFlowsInsideNodes();
     return sankey;

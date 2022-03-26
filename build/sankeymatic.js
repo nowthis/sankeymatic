@@ -504,7 +504,9 @@ function render_sankey(all_nodes, all_flows, cfg) {
         .flows(all_flows)
         .rightJustifyEndpoints(cfg.justify_ends)
         .leftJustifyOrigins(cfg.justify_origins)
-        .layout(50); // Note: The 'layout()' step must be LAST.
+        .setup();
+
+    sankey_obj.layout(50); // Note: The 'layout()' step must be LAST.
 
     // Draw!
 
