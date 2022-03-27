@@ -148,9 +148,10 @@ d3.sankey = function() {
 
     function moveOriginsRight() {
       nodes.forEach(n => {
-        // If this node is not the target for any others, then it's an origin
-        if (!n.flowsIn.length) {
-          // Now move it as far right as it can go:
+        // If this node is not the target for any others, then it's an origin.
+        // If it has 1+ targets (the common case), then move it as far right
+        // as it can go without bumping into its targets:
+        if (!n.flowsIn.length && n.flowsOut.length) {
           n.stage = d3.min(n.flowsOut, d => d.target.stage) - 1;
         }
       });
@@ -183,11 +184,16 @@ d3.sankey = function() {
     // Force endpoint nodes all the way to the right?
     // Note: furthestStage at this point is 1 beyond the last actual stage:
     if (rightJustifyEndpoints) { moveSinksRight(); }
+  }
 
-    // Set up stagesArr: an array element for each stage, containing that
-    // stage's nodes:
-    stagesArr = Array.from(d3.group(nodes, d => d.stage)).map(d => d[1]);
-
+  // Set up stagesArr: one array element for each stage, containing that
+  // stage's nodes, in stage order.
+  // This can also be called when nodes' info may have been updated elsewhere &
+  // we need a fresh map generated.
+  function updateStagesArray() {
+    stagesArr = Array.from(d3.group(nodes, d => d.stage))
+      .sort((a,b) => { return a[0] - b[0]; })
+      .map(d => d[1]);
   }
 
   // placeNodes: Compute the depth (y-position) for each node.
@@ -225,8 +231,10 @@ d3.sankey = function() {
       stagesArr.forEach(s => {
         s.forEach( (n, i) => {
           n.y = i; // i = a counter (0 to the # of nodes in this stage)
-          // Compute every node's final height in the graph (dy):
-          n.dy = n.value * ky;
+          // Compute every node's final height in the graph (dy).
+          // Also: make sure each node is at least 1 pixel, even if its true
+          // value is 0:
+          n.dy = Math.max(1, n.value * ky);
         });
       });
 
@@ -348,12 +356,15 @@ d3.sankey = function() {
     connectFlowsToNodes();
     computeNodeValues();
     assignNodesToStages();
+    updateStagesArray();
     return sankey;
   };
 
   // layout() = Given a complete skeleton, use the given total width/height and
   // set the exact positions of all nodes and flows:
   sankey.layout = function(iterations) {
+    // In case anything's changed since setup, re-generate our map:
+    updateStagesArray();
     placeNodes(iterations);
     return sankey;
   };

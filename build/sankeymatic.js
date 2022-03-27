@@ -532,9 +532,10 @@ function render_sankey(all_nodes, all_flows, cfg) {
         .leftJustifyOrigins(cfg.justify_origins)
         .setup();
 
-    stagesArr = sankey_obj.stages();
-
     sankey_obj.layout(50); // Note: The 'layout()' step must be LAST.
+
+    // Get the final stages array (might be used for outside-in colors):
+    stagesArr = sankey_obj.stages();
 
     // Draw!
 
