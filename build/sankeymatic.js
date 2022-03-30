@@ -732,18 +732,17 @@ glob.process_sankey = function () {
     var source_lines = [], good_flows = [], good_node_lines = [],
         bad_lines = [], node_order = [], line_ix = 0, line_in = '',
         unique_nodes = {}, matches = [], amount_in = 0,
-        do_cross_checking = true, cross_check_errors = [],
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '',
         reverse_the_graph = 0,
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
         colorset_in = '', labelpos_in = '', fontface_in = '',
+        differences = [],
+        differences_el = document.getElementById("imbalances"),
+        list_differences_el = document.getElementById("flow_cross_check"),
         chart_el    = document.getElementById("chart"),
         messages_el = document.getElementById("messages_container"),
-        imbalances_el = document.getElementById("imbalances"),
-        imbalance_msg_el = document.getElementById("imbalance_messages"),
-        flow_cross_check_el = document.getElementById("flow_cross_check"),
         raw_source = document.getElementById("flows_in").value;
 
     // Define utility functions:
@@ -757,14 +756,10 @@ glob.process_sankey = function () {
                 : (messages_el.innerHTML + new_msg);
     }
 
-    // set_imbalances_message: Show message using the given class:
-    function set_imbalances_message(msg_html) {
-        if (msg_html.length > 0) {
-            imbalance_msg_el.innerHTML
-                = '<div id="imbalance_msg">' + msg_html + '</div>';
-        } else {
-            imbalance_msg_el.innerHTML = '';
-        }
+    // set_differences_message: Show message using the correct class:
+    function set_differences_message(msgHTML) {
+        document.getElementById("imbalance_messages").innerHTML =
+            msgHTML.length ? `<div id="imbalance_msg">${msgHTML}</div>`: '';
     }
 
     // unit_fy: Format a value as it will be in the graph.
@@ -1263,93 +1258,92 @@ glob.process_sankey = function () {
         }
     });
 
-    do_cross_checking = flow_cross_check_el.checked;
-
     // Calculate some totals & stats for the graph.
-    node_order.forEach( function(nodename) {
-        var this_node = unique_nodes[nodename],
-            difference = 0;
-        // Don't crosscheck any nodes with 0 as the From or To amount; those are the
-        // origins & endpoints for the whole graph and don't qualify:
-        if ( this_node.from_sum > 0 && this_node.to_sum > 0) {
-            difference = this_node.to_sum - this_node.from_sum;
+    node_order.forEach( nodeName => {
+        var n = unique_nodes[nodeName];
+
+        // Skip checking any nodes with 0 as the From or To amount; those are
+        // the origins & endpoints for the whole graph and don't qualify:
+        if ( n.from_sum > 0 && n.to_sum > 0) {
+            const difference = n.to_sum - n.from_sum;
             // Is there a difference big enough to matter? (i.e. > epsilon)
-            if ( do_cross_checking
-                && Math.abs(difference) > epsilon_difference ) {
-                cross_check_errors.push({
-                    nodename: nodename,
-                    total_in: explain_sum(this_node.to_sum, this_node.to_list),
-                    total_out: explain_sum(this_node.from_sum, this_node.from_list),
-                    difference: difference
+            // We'll always calculate this, even if not shown to the user.
+            if ( Math.abs(difference) > epsilon_difference ) {
+                differences.push({
+                    name: nodeName,
+                    total_in: explain_sum(n.to_sum, n.to_list),
+                    total_out: explain_sum(n.from_sum, n.from_list),
+                    difference: unit_fy(difference),
                 });
             }
         } else {
             // Accumulate totals in & out of the graph
             // (On this path, one of these values will be 0 every time.)
-            total_inflow  += this_node.from_sum;
-            total_outflow += this_node.to_sum;
+            total_inflow  += n.from_sum;
+            total_outflow += n.to_sum;
         }
     });
 
-    if (do_cross_checking) {
-        // Construct a hyper-informative error message about any imbalances:
-        // Are there any errors?
-        if ( cross_check_errors.length > 0 ) {
-            let cross_check_output_rows = [
-                "<tr><td></td><th>Total In</th><th>Total Out</th><th>Difference</th></tr>"
-            ];
-            // Loop through the failures and make a nice table:
-            cross_check_errors.forEach( function(error_rec) {
-                cross_check_output_rows.push(
-                    "<tr><td class=\"nodename\">"
-                    + escape_html(error_rec.nodename) + "</td><td>"
-                    + error_rec.total_in + "</td><td>"
-                    + error_rec.total_out + "</td><td>"
-                    + unit_fy(error_rec.difference) + "</td></tr>"
-                );
-            });
-            set_imbalances_message(
-                "<table class=\"center_basic\">"
-                + cross_check_output_rows.join("\n")
-                + "</table>");
-        } else {
-            set_imbalances_message("");
-        }
+    // Are there any differences, and does the user want to know?
+    if (differences.length && list_differences_el.checked) {
+        // Construct a hyper-informative error message about any differences:
+        let differenceRows = [
+            "<tr><td></td><th>Total In</th><th>Total Out</th><th>Difference</th></tr>"
+        ];
+        // Make a nice table of the differences:
+        differences.forEach( diffRec => {
+            differenceRows.push(
+                `<tr><td class="nodename">${escape_html(diffRec.name)}</td>`
+                + `<td>${diffRec.total_in}</td>`
+                + `<td>${diffRec.total_out}</td>`
+                + `<td>${diffRec.difference}</td></tr>`
+            );
+        });
+        set_differences_message(
+            `<table class="center_basic">${differenceRows.join("\n")}</table>`
+        );
     } else {
-        // User doesn't want to know. Clear the messages area:
-        set_imbalances_message("");
+        // Clear the messages area:
+        set_differences_message('');
     }
 
-    // Reflect summary stats to the user, including an overview of any cross-checks:
-    status_message = "<strong>"
-        + approved_flows.length + " Flows</strong> between <strong>"
-        + approved_nodes.length + " Nodes</strong>. ";
-    // Do the totals match?
+    // Reflect summary stats to the user:
+    status_message =
+        `<strong>${approved_flows.length} Flows</strong> between `
+        + `<strong>${approved_nodes.length} Nodes</strong>. `;
+
+    // Do the totals match? If not, mention the different totals:
     if ( Math.abs( total_inflow - total_outflow ) < epsilon_difference ) {
-        status_message +=
-            "Total Inputs = <strong>" + unit_fy(total_inflow)
-            + "</strong> = Total Outputs &#9989;";
-        // Disable the controls for telling the user about differences:
-        flow_cross_check_el.disabled = true;
-        imbalances_el.setAttribute('aria-disabled', true);
+        status_message += 'Total Inputs = Total Outputs = '
+            + `<strong>${unit_fy(total_inflow)}</strong> &#9989;`;
     } else {
         status_message +=
-            "Total Inputs: <strong>"
-            + unit_fy(total_inflow) + "</strong>. Total Outputs: <strong>"
-            + unit_fy(total_outflow) + "</strong>";
-        // Enable the controls for telling the user about the differences:
-        flow_cross_check_el.disabled = false;
-        imbalances_el.setAttribute('aria-disabled', false);
+            `Total Inputs: <strong>${unit_fy(total_inflow)}</strong> `
+            + (total_inflow > total_outflow ? '&gt;' : '&lt;')
+            + ` Total Outputs: <strong>${unit_fy(total_outflow)}</strong>`;
+    }
+
+    // Are there any mismatched rows?
+    if (differences.length) {
+        // Enable the controls for letting the user show the differences:
+        list_differences_el.disabled = false;
+        differences_el.setAttribute('aria-disabled', false);
+    } else {
+        // Disable the controls for telling the user about differences:
+        list_differences_el.disabled = true;
+        differences_el.setAttribute('aria-disabled', true);
     }
 
     // always display main status line first:
     add_message( "okmessage", status_message, true );
 
     update_theme_lists();
-    // Do the actual rendering:
+
+    // All is ready. Do the actual rendering:
     render_sankey( approved_nodes, approved_flows, approved_config );
 
-    // Figure out this diagram's scale & tell the user:
+    // Now that the SVG code has been generated, figure out this diagram's
+    // Scale & make that available to the user:
     var tallest_node_height
         = parseFloat(
             document.getElementById( "r" + max_node_index ).getAttributeNS( null,"height" )
