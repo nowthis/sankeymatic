@@ -1502,17 +1502,16 @@ glob.process_sankey = function () {
 
     // Now that the SVG code has been generated, figure out this diagram's
     // Scale & make that available to the user:
-    var tallest_node_height
+    const tallest_node_height
         = parseFloat(
             document.getElementById( "r" + max_node_index ).getAttributeNS( null,"height" )
             );
-    // Use a high precision for the scale output (6 decimal places):
-    var scale_report = unit_fy(max_node_val) + " / " +
-        fix_separators( d3.format(",.2f")(tallest_node_height),
-            approved_config.seps) +
-        "px = <strong>" +
-        unit_fy( max_node_val / tallest_node_height, 6 ) + "/px</strong>";
-    document.getElementById("scale_figures").innerHTML = scale_report;
+    // Use plenty of precision for the scale output (4 decimal places):
+    document.getElementById("scale_figures").innerHTML =
+        `<strong>${unit_fy(max_node_val/tallest_node_height, 4)}</strong> `
+        + `per pixel (${unit_fy(max_node_val)}/`
+        + fix_separators(d3.format(",.2f")(tallest_node_height),approved_config.seps)
+        + `px)`;
 
     // Re-make the PNG+SVG outputs in the background so they are ready to use:
     glob.render_exportable_outputs();
