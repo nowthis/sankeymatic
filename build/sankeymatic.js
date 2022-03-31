@@ -41,6 +41,22 @@ function clamp(n, min, max) {
     return is_numeric(n) ? Math.min(Math.max(n,min),max) : min;
 }
 
+// rememberedMoves: Used to track the user's repositioning of specific nodes
+// which should be preserved across diagram renders.
+// Format is: nodeName => [move_x, move_y]
+glob.rememberedMoves = new Map();
+
+glob.resetMovedNodes = function () {
+    glob.rememberedMoves.clear();
+    process_sankey();
+}
+
+function updateResetNodesUI() {
+    // Check whether we should enable the 'reset moved nodes' button:
+    document.getElementById("reset_all_moved_nodes").disabled =
+        glob.rememberedMoves.size ? false : true;
+}
+
 // contrasting_gray_color:
 // Given any hex color, return a grayscale color which is lower-contrast than
 // pure black/white but still sufficient. (Used for less-important text.)
@@ -327,6 +343,10 @@ glob.reset_graph_confirmed = function () {
     // ... then replace it with the new content.
     flows_el.setRangeText(newFlowInputs, 0, flows_el.selectionEnd, 'start');
 
+    // Take away any remembered moves, just in case any share a name with a
+    // node in the new diagram:
+    glob.rememberedMoves.clear();
+
     // Draw the new diagram immediately:
     process_sankey();
 
@@ -334,7 +354,7 @@ glob.reset_graph_confirmed = function () {
     // auto-popping-up):
     flows_el.blur();
 
-    // If the reset warning is showing, hide it:
+    // If the reset-graph warning is showing, hide it:
     hide_reset_warning();
     return null;
 }
@@ -609,72 +629,129 @@ function render_sankey(all_nodes, all_flows, cfg) {
             return `${d.source.name} → ${d.target.name}:\n${units_format(d.value)}`;
         });
 
-    // This is called after any node has been moved; we re-calculate positions
-    // and re-render:
-    function renderMovedNode(n) {
-        // Calculate the offsets for the new position from the original spot:
-        let move_x = n.x - n.orig_x,
-            move_y = n.y - n.orig_y;
+    // Given a Node index, apply its move to the SVG & remember it for later:
+    function applyNodeMove(index) {
+        const n = all_nodes[index],
+            isZeroMove = (n.move_x == 0 && n.move_y == 0),
+            reverse_x = document.getElementById("reverse_graph").checked,
+            my_move_x = n.move_x * (reverse_x ? -1 : 1),
+            available_w = graph_w - n.dx,
+            available_h = graph_h - n.dy;
+
+        // Apply the move to the node (halting at the edges of the graph):
+        n.x = Math.max(0,
+            Math.min(available_w, n.orig_x + available_w * my_move_x));
+        n.y = Math.max(0,
+            Math.min(available_h, n.orig_y + available_h * n.move_y));
 
         // Find everything which shares the class of the dragged node and
-        // translate it by the offsets:
-        // (Currently this means the node and its label, if present.)
-        d3.selectAll(`#sankey_svg .for_r${n.index}`)
-            .attr("transform", (move_x == 0 && move_y == 0)
+        // translate each with these offsets.
+        // Currently this means the node and its label, if present.
+        // (Why would we apply a null transform? Because it may have been
+        // transformed already & we are now undoing the previous operation.)
+        d3.selectAll(`#sankey_svg .for_r${index}`)
+            .attr("transform", isZeroMove
                 ? null
-                : `translate(${ep(move_x)},${ep(move_y)})`);
-        // Recalculate all flow positions given this node's new position:
+                : `translate(${ep(n.x - n.orig_x)},${ep(n.y - n.orig_y)})`);
+    }
+
+    // Set the new starting point of any constrained move:
+    function updateLastNodePosition(n) {
+        n.last_x = n.x;
+        n.last_y = n.y;
+    }
+
+    // After applying a move, save the record of the move percentages so they
+    // can be re-applied.
+    // We don't save after every pixel-move of a drag, just when the gesture is
+    // finished.
+    function rememberNodeMove(n) {
+        if (n.move_x == 0 && n.move_y == 0) {
+            // No move any more; forget it, if there was one:
+            glob.rememberedMoves.delete(n.name);
+        } else {
+            // We save moves keyed to their name (not their index), so they
+            // can be remembered even when the inputs change their order.
+            //
+            // The value saved is the percentage of the graph's size that the
+            // node was moved, not the literal number of pixels. This helps
+            // when the user is changing spacing / diagram size.
+            //
+            // In the case of a remembered move, this will replace the
+            // original moves with an identical copy...seems less trouble than
+            // checking first.
+            glob.rememberedMoves.set(n.name, [n.move_x, n.move_y]);
+        }
+    }
+
+    // After one or more Node moves are done, call this:
+    function reLayoutDiagram() {
+        // Recalculate all flow positions given new node position(s):
         sankey_obj.relayout();
+
         // For every flow, update its 'd' path attribute with the new
         // calculated path:
         diag_flows.attr("d", flow_path_fn);
 
-        // Regenerate the exportable versions, now incorporating the drag:
+        // Regenerate the exportable versions:
         glob.render_exportable_outputs();
-        return;
     }
 
     // This is called _during_ Node drags:
     function draggingNode(event, d) {
         // Fun fact: In this context, event.subject is the same thing as 'd'.
         let my_x = event.x,
-            my_y = event.y;
+            my_y = event.y,
+            reverse_x = document.getElementById("reverse_graph").checked;
 
         // Check for the Shift key:
         if (event.sourceEvent && event.sourceEvent.shiftKey) {
             // Shift is pressed, so this is a constrained drag.
             // Figure out which direction the user has dragged _further_ in:
             if (Math.abs(my_x - d.last_x) > Math.abs(my_y - d.last_y)) {
-                my_y = d.last_y; // Use X; reset Y to the most recent Y
+                my_y = d.last_y; // Use X but reset Y to the most recent Y
             } else {
-                my_x = d.last_x; // Use Y; reset X to the most recent X
+                my_x = d.last_x; // Use Y but reset X to the most recent X
             }
         }
 
-        // Update the Node's position to where the drag has taken it (halting
-        // at the edges of the graph):
-        d.x = Math.max(0, Math.min(my_x, graph_w - d.dx));
-        d.y = Math.max(0, Math.min(my_y, graph_h - d.dy));
+        // Calculate the percentages we want to save (which will stay
+        // independent of the graph's edge constraints, even if the spacing,
+        // etc. changes):
+        // If the graph is RTL, save the move as though it's LTR:
+        d.move_x = (my_x - d.orig_x)/(graph_w - d.dx) * (reverse_x ? -1 : 1);
+        d.move_y = (my_y - d.orig_y)/(graph_h - d.dy);
 
-        renderMovedNode(d);
+        applyNodeMove(d.index);
+        // ...This is one place where we *don't* rememberNodeMove after every
+        // applyNodeMove...
+        reLayoutDiagram();
         return null;
     }
 
-    // After a drag is finished, any new constrained drag should use the _new_
-    // position as 'home'. Therefore we have to save the new position:
+    // (Investigate: This is called on every ordinary *click* as well; look
+    // into skipping this work if no actual move has happened.)
     function dragNodeEnded(event, d) {
-        d.last_x = d.x;
-        d.last_y = d.y;
+        // After a drag is finished, any new constrained drag should use the
+        // _new_ position as 'home'. Therefore we have to set this as the
+        // 'last' position:
+        updateLastNodePosition(d);
+        rememberNodeMove(d);
+        updateResetNodesUI();
         return null;
     }
 
     // A double-click resets a node to its default rendered position:
     function doubleClickNode(event, d) {
-        d.x = d.orig_x;
-        d.y = d.orig_y;
-        d.last_x = d.x;
-        d.last_y = d.y;
-        renderMovedNode(d);
+        d.move_x = 0;
+        d.move_y = 0;
+
+        applyNodeMove(d.index);
+        updateLastNodePosition(d);
+        rememberNodeMove(d);
+
+        reLayoutDiagram();
+        updateResetNodesUI();
         return null;
     }
 
@@ -771,6 +848,40 @@ function render_sankey(all_nodes, all_flows, cfg) {
             .attr("text-anchor", "start")
             .attr("x", d => ep(d.x + cfg.node_width + 6));
     }
+
+    // Now that all of the SVG nodes and labels exist, it's time to re-apply
+    // any remembered moves:
+    if (glob.rememberedMoves.size) {
+        // Make a copy of the list of moved-Node names (so we can destroy it):
+        const movedNodes = new Set(glob.rememberedMoves.keys());
+
+        // Look for all node objects matching a name in the list:
+        all_nodes.filter( n => movedNodes.has(n.name) )
+            .forEach( n => {
+                const moves = glob.rememberedMoves.get(n.name);
+                n.move_x = moves[0];
+                n.move_y = moves[1];
+                // Make this move visible in the diagram:
+                applyNodeMove(n.index);
+                updateLastNodePosition(n);
+                // *Don't* rememberNodeMove here - if we do, then the last
+                // manual move will be unintentionally updated when the
+                // spacing is changed, for example.
+
+                // Delete this moved node's name from the Set:
+                movedNodes.delete(n.name);
+            });
+        // Any remaining items in the movedNodes Set must refer to Nodes which
+        // are no longer with us.
+        // Delete their moves from the global memory:
+        movedNodes.forEach( nodeName => {
+            glob.rememberedMoves.delete(nodeName);
+        });
+
+        // Re-layout the diagram once, after all of the above moves:
+        reLayoutDiagram();
+    }
+
 } // end of render_sankey
 
 // MAIN FUNCTION:
@@ -1405,6 +1516,8 @@ glob.process_sankey = function () {
 
     // Re-make the PNG+SVG outputs in the background so they are ready to use:
     glob.render_exportable_outputs();
+
+    updateResetNodesUI();
 
     // All done. Give control back to the browser:
     return null;

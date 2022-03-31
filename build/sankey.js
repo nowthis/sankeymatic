@@ -347,8 +347,10 @@ d3.sankey = function() {
     nodes.forEach(n => {
         n.orig_x = n.x;
         n.last_x = n.x;
+        n.move_x = 0;
         n.orig_y = n.y;
         n.last_y = n.y;
+        n.move_y = 0;
     });
   }
 

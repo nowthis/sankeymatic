@@ -279,7 +279,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 Layout Options<span id="layout_options_hint">...</span></h2>
 <div id="layout_options" class="form_chunk" style="display: none;">
 <div class="form_elements1 text_center">
-<small>Note: these options only apply to diagrams<br /> with 3 or more columns of nodes.</small>
+<small>Note: these options only apply to diagrams<br /> with 3 or more columns of nodes:</small>
 
 <table style="width: 100%;"><tr>
 <td class="text_left">
@@ -292,6 +292,17 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 </td>
 </tr></table>
 </div>
+<p class="form_elements2 center_content">
+<input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">
+<label for="reverse_graph" class="ropt"><strong>Reverse the graph</strong> (flow right-to-left)</label>
+</p>
+
+<p class="form_elements1 center_content">
+<strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
+For fair comparisons <em>between</em> diagrams, make their<br />
+Units and Scale match as closely as possible.
+</p>
+
 </div>
 
 <!-- EXPORT -->
@@ -336,30 +347,6 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 </div>
 </div>
 
-</div>
-
-<!-- ADVANCED -->
-
-<h2 class="ui_head" onclick="toggle_panel('advanced_options');">
-<span id="advanced_options_indicator" class="indicator">+</span>
-Advanced<span id="advanced_options_hint">...</span></h2>
-
-<div id="advanced_options" class="form_chunk" style="display: none;">
-<p class="form_elements1">
-<strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
-(For fair comparisons between diagrams, make their<br />
-Units and Scale match as closely as possible.)
-</p>
-
-<p class="form_elements2">
-<strong>Note:</strong> You can <u>drag</u> Nodes around to reposition them<br />
-before export. (However, changing any inputs will<br />
-re-draw/reset the whole diagram.)</p>
-
-<p class="form_elements1">
-<input type="checkbox" id="reverse_graph" value="1" onchange="process_sankey();">
-<label for="reverse_graph" class="ropt"><strong>Reverse the graph</strong> (flow right-to-left)</label>
-</p>
 </div>
 
 </td>
@@ -413,9 +400,11 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 <label for="bottom_margin">Bot</label>
 <input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="20" onchange="process_sankey();"></span>
 </p>
-
 </div>
 </div>
+<p id="reset_moves_area" class="form_elements1">
+Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type="button" id="reset_all_moved_nodes" onclick="resetMovedNodes(); return false;">Reset all moved Nodes</button>
+</p>
 
 <p id="chart">
 <svg id="sankey_svg" height="600" width="600" xmlns="http://www.w3.org/2000/svg" version="1.1"></svg>

@@ -324,6 +324,11 @@ th#title {
   color: darkred;
 }
 
+#reset_moves_area {
+  margin-left: 0.1em;
+  margin-bottom: 0;
+}
+
 .callout_container {
   text-align: center;
   margin: 0.3em;
