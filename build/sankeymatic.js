@@ -609,28 +609,72 @@ function render_sankey(all_nodes, all_flows, cfg) {
             return `${d.source.name} → ${d.target.name}:\n${units_format(d.value)}`;
         });
 
-    // Node-drag function definition:
-    function dragmove(event) {
-        // Move the node to where the drag has taken it (halting at the edges
-        // of the graph):
-        event.subject.x = Math.max(0, Math.min(graph_w - event.subject.dx, event.x));
-        event.subject.y = Math.max(0, Math.min(graph_h - event.subject.dy, event.y));
-        // Calculate the offsets for the new position:
-        const move_x = event.subject.x - event.subject.orig_x,
-            move_y = event.subject.y - event.subject.orig_y;
+    // This is called after any node has been moved; we re-calculate positions
+    // and re-render:
+    function renderMovedNode(n) {
+        // Calculate the offsets for the new position from the original spot:
+        let move_x = n.x - n.orig_x,
+            move_y = n.y - n.orig_y;
+
         // Find everything which shares the class of the dragged node and
         // translate it by the offsets:
         // (Currently this means the node and its label, if present.)
-        d3.selectAll(`#sankey_svg .for_r${event.subject.index}`)
-            .attr("transform", `translate(${ep(move_x)},${ep(move_y)})`);
+        d3.selectAll(`#sankey_svg .for_r${n.index}`)
+            .attr("transform", (move_x == 0 && move_y == 0)
+                ? null
+                : `translate(${ep(move_x)},${ep(move_y)})`);
         // Recalculate all flow positions given this node's new position:
         sankey_obj.relayout();
         // For every flow, update its 'd' path attribute with the new
         // calculated path:
         diag_flows.attr("d", flow_path_fn);
 
-        // Regenerate the export versions, now incorporating the drag:
+        // Regenerate the exportable versions, now incorporating the drag:
         glob.render_exportable_outputs();
+        return;
+    }
+
+    // This is called _during_ Node drags:
+    function draggingNode(event, d) {
+        // Fun fact: In this context, event.subject is the same thing as 'd'.
+        let my_x = event.x,
+            my_y = event.y;
+
+        // Check for the Shift key:
+        if (event.sourceEvent && event.sourceEvent.shiftKey) {
+            // Shift is pressed, so this is a constrained drag.
+            // Figure out which direction the user has dragged _further_ in:
+            if (Math.abs(my_x - d.last_x) > Math.abs(my_y - d.last_y)) {
+                my_y = d.last_y; // Use X; reset Y to the most recent Y
+            } else {
+                my_x = d.last_x; // Use Y; reset X to the most recent X
+            }
+        }
+
+        // Update the Node's position to where the drag has taken it (halting
+        // at the edges of the graph):
+        d.x = Math.max(0, Math.min(my_x, graph_w - d.dx));
+        d.y = Math.max(0, Math.min(my_y, graph_h - d.dy));
+
+        renderMovedNode(d);
+        return null;
+    }
+
+    // After a drag is finished, any new constrained drag should use the _new_
+    // position as 'home'. Therefore we have to save the new position:
+    function dragNodeEnded(event, d) {
+        d.last_x = d.x;
+        d.last_y = d.y;
+        return null;
+    }
+
+    // A double-click resets a node to its default rendered position:
+    function doubleClickNode(event, d) {
+        d.x = d.orig_x;
+        d.y = d.orig_y;
+        d.last_x = d.x;
+        d.last_y = d.y;
+        renderMovedNode(d);
         return null;
     }
 
@@ -644,7 +688,10 @@ function render_sankey(all_nodes, all_flows, cfg) {
       .enter()
       .append("g")
         .attr("class", "node")
-        .call(d3.drag().on("drag", dragmove));
+        .call(d3.drag()
+            .on("drag", draggingNode)
+            .on("end", dragNodeEnded))
+        .on("dblclick", doubleClickNode);
 
     // Construct the actual rectangles for NODEs:
     diag_nodes.append("rect")

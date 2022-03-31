@@ -346,7 +346,9 @@ d3.sankey = function() {
     // (to support drag moves):
     nodes.forEach(n => {
         n.orig_x = n.x;
+        n.last_x = n.x;
         n.orig_y = n.y;
+        n.last_y = n.y;
     });
   }
 
