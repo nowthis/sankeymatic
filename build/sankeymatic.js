@@ -798,9 +798,11 @@ function render_sankey(all_nodes, all_flows, cfg) {
         .style("fill", cfg.font_color);
     if (cfg.mention_sankeymatic) {
         diag_labels.append("text")
-            // Anchor the text to the midpoint of the graph:
+            // Anchor the text to the midpoint of the canvas (not the graph):
             .attr("text-anchor", "middle")
-            .attr("x", graph_w/2)
+            // x = graph_w/2 is wrong when the L/R margins are uneven.. We
+            // have to use the whole width & adjust for the graph's transform:
+            .attr("x", cfg.canvas_width/2 - cfg.left_margin)
             .attr("y", graph_h + cfg.bottom_margin - 5)
             // Keep the current font, but make this small & grey:
             .style("font-size", "11px")
