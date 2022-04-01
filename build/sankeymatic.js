@@ -697,6 +697,74 @@ function render_sankey(all_nodes, all_flows, cfg) {
         glob.render_exportable_outputs();
     }
 
+    // Show helpful guides/content for the current drag. We put it all in a
+    // distinct 'g'roup for helper content so we can remove it easily later:
+    function dragNodeStarted(event, d) {
+        const grayColor = contrasting_gray_color(cfg.background_color);
+        let diag_helper_layer = diag_main.select("#helper_layer");
+        // Create the helper layer if it doesn't exist:
+        if (diag_helper_layer.nodes.length == 0) {
+            // Insert it just before (i.e. 'under') the 'nodes' layer, so it
+            // doesn't interfere with things like double-clicks on nodes.
+            diag_helper_layer = diag_main.insert("g","#sankey_nodes")
+              .attr("id","helper_layer")
+              // Set up attributes common to all the stuff inside here..
+              .style("fill", grayColor)
+              .style("fill-opacity", 0.5)
+              .style("stroke", "none");
+        }
+
+        // Draw 4 horizontal/vertical guide lines, along the edges of the
+        // place where the drag began (d.last_x/y):
+        diag_helper_layer.append("path")
+          .attr("id","helper_lines")
+          // This SVG Path spec means:
+          // [M]ove to the left edge of the graph at this node's top
+          // [h]orizontal line across the whole graph width
+          // [m]ove down by this node's height
+          // [H]orizontal line back to the left edge (x=0)
+          // ..Then the same operation [v]ertically, using this node's width.
+          .attr("d", `M0 ${ep(d.last_y)} h${ep(graph_w)} m0 ${ep(d.dy)} H0`
+                   + `M${ep(d.last_x)} 0 v${ep(graph_h)} m${ep(d.dx)} 0 V0`)
+          .style("stroke", grayColor)
+          .style("stroke-width", 1)
+          .style("stroke-dasharray", "1 3")
+          .style("stroke-opacity", 0.7);
+
+        // Put a ghost rectangle where this node started out:
+        diag_helper_layer.append("rect")
+          .attr("id","helper_original_rect")
+          .attr("x", ep(d.orig_x))
+          .attr("y", ep(d.orig_y))
+          .attr("height", ep(d.dy))
+          .attr("width", cfg.node_width)
+          .style("fill", d.color)
+          .style("fill-opacity", 0.3);
+
+        // Check for the Shift key. If it's down when starting the drag, skip
+        // the hint:
+        if (!(event.sourceEvent && event.sourceEvent.shiftKey)) {
+            // Place hint text where it can hopefully be seen,
+            // in a [g]roup which can be removed later during dragging:
+            const shift_hints = diag_helper_layer.append("g")
+              .attr("id","helper_shift_hints")
+              .style("font-size", "14px")
+              .style("font-weight", "400")
+            const hint_placement_heights = graph_h > 350
+                ? [0.05, 0.95]
+                : [0.4];
+            // Show the text so it's visible but not overwhelming:
+            hint_placement_heights.forEach( h => {
+                shift_hints.append("text")
+                  .attr("text-anchor", "middle")
+                  .attr("x", graph_w/2)
+                  .attr("y", graph_h * h)
+                 .text("Hold down Shift to move in only one direction");
+            });
+        }
+        return null;
+    }
+
     // This is called _during_ Node drags:
     function draggingNode(event, d) {
         // Fun fact: In this context, event.subject is the same thing as 'd'.
@@ -713,6 +781,10 @@ function render_sankey(all_nodes, all_flows, cfg) {
             } else {
                 my_x = d.last_x; // Use Y but reset X to the most recent X
             }
+            // If they've Shift-dragged, they don't need the hint any more -
+            // remove it and don't bring it back until the next gesture.
+            const shift_hint = diag_main.select("#helper_shift_hints");
+            if (shift_hint.nodes) { shift_hint.remove(); }
         }
 
         // Calculate the percentages we want to save (which will stay
@@ -732,6 +804,10 @@ function render_sankey(all_nodes, all_flows, cfg) {
     // (Investigate: This is called on every ordinary *click* as well; look
     // into skipping this work if no actual move has happened.)
     function dragNodeEnded(event, d) {
+        // Take away the helper guides:
+        const helper_layer = diag_main.select("#helper_layer");
+        if (helper_layer.nodes) { helper_layer.remove(); }
+
         // After a drag is finished, any new constrained drag should use the
         // _new_ position as 'home'. Therefore we have to set this as the
         // 'last' position:
@@ -766,6 +842,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
       .append("g")
         .attr("class", "node")
         .call(d3.drag()
+            .on("start", dragNodeStarted)
             .on("drag", draggingNode)
             .on("end", dragNodeEnded))
         .on("dblclick", doubleClickNode);
