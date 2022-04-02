@@ -792,7 +792,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // etc. changes):
         // If the graph is RTL, save the move as though it's LTR:
         d.move_x = (my_x - d.orig_x)/(graph_w - d.dx) * (reverse_x ? -1 : 1);
-        d.move_y = (my_y - d.orig_y)/(graph_h - d.dy);
+        d.move_y = (graph_h == d.dy) ? 0 : (my_y - d.orig_y)/(graph_h - d.dy);
 
         applyNodeMove(d.index);
         // ...This is one place where we *don't* rememberNodeMove after every
