@@ -319,19 +319,22 @@ glob.reset_graph_confirmed = function () {
     const newFlowInputs = newDiagramSpec !== null
         ? newDiagramSpec.flows.replace("\\n","\n")
         : "Requested sample diagram not found";
-    const newSettings = newDiagramSpec !== null
-        ? newDiagramSpec.settings || {}
-        : {};
+    const newSettings = new Map(
+      newDiagramSpec !== null
+        ? Object.entries(newDiagramSpec.settings) || []
+        : []
+    );
 
     // Update any settings specified in the stored diagram:
-    Object.keys(newSettings).forEach(
-        s => {
+    newSettings.forEach(
+        (newValue, setting) => {
+            const target_el = document.getElementById(setting);
             // Is this a true/false value (i.e. a radio or checkbox to update?)
-            if (newSettings[s] === true || newSettings[s] === false) {
-                document.getElementById(s).checked = newSettings[s];
+            if (newValue === true || newValue === false) {
+                target_el.checked = newValue;
             } else {
                 // This is a regular setting:
-                document.getElementById(s).value = newSettings[s];
+                target_el.value = newValue;
             }
         }
     );
@@ -398,26 +401,17 @@ glob.reset_graph = function (graphName) {
     return null;
 };
 
-glob.color_array_for = {
+glob.color_array_for = new Map([
     //  0: Official name, 1: Array of colors, 2: Display name:
-    a: [ 'Category10', d3.schemeCategory10, 'Categories' ],
-    b: [ 'Tableau10', d3.schemeTableau10, 'Tableau10' ],
-    c: [ 'Dark2', d3.schemeDark2, 'Dark' ],
-    d: [ 'Set3', d3.schemeSet3, 'Varied' ],
-    // Currently excluding the 'Bold' theme for 2 reasons:
-    // 1. The colors are too different in brightness to be general-purpose (IMO)
-    //    Example: Red #e41a1c vs. Yellow #ffff33 is very stark
-    // 2. Vertical space. 4 themes already take a lot of screen space.
-    // (Might revise this decision when there are ways to mitigate #2.)
-    // e: [ 'Set1', d3.schemeSet1, 'Bold' ],
-};
+    ['a', [ 'Category10', d3.schemeCategory10, 'Categories' ]],
+    ['b', [ 'Tableau10', d3.schemeTableau10, 'Tableau10' ]],
+    ['c', [ 'Dark2', d3.schemeDark2, 'Dark' ]],
+    ['d', [ 'Set3', d3.schemeSet3, 'Varied' ]],
+]);
 
 function approved_color_theme(theme_key) {
-    // Give back an empty array if the key isn't valid:
-    if (!glob.color_array_for.hasOwnProperty(theme_key.toLowerCase())) {
-        return [];
-    }
-    return glob.color_array_for[theme_key.toLowerCase()];
+    // Give back an empty theme if the key isn't valid:
+    return glob.color_array_for.get( theme_key.toLowerCase() ) || ['',[],''];
 }
 
 function color_theme_with_offset(theme_key, offset) {
@@ -1029,8 +1023,7 @@ glob.process_sankey = function () {
         // template string for the color swatches:
         const make_span_tag = (color, css_class, theme_id) =>
         `<span style="background-color: ${color};" class="${css_class}" title="${color} from d3 color scheme ${theme_id}">&nbsp;</span>`;
-        Object.keys(glob.color_array_for)
-            .forEach( t => {
+        for (const t of glob.color_array_for.keys()) {
             let theme_offset = document.getElementById(`theme_${t}_offset`).value,
                 the_theme = color_theme_with_offset(t, theme_offset),
                 samples_class = `color_sample_${the_theme[1].length}`,
@@ -1042,7 +1035,7 @@ glob.process_sankey = function () {
             document.getElementById(`theme_${t}_guide`).innerHTML =
                 rendered_guide;
             document.getElementById(`theme_${t}_label`).textContent = the_theme[2];
-        });
+        };
     }
 
     // BEGIN by resetting all messages:
@@ -1368,8 +1361,7 @@ glob.process_sankey = function () {
     });
 
     // Color theme offset fields:
-    Object.keys(glob.color_array_for)
-        .forEach( t => {
+    for (const t of glob.color_array_for.keys()) {
         const field_name = `theme_${t}_offset`,
               field_val = document.getElementById(field_name).value;
         // Verify that the number matches up with the possible offset
@@ -1377,12 +1369,12 @@ glob.process_sankey = function () {
         // It has to be either 1 or 2 digits (some ranges have > 9 options):
         if (field_val.match(/^\d{1,2}$/)
             // No '-', so it's at least a positive number. Is it too big?:
-            && Number(field_val) <= (glob.color_array_for[t][1].length - 1)) {
+            && Number(field_val) <= (glob.color_array_for.get(t)[1].length - 1)) {
             approved_config[field_name] = Number(field_val);
         } else {
             reset_field(field_name);
         }
-    });
+    };
 
     (["default_flow_color", "background_color", "font_color",
         "default_node_color" ]).forEach( function(field_name) {
