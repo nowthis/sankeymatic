@@ -514,14 +514,16 @@ function render_sankey(all_nodes, all_flows, cfg) {
         );
     }
 
-    // Fill in any un-set node colors up front so flows can inherit colors from them:
+    // Fill in any un-set node colors up front so flows can inherit colors
+    // from them:
     all_nodes.forEach( function(node) {
         if (typeof node.color === 'undefined' || node.color === '') {
-            // Use the first word of the label as the basis for
-            // finding an already-used color or picking a new one (case sensitive!)
-            // If there are no 'word' characters, substitute a word-ish value
-            // (rather than crash):
-            var first_word = ( /^\W*(\w+)/.exec(node.name) || ['','not a word'] )[1];
+            // Use the first non-blank string in the label as the basis for
+            // adopting an already-used color or picking a new one. (Note:
+            // case sensitive!) If there are no non-blank strings in the node
+            // name, substitute a word-ish value (rather than crash):
+            const first_word =
+                ( /^\s*(\S+)/.exec(node.name) || ['','name-is-blank'] )[1];
             node.color = d3_color_scale_fn(first_word);
         }
     });
