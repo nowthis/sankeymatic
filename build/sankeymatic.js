@@ -15,13 +15,16 @@ Requires:
 // 'glob' points to the global object, either 'window' (browser) or 'global' (node.js)
 // This lets us contain everything in an IIFE (Immediately-Invoked Function Expression)
 
+// el: shorthand for grabbing a DOM element:
+function el(domId) { return document.getElementById(domId); }
+
 // toggle_panel: hide or show one of the interface panels, by name
 glob.toggle_panel = function (el_id) {
-    var el = document.getElementById(el_id),
-        indicator_el = document.getElementById( el_id + "_indicator" ),
-        hint_el      = document.getElementById( el_id + "_hint" ),
-        hiding_now = ( el.style.display !== "none" );
-    el.style.display       = hiding_now ? "none"   : "";
+    var panel_el = el(el_id),
+        indicator_el = el( el_id + '_indicator' ),
+        hint_el      = el( el_id + '_hint' ),
+        hiding_now = ( panel_el.style.display !== "none" );
+    panel_el.style.display = hiding_now ? "none"   : "";
     hint_el.innerHTML      = hiding_now ? "..."    : ":";
     indicator_el.innerHTML = hiding_now ? "+" : "&ndash;";
     return null;
@@ -53,7 +56,7 @@ glob.resetMovedNodes = function () {
 
 function updateResetNodesUI() {
     // Check whether we should enable the 'reset moved nodes' button:
-    document.getElementById("reset_all_moved_nodes").disabled =
+    el('reset_all_moved_nodes').disabled =
         glob.rememberedMoves.size ? false : true;
 }
 
@@ -141,7 +144,7 @@ function svg_background_class(transparent) {
 function make_diagram_blank(w, h, background_transparent) {
     // Simply emptying the SVG tag doesn't seem to work well in Safari,
     // so we remake the whole tag instead:
-    document.getElementById('chart').innerHTML =
+    el('chart').innerHTML =
         '<svg id="sankey_svg" height="' + h + '" width="' + w + '" '
         + 'xmlns="http://www.w3.org/2000/svg" version="1.1" '
         + 'class="' + svg_background_class(background_transparent) + '">'
@@ -151,23 +154,21 @@ function make_diagram_blank(w, h, background_transparent) {
 
 // render_png: Build a PNG file in the background
 function render_png(curdate) {
-    let chart_el = document.getElementById("chart"),
+    let chart_el = el('chart'),
         orig_w = chart_el.clientWidth,
         orig_h = chart_el.clientHeight,
         // What scale does the user want (1,2,4,6)?:
-        scale_factor = clamp(document.getElementById("scale_x").value,1,6),
+        scale_factor = clamp(el('scale_x').value,1,6),
         scaled_w = orig_w * scale_factor,
         scaled_h = orig_h * scale_factor,
         // Find the (hidden) canvas element in our page:
-        canvas_el = document.getElementById("png_preview"),
+        canvas_el = el('png_preview'),
         // Set up the values Canvg will need:
         canvas_context = canvas_el.getContext("2d"),
-        svg_el = document.getElementById("sankey_svg"),
+        svg_el = el('sankey_svg'),
         svg_content = ( new XMLSerializer() ).serializeToString(svg_el),
         // More targets we'll be changing on the page:
-        png_link_el = document.getElementById("download_png_link"),
-        img_tag_w_el = document.getElementById("img_tag_hint_w"),
-        img_tag_h_el = document.getElementById("img_tag_hint_h"),
+        png_link_el = el('download_png_link'),
         // Generate yyyymmdd_hhmmss string:
         filename_timestamp =
             (curdate.toISOString().replace(/T.+$/,'_') +
@@ -183,8 +184,8 @@ function render_png(curdate) {
     canvas_el.height = scaled_h;
 
     // Update img tag hint with user's original dimensions:
-    img_tag_w_el.innerHTML = orig_w;
-    img_tag_h_el.innerHTML = orig_h;
+    el('img_tag_hint_w').innerHTML = orig_w;
+    el('img_tag_hint_h').innerHTML = orig_h;
 
     // Give Canvg what it needs to produce a rendered image:
     canvg_obj = canvg.Canvg.fromString(
@@ -215,13 +216,10 @@ function render_png(curdate) {
 // produce_svg_code: take the current state of 'sankey_svg' and
 // relay it nicely to the user
 function produce_svg_code(curdate) {
-  // Prep for filling in the code area
-  var svg_export_el = document.getElementById("svg_for_export");
-
   // For the user-consumable SVG code, put in a title placeholder & credit:
   var svg_for_copying =
       // Read the live SVG structure and tweak it:
-      document.getElementById("chart").innerHTML
+      el('chart').innerHTML
         // Take out the class declaration for the background:
         .replace(/ class="svg_background_[a-z]+"/, '')
         // Insert some helpful tags in front of the first inner tag:
@@ -233,7 +231,7 @@ function produce_svg_code(curdate) {
         .replace(/<(g|\/g|path|text)/g, "\n<$1");
 
   // Escape that whole batch of tags and put it in the <div> for copying:
-  svg_export_el.innerHTML = escape_html(svg_for_copying);
+  el('svg_for_export').innerHTML = escape_html(svg_for_copying);
 
   return;
 }
@@ -281,15 +279,15 @@ function flatFlowPathMaker(f) {
 // Called after the initial draw & when the user chooses a new PNG resolution
 glob.render_exportable_outputs = function () {
     // Reset the existing export output areas:
-    var png_link_el = document.getElementById("download_png_link"),
-        svg_export_el = document.getElementById("svg_for_export"),
+    var png_link_el = el('download_png_link'),
         current_date = new Date();
 
     // Clear out the old image link, cue user that the graphic isn't yet ready:
     png_link_el.innerHTML = '...creating downloadable graphic...';
     png_link_el.setAttribute( 'href', '#' );
+
     // Wipe out the SVG from the old diagram:
-    svg_export_el.innerHTML = '(generating SVG code...)';
+    el('svg_for_export').innerHTML = '(generating SVG code...)';
 
     // Fire off asynchronous events for generating the export output,
     // so we can give control back asap:
@@ -301,8 +299,7 @@ glob.render_exportable_outputs = function () {
 
 function hide_reset_warning() {
     // Hide the overwrite-warning paragraph (if it's showing)
-    const warning_el = document.getElementById("reset_graph_warning");
-    warning_el.style.display = "none";
+    el('reset_graph_warning').style.display = "none";
     return null;
 }
 
@@ -312,7 +309,7 @@ glob.cancel_reset_graph = function () {
 }
 
 glob.reset_graph_confirmed = function () {
-    const graphName = document.getElementById("demo_graph_chosen").value;
+    const graphName = el('demo_graph_chosen').value;
     const newDiagramSpec = sampleDiagramRecipes.hasOwnProperty(graphName)
         ? sampleDiagramRecipes[graphName]
         : null;
@@ -328,7 +325,7 @@ glob.reset_graph_confirmed = function () {
     // Update any settings specified in the stored diagram:
     newSettings.forEach(
         (newValue, setting) => {
-            const target_el = document.getElementById(setting);
+            const target_el = el(setting);
             // Is this a true/false value (i.e. a radio or checkbox to update?)
             if (newValue === true || newValue === false) {
                 target_el.checked = newValue;
@@ -340,7 +337,7 @@ glob.reset_graph_confirmed = function () {
     );
 
     // Select all the text...
-    const flows_el = document.getElementById("flows_in")
+    const flows_el = el('flows_in')
     flows_el.focus();
     flows_el.select();
     // ... then replace it with the new content.
@@ -366,11 +363,10 @@ glob.reset_graph = function (graphName) {
     // Is there a recipe with the given key? If so, let's proceed.
     if (sampleDiagramRecipes.hasOwnProperty(graphName)) {
         // Set the 'demo_graph_chosen' value according to the user's click:
-        const chosen_el = document.getElementById("demo_graph_chosen");
-        chosen_el.value = graphName;
+        el('demo_graph_chosen').value = graphName;
 
         // Test the user's current input against the saved samples:
-        const user_input = document.getElementById("flows_in").value;
+        const user_input = el('flows_in').value;
         let flows_match_a_sample = false;
         Object.keys(sampleDiagramRecipes).forEach(
             graph => {
@@ -385,10 +381,8 @@ glob.reset_graph = function (graphName) {
             glob.reset_graph_confirmed();
         } else {
             // Otherwise, show the warning and do NOT reset the graph:
-            const warning_el = document.getElementById("reset_graph_warning");
-            warning_el.style.display = "";
-            const yes_button_el = document.getElementById("reset_graph_yes");
-            yes_button_el.innerHTML =
+            el('reset_graph_warning').style.display = "";
+            el('reset_graph_yes').innerHTML =
                 `Yes, replace the graph with '${sampleDiagramRecipes[graphName].name}'`;
         }
     } else {
@@ -428,14 +422,14 @@ function color_theme_with_offset(theme_key, offset) {
 
 glob.update_theme_offset = function(theme_key, change) {
     const the_theme = approved_color_theme(theme_key),
-        el_theme_offset = document.getElementById(`theme_${theme_key}_offset`),
+        el_theme_offset = el(`theme_${theme_key}_offset`),
         current_offset = el_theme_offset === null ? 0 : el_theme_offset.value,
-        new_offset = (+current_offset + +change + the_theme[1].length) % the_theme[1].length,
-        el_theme_radio = document.getElementById(`theme_${theme_key}_radio`);
+        new_offset = (+current_offset + +change + the_theme[1].length)
+            % the_theme[1].length;
 
-    // Since the user is tweaking a theme, switch to that them if it's not
+    // Since the user is tweaking a theme, switch to that theme if it's not
     // already selected:
-    el_theme_radio.checked = true;
+    el(`theme_${theme_key}_radio`).checked = true;
     el_theme_offset.value = new_offset;
 
     process_sankey();
@@ -629,7 +623,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
     function applyNodeMove(index) {
         const n = all_nodes[index],
             isZeroMove = (n.move_x == 0 && n.move_y == 0),
-            reverse_x = document.getElementById("reverse_graph").checked,
+            reverse_x = el('reverse_graph').checked,
             my_move_x = n.move_x * (reverse_x ? -1 : 1),
             available_w = graph_w - n.dx,
             available_h = graph_h - n.dy;
@@ -766,7 +760,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // Fun fact: In this context, event.subject is the same thing as 'd'.
         let my_x = event.x,
             my_y = event.y,
-            reverse_x = document.getElementById("reverse_graph").checked;
+            reverse_x = el('reverse_graph').checked;
 
         // Check for the Shift key:
         if (event.sourceEvent && event.sourceEvent.shiftKey) {
@@ -972,11 +966,11 @@ glob.process_sankey = function () {
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
         colorset_in = '', labelpos_in = '', fontface_in = '',
         differences = [],
-        differences_el = document.getElementById("imbalances"),
-        list_differences_el = document.getElementById("flow_cross_check"),
-        chart_el    = document.getElementById("chart"),
-        messages_el = document.getElementById("messages_container"),
-        raw_source = document.getElementById("flows_in").value;
+        differences_el = el('imbalances'),
+        list_differences_el = el('flow_cross_check'),
+        chart_el    = el('chart'),
+        messages_el = el('messages_container'),
+        raw_source = el('flows_in').value;
 
     // Define utility functions:
 
@@ -991,7 +985,7 @@ glob.process_sankey = function () {
 
     // set_differences_message: Show message using the correct class:
     function set_differences_message(msgHTML) {
-        document.getElementById("imbalance_messages").innerHTML =
+        el('imbalance_messages').innerHTML =
             msgHTML.length ? `<div id="imbalance_msg">${msgHTML}</div>`: '';
     }
 
@@ -1026,7 +1020,7 @@ glob.process_sankey = function () {
         const make_span_tag = (color, css_class, theme_id) =>
         `<span style="background-color: ${color};" class="${css_class}" title="${color} from d3 color scheme ${theme_id}">&nbsp;</span>`;
         for (const t of glob.color_array_for.keys()) {
-            let theme_offset = document.getElementById(`theme_${t}_offset`).value,
+            let theme_offset = el(`theme_${t}_offset`).value,
                 the_theme = color_theme_with_offset(t, theme_offset),
                 samples_class = `color_sample_${the_theme[1].length}`,
                 // Show the array rotated properly given the user's offset:
@@ -1034,9 +1028,8 @@ glob.process_sankey = function () {
                     .map( c => make_span_tag(c, samples_class, the_theme[0]) )
                     .join('');
                 // SOMEDAY: Add an indicator for which colors are/are not in use?
-            document.getElementById(`theme_${t}_guide`).innerHTML =
-                rendered_guide;
-            document.getElementById(`theme_${t}_label`).textContent = the_theme[2];
+            el(`theme_${t}_guide`).innerHTML = rendered_guide;
+            el(`theme_${t}_label`).textContent = the_theme[2];
         };
     }
 
@@ -1057,8 +1050,7 @@ glob.process_sankey = function () {
     // If the user is setting Label positions to either left or right (i.e. not
     // 'auto'), show the margin hint:
     var label_pos_val = radio_value("label_pos");
-    var labelposnote_el = document.getElementById("label_pos_note");
-    labelposnote_el.innerHTML =
+    el('label_pos_note').innerHTML =
         (label_pos_val === "all_left"
        ? "Adjust the <strong>Left Margin</strong> above to fit your labels"
        : label_pos_val === "all_right"
@@ -1222,12 +1214,12 @@ glob.process_sankey = function () {
 
     // reset_field: We got bad input, so reset the form field to the default value
     function reset_field(field_name) {
-        document.getElementById(field_name).value = approved_config[field_name];
+        el(field_name).value = approved_config[field_name];
     }
 
     // get_color_input: If a field has a valid-looking HTML color value, then use it
     function get_color_input( field_name ) {
-        var field_el  = document.getElementById(field_name),
+        var field_el  = el(field_name),
             field_val = field_el.value;
         // console.log(field_name, field_val, typeof field_val);
         if ( field_val.match( /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
@@ -1253,7 +1245,7 @@ glob.process_sankey = function () {
     } );
 
     // Given good_flows, make the lists of nodes and flows
-    reverse_the_graph = document.getElementById("reverse_graph").checked;
+    reverse_the_graph = el('reverse_graph').checked;
     good_flows.forEach( function(flow) {
         // Look for extra content about this flow on the target-node end of the
         // string:
@@ -1354,7 +1346,7 @@ glob.process_sankey = function () {
         "top_margin",  "right_margin",  "bottom_margin",
         "left_margin", "font_weight",   "node_spacing",
         "node_width",  "node_border" ]).forEach( function(field_name) {
-        var field_val = document.getElementById(field_name).value;
+        var field_val = el(field_name).value;
         if (field_val.length < 10 && field_val.match(/^\d+$/)) {
             approved_config[field_name] = Number(field_val);
         } else {
@@ -1365,7 +1357,7 @@ glob.process_sankey = function () {
     // Color theme offset fields:
     for (const t of glob.color_array_for.keys()) {
         const field_name = `theme_${t}_offset`,
-              field_val = document.getElementById(field_name).value;
+              field_val = el(field_name).value;
         // Verify that the number matches up with the possible offset
         // range for each theme.
         // It has to be either 1 or 2 digits (some ranges have > 9 options):
@@ -1410,7 +1402,7 @@ glob.process_sankey = function () {
 
     // Verify valid plain strings:
     (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
-        var field_val = document.getElementById(field_name).value;
+        var field_val = el(field_name).value;
         if (typeof field_val !== "undefined"
             && field_val !== null
             && field_val.length <= 10) {
@@ -1422,7 +1414,7 @@ glob.process_sankey = function () {
 
     // Interpret user's number format settings:
     (["number_format"]).forEach( function(field_name) {
-        var field_val = document.getElementById(field_name).value;
+        var field_val = el(field_name).value;
         if (field_val.length === 2 && ( /^[,.\ X][,.]$/.exec(field_val) ) ) {
             // Grab the 1st character if it's a valid 'thousands' value:
             const new_thousands = (/^[,.\ X]/.exec(field_val))[0];
@@ -1475,13 +1467,13 @@ glob.process_sankey = function () {
     (["display_full_precision", "include_values_in_node_labels",
         "show_labels", "background_transparent", "justify_origins",
         "justify_ends", "mention_sankeymatic"]).forEach( function(field_name) {
-        approved_config[field_name] = document.getElementById(field_name).checked;
+        approved_config[field_name] = el(field_name).checked;
     });
 
     // Decimal:
     (["default_node_opacity","default_flow_opacity",
         "curvature"]).forEach( function(field_name) {
-        var field_val = document.getElementById(field_name).value;
+        var field_val = el(field_name).value;
         if ( field_val.match(/^\d(?:.\d+)?$/) ) {
             approved_config[field_name] = field_val;
         } else {
@@ -1577,10 +1569,10 @@ glob.process_sankey = function () {
     // Scale & make that available to the user:
     const tallest_node_height
         = parseFloat(
-            document.getElementById( "r" + max_node_index ).getAttributeNS( null,"height" )
+            el( 'r' + max_node_index ).getAttributeNS( null,"height" )
             );
     // Use plenty of precision for the scale output (4 decimal places):
-    document.getElementById("scale_figures").innerHTML =
+    el('scale_figures').innerHTML =
         `<strong>${unit_fy(max_node_val/tallest_node_height, 4)}</strong> `
         + `per pixel (${unit_fy(max_node_val)}/`
         + fix_separators(d3.format(",.2f")(tallest_node_height),approved_config.seps)
