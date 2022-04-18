@@ -20,7 +20,7 @@ function el(domId) { return document.getElementById(domId); }
 
 // toggle_panel: hide or show one of the interface panels, by name
 glob.toggle_panel = function (el_id) {
-    var panel_el = el(el_id),
+    const panel_el = el(el_id),
         indicator_el = el( el_id + '_indicator' ),
         hint_el      = el( el_id + '_hint' ),
         hiding_now = ( panel_el.style.display !== "none" );
@@ -38,8 +38,8 @@ function is_numeric(n) {
     return n - parseFloat(n) >= 0;
 }
 
-// clamp:
-// Ensure a numeric value is between two limits. Default to min if not numeric.
+// clamp: Ensure a numeric value n is between min and max.
+// Default to min if not numeric.
 function clamp(n, min, max) {
     return is_numeric(n) ? Math.min(Math.max(n,min),max) : min;
 }
@@ -74,16 +74,18 @@ function contrasting_gray_color(hc) {
     return d3.rgb(gray, gray, gray);
 }
 
-// escape_html: make any input string safe to display
-function escape_html(unsafe_string) {
+// escapeHTML: make any input string safe to display.
+// Used for displaying raw <SVG> code
+// and for reflecting the user's input back to them in messages.
+function escapeHTML(unsafe_string) {
     return unsafe_string
-         .replace(/→/g, "&#8594;")
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;")
-         .replace(/\n/g, "<br />");
+         .replaceAll('→', "&#8594;")
+         .replaceAll('&', "&amp;")
+         .replaceAll('<', "&lt;")
+         .replaceAll('>', "&gt;")
+         .replaceAll('"', "&quot;")
+         .replaceAll("'", "&#039;")
+         .replaceAll("\n", "<br />");
 }
 
 // remove_zeroes: Strip off zeros from after any decimal
@@ -93,7 +95,7 @@ function remove_zeroes(number_string) {
         .replace( /\.$/, '');  // If no digits remain, remove the '.' as well.
 }
 
-// ep = "Enough Precision"
+// ep = "Enough Precision". Why?
 // SVG diagrams produced by SankeyMATIC don't really benefit from specifying
 // values with more than 3 decimal places, but by default the output has *13*.
 // This is frankly hard to read and actually inflates the size of the SVG output
@@ -125,7 +127,7 @@ function format_a_value(number_in, places, separators, prefix, suffix,
 
 // radio_value: given a field name, get the value of the checked radio button
 function radio_value(radio_input_name) {
-    var radio_result='';
+    let radio_result='';
     // Loop over all radio input elements; copy the 'checked' one's value.
     Array.prototype.slice.call(document.getElementsByName(radio_input_name))
         .forEach( function(radio_option) {
@@ -140,21 +142,21 @@ function svg_background_class(transparent) {
     return 'svg_background_' + (transparent ? 'transparent' : 'default');
 }
 
-// make_diagram_blank: reset the SVG tag to be empty, with the user's chosen background
-function make_diagram_blank(w, h, background_transparent) {
+// makeDiagramBlank: reset the SVG tag to be empty, with a pattern backing
+// if the user wants it to be transparent:
+function makeDiagramBlank(cfg) {
     // Simply emptying the SVG tag doesn't seem to work well in Safari,
     // so we remake the whole tag instead:
     el('chart').innerHTML =
-        '<svg id="sankey_svg" height="' + h + '" width="' + w + '" '
-        + 'xmlns="http://www.w3.org/2000/svg" version="1.1" '
-        + 'class="' + svg_background_class(background_transparent) + '">'
-        + '</svg>';
+        '<svg id="sankey_svg" xmlns="http://www.w3.org/2000/svg" version="1.1" '
+        + `height="${cfg.canvas_height}" width="${cfg.canvas_width}" `
+        + `class="${svg_background_class(cfg.background_transparent)}"></svg>`;
     return;
 }
 
 // render_png: Build a PNG file in the background
 function render_png(curdate) {
-    let chart_el = el('chart'),
+    const chart_el = el('chart'),
         orig_w = chart_el.clientWidth,
         orig_h = chart_el.clientHeight,
         // What scale does the user want (1,2,4,6)?:
@@ -176,8 +178,7 @@ function render_png(curdate) {
             .replace(/[:-]/g,''),
         // Canvg 3 needs interesting offsets added when scaling up:
         x_offset = (scaled_w - orig_w) / (2 * scale_factor),
-        y_offset = (scaled_h - orig_h) / (2 * scale_factor),
-        canvg_obj;
+        y_offset = (scaled_h - orig_h) / (2 * scale_factor);
 
     // Set the canvas element to the final height/width the user wants:
     canvas_el.width = scaled_w;
@@ -188,7 +189,7 @@ function render_png(curdate) {
     el('img_tag_hint_h').innerHTML = orig_h;
 
     // Give Canvg what it needs to produce a rendered image:
-    canvg_obj = canvg.Canvg.fromString(
+    const canvg_obj = canvg.Canvg.fromString(
         canvas_context,
         svg_content, {
             ignoreMouse: true,
@@ -216,11 +217,13 @@ function render_png(curdate) {
 // produce_svg_code: take the current state of 'sankey_svg' and
 // relay it nicely to the user
 function produce_svg_code(curdate) {
-  // For the user-consumable SVG code, put in a title placeholder & credit:
-  var svg_for_copying =
+  // For the user-consumable SVG code, make a copy of the real SVG & put in a
+  // title placeholder & credit:
+  const svg_for_copying =
       // Read the live SVG structure and tweak it:
       el('chart').innerHTML
-        // Take out the class declaration for the background:
+        // Take out the id and the class declaration for the background:
+        .replace(' id="sankey_svg"', '')
         .replace(/ class="svg_background_[a-z]+"/, '')
         // Insert some helpful tags in front of the first inner tag:
         .replace(/>/,
@@ -231,7 +234,7 @@ function produce_svg_code(curdate) {
         .replace(/<(g|\/g|path|text)/g, "\n<$1");
 
   // Escape that whole batch of tags and put it in the <div> for copying:
-  el('svg_for_export').innerHTML = escape_html(svg_for_copying);
+  el('svg_for_export').innerHTML = escapeHTML(svg_for_copying);
 
   return;
 }
@@ -279,7 +282,7 @@ function flatFlowPathMaker(f) {
 // Called after the initial draw & when the user chooses a new PNG resolution
 glob.render_exportable_outputs = function () {
     // Reset the existing export output areas:
-    var png_link_el = el('download_png_link'),
+    const png_link_el = el('download_png_link'),
         current_date = new Date();
 
     // Clear out the old image link, cue user that the graphic isn't yet ready:
@@ -438,17 +441,17 @@ glob.update_theme_offset = function(theme_key, change) {
 
 // render_sankey: given nodes, flows, and other config, MAKE THE SVG DIAGRAM:
 function render_sankey(all_nodes, all_flows, cfg) {
-    var graph_w, graph_h, sankey_obj, d3_color_scale_fn,
+    let graph_w, graph_h, sankey_obj, d3_color_scale_fn,
         flow_path_fn, // holds the path-generating function
         diag_main,    // primary d3 selection of the graph
         diag_flows,   // d3 selection of all flow paths
         diag_nodes,   // ...all nodes
         diag_labels,  // ...all labels & titles
-        stagesArr = [], // the array of all stages in the diagram
+        stagesArr = []; // the array of all stages in the diagram
         // Drawing curves with curvature of <= 0.1 looks bad and produces visual
         // artifacts, so let's just take the lowest value on the slider (0.1)
         // and call that 0/flat:
-        flat_flows = (cfg.curvature <= 0.1);
+    const flat_flows = (cfg.curvature <= 0.1);
 
     // units_format: produce a fully prefixed/suffixed/separated number string:
     function units_format(n) {
@@ -550,8 +553,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
     // Draw!
 
     // Clear out any old contents:
-    make_diagram_blank(cfg.canvas_width, cfg.canvas_height,
-        cfg.background_transparent);
+    makeDiagramBlank(cfg);
 
     // Select the svg canvas, set the defined dimensions:
     diag_main = d3.select("#sankey_svg")
@@ -956,7 +958,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
 // MAIN FUNCTION:
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = function () {
-    var source_lines = [], good_flows = [], good_node_lines = [],
+    let source_lines = [], good_flows = [], good_node_lines = [],
         bad_lines = [], node_order = [], line_ix = 0, line_in = '',
         unique_nodes = {}, matches = [], amount_in = 0,
         approved_nodes = [], approved_flows = [], approved_config = {},
@@ -976,7 +978,7 @@ glob.process_sankey = function () {
 
     // add_message: Put a message on the page using the specified class:
     function add_message( msg_class, msg_html, put_at_beginning ) {
-        var new_msg = '<div class="' + msg_class + '">' + msg_html + '</div>';
+        const new_msg = '<div class="' + msg_class + '">' + msg_html + '</div>';
         messages_el.innerHTML
             = put_at_beginning
                 ? (new_msg + messages_el.innerHTML)
@@ -1049,7 +1051,7 @@ glob.process_sankey = function () {
 
     // If the user is setting Label positions to either left or right (i.e. not
     // 'auto'), show the margin hint:
-    var label_pos_val = radio_value("label_pos");
+    const label_pos_val = radio_value("label_pos");
     el('label_pos_note').innerHTML =
         (label_pos_val === "all_left"
        ? "Adjust the <strong>Left Margin</strong> above to fit your labels"
@@ -1138,7 +1140,7 @@ glob.process_sankey = function () {
     // Mention the bad lines in the message area:
     bad_lines.forEach( function(parse_error) {
         add_message('errormessage',
-            '&quot;<b>' + escape_html(parse_error.value) + '</b>&quot;: ' +
+            '&quot;<b>' + escapeHTML(parse_error.value) + '</b>&quot;: ' +
              parse_error.message,
              false );
     });
@@ -1219,7 +1221,7 @@ glob.process_sankey = function () {
 
     // get_color_input: If a field has a valid-looking HTML color value, then use it
     function get_color_input( field_name ) {
-        var field_el  = el(field_name),
+        let field_el  = el(field_name),
             field_val = field_el.value;
         // console.log(field_name, field_val, typeof field_val);
         if ( field_val.match( /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i ) ) {
@@ -1249,7 +1251,7 @@ glob.process_sankey = function () {
     good_flows.forEach( function(flow) {
         // Look for extra content about this flow on the target-node end of the
         // string:
-        var possible_color, possible_nodename, flow_color = "", tmp = "",
+        let possible_color, possible_nodename, flow_color = "", tmp = "",
             opacity = "", opacity_on_hover = "", flow_struct = {};
         // Try to parse; there may be extra info that isn't actually the name:
         // Format of the Target node can be:
@@ -1309,7 +1311,7 @@ glob.process_sankey = function () {
 
     // Construct the approved_nodes structure:
     node_order.forEach( function (nodename) {
-        var this_node = unique_nodes[nodename], readynode = {},
+        let this_node = unique_nodes[nodename], readynode = {},
             inherit_left = 0, inherit_right = 0, node_total = 0;
 
         // Right & left here correspond to >> and <<. These will have to be
@@ -1346,7 +1348,7 @@ glob.process_sankey = function () {
         "top_margin",  "right_margin",  "bottom_margin",
         "left_margin", "font_weight",   "node_spacing",
         "node_width",  "node_border" ]).forEach( function(field_name) {
-        var field_val = el(field_name).value;
+        const field_val = el(field_name).value;
         if (field_val.length < 10 && field_val.match(/^\d+$/)) {
             approved_config[field_name] = Number(field_val);
         } else {
@@ -1387,11 +1389,9 @@ glob.process_sankey = function () {
             + 'See the <a href="/manual/" target="_blank">Manual</a> for more help.',
             false );
 
-        // Clear the contents of the graph in case there was an old graph left over:
-        make_diagram_blank(
-            approved_config.canvas_width,
-            approved_config.canvas_height,
-            approved_config.background_transparent);
+        // Clear the contents of the graph in case there was an old graph left
+        // over:
+        makeDiagramBlank(approved_config);
 
         // Also clear out any leftover export output by rendering the currently-blank canvas:
         glob.render_exportable_outputs();
@@ -1402,7 +1402,7 @@ glob.process_sankey = function () {
 
     // Verify valid plain strings:
     (["unit_prefix", "unit_suffix"]).forEach( function(field_name) {
-        var field_val = el(field_name).value;
+        const field_val = el(field_name).value;
         if (typeof field_val !== "undefined"
             && field_val !== null
             && field_val.length <= 10) {
@@ -1414,7 +1414,7 @@ glob.process_sankey = function () {
 
     // Interpret user's number format settings:
     (["number_format"]).forEach( function(field_name) {
-        var field_val = el(field_name).value;
+        const field_val = el(field_name).value;
         if (field_val.length === 2 && ( /^[,.\ X][,.]$/.exec(field_val) ) ) {
             // Grab the 1st character if it's a valid 'thousands' value:
             const new_thousands = (/^[,.\ X]/.exec(field_val))[0];
@@ -1473,7 +1473,7 @@ glob.process_sankey = function () {
     // Decimal:
     (["default_node_opacity","default_flow_opacity",
         "curvature"]).forEach( function(field_name) {
-        var field_val = el(field_name).value;
+        const field_val = el(field_name).value;
         if ( field_val.match(/^\d(?:.\d+)?$/) ) {
             approved_config[field_name] = field_val;
         } else {
@@ -1483,7 +1483,7 @@ glob.process_sankey = function () {
 
     // Calculate some totals & stats for the graph.
     node_order.forEach( nodeName => {
-        var n = unique_nodes[nodeName];
+        const n = unique_nodes[nodeName];
 
         // Skip checking any nodes with 0 as the From or To amount; those are
         // the origins & endpoints for the whole graph and don't qualify:
@@ -1516,7 +1516,7 @@ glob.process_sankey = function () {
         // Make a nice table of the differences:
         differences.forEach( diffRec => {
             differenceRows.push(
-                `<tr><td class="nodename">${escape_html(diffRec.name)}</td>`
+                `<tr><td class="nodename">${escapeHTML(diffRec.name)}</td>`
                 + `<td>${diffRec.total_in}</td>`
                 + `<td>${diffRec.total_out}</td>`
                 + `<td>${diffRec.difference}</td></tr>`
