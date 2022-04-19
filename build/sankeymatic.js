@@ -30,19 +30,17 @@ glob.toggle_panel = function (el_id) {
     return null;
 };
 
-// is_numeric: borrowed from jQuery's isNumeric
-function is_numeric(n) {
-    /* "parseFloat NaNs numeric-cast false positives (null|true|false|"")
-       ...but misinterprets leading-number strings, particularly hex literals ("0x...")
-       subtraction forces infinities to NaN" */
-    return n - parseFloat(n) >= 0;
-}
+// isNumeric: borrowed from jQuery/Angular
+function isNumeric(n) { return !isNaN(n - parseFloat(n)); }
 
 // clamp: Ensure a numeric value n is between min and max.
 // Default to min if not numeric.
 function clamp(n, min, max) {
-    return is_numeric(n) ? Math.min(Math.max(n,min),max) : min;
+    return isNumeric(n) ? Math.min(Math.max(n,min),max) : min;
 }
+
+// radioRef: get the object which lets you get/set a radio input value:
+function radioRef(rId) { return document.forms['skm_form'].elements[rId]; }
 
 // rememberedMoves: Used to track the user's repositioning of specific nodes
 // which should be preserved across diagram renders.
@@ -125,17 +123,6 @@ function format_a_value(number_in, places, separators, prefix, suffix,
     let n = d3.format(`,.${places}f`)(number_in);
     if (!display_full_precision) { n = remove_zeroes(n); }
     return prefix + fix_separators(n, separators) + suffix;
-}
-
-// radio_value: given a field name, get the value of the checked radio button
-function radio_value(radio_input_name) {
-    let radio_result='';
-    // Loop over all radio input elements; copy the 'checked' one's value.
-    Array.prototype.slice.call(document.getElementsByName(radio_input_name))
-        .forEach( function(radio_option) {
-            if (radio_option.checked) { radio_result = radio_option.value; }
-        });
-    return radio_result;
 }
 
 // svg_background_class:
@@ -945,7 +932,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
 glob.process_sankey = function () {
     let source_lines = [], good_flows = [], good_node_lines = [],
         bad_lines = [], node_order = [], line_ix = 0, line_in = '',
-        unique_nodes = {}, matches = [], amount_in = 0,
+        unique_nodes = {}, matches = [],
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '',
@@ -956,7 +943,6 @@ glob.process_sankey = function () {
         list_differences_el = el('flow_cross_check'),
         chart_el    = el('chart'),
         messages_el = el('messages_container'),
-        raw_source = el('flows_in').value,
         graphIsReversed = el('reverse_graph').checked;
 
     // Define utility functions:
@@ -1036,7 +1022,7 @@ glob.process_sankey = function () {
 
     // If the user is setting Label positions to either left or right (i.e. not
     // 'auto'), show the margin hint:
-    const label_pos_val = radio_value("label_pos");
+    const label_pos_val = radioRef("label_pos").value;
     el('label_pos_note').innerHTML =
         (label_pos_val === "all_left"
        ? "Adjust the <strong>Left Margin</strong> above to fit your labels"
@@ -1047,7 +1033,7 @@ glob.process_sankey = function () {
     // Flows validation:
 
     // parse into structures: approved_nodes, approved_flows, approved_config
-    source_lines = raw_source.split("\n");
+    source_lines = el('flows_in').value.split("\n");
 
     // parse all the input lines, storing good ones vs bad ones:
     for ( line_ix = 0; line_ix < source_lines.length; line_ix += 1 ) {
@@ -1076,10 +1062,10 @@ glob.process_sankey = function () {
         // Try to match the line to a Data spec:
         matches = line_in.match( /^(.+)\[([\d\.\s\+\-]+)\](.+)$/ );
         if ( matches !== null ) {
-            amount_in = matches[2].replace(/\s/g,'');
             // The Amount looked trivially like a number; reject the line
             // if it really isn't:
-            if ( !is_numeric(amount_in) ) {
+            const amount_in = matches[2].replace(/\s/g,'');
+            if ( !isNumeric(amount_in) ) {
                 bad_lines.push (
                     { value: line_in,
                       message: 'The Amount is not a valid decimal number.' } );
@@ -1236,7 +1222,7 @@ glob.process_sankey = function () {
         // Look for extra content about this flow on the target-node end of the
         // string:
         let possible_color, possible_nodename, flow_color = "",
-            opacity = "", opacity_on_hover = "", flow_struct = {};
+            opacity = "", opacity_on_hover = "";
         // Try to parse; there may be extra info that isn't actually the name:
         // Format of the Target node can be:
         // TODO: Target node ["Custom name for flow"] [#color[.opacity]]
@@ -1271,7 +1257,7 @@ glob.process_sankey = function () {
         save_node(flow.target);
 
         // Add the encoded flow to the list of approved flows:
-        flow_struct = {
+        const flow_struct = {
             source: unique_nodes[flow.source].index,
             target: unique_nodes[flow.target].index,
             value:  flow.amount,
@@ -1416,7 +1402,7 @@ glob.process_sankey = function () {
 
     // Direction of flow color inheritance:
     // Allowed values = source|target|none
-    flow_inherit = radio_value("default_flow_inherit");
+    flow_inherit = radioRef("default_flow_inherit").value;
     if ( flow_inherit.match( /^(?:source|target|outside_in|none)$/ ) ) {
         if (graphIsReversed) {
             flow_inherit
@@ -1427,17 +1413,17 @@ glob.process_sankey = function () {
         approved_config.default_flow_inherit = flow_inherit;
     } // otherwise skip & use the default
 
-    labelpos_in = radio_value("label_pos");
+    labelpos_in = radioRef("label_pos").value;
     if ( labelpos_in.match( /^(?:all_left|auto|all_right)$/ ) ) {
         approved_config.label_pos = labelpos_in;
     }
 
-    fontface_in = radio_value("font_face");
+    fontface_in = radioRef("font_face").value;
     if ( fontface_in.match( /^(?:serif|sans-serif|monospace)$/ ) ) {
         approved_config.font_face = fontface_in;
     }
 
-    colorset_in = radio_value("default_node_colorset");
+    colorset_in = radioRef("default_node_colorset").value;
     if ( colorset_in.match( /^(?:[abcd]|none)$/ ) ) {
         approved_config.default_node_colorset = colorset_in;
         // Given the selected theme, what's the specific offset for that theme?
