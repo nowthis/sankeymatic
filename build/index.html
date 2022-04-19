@@ -373,8 +373,8 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 <p id="reset_graph_warning" style="display: none;">
 <em>This will <strong>erase</strong> your changes. Are you sure?</em><br />
 <input type="hidden" id="demo_graph_chosen" value="" />
-<button type="button" id="reset_graph_yes" onclick="reset_graph_confirmed(); return false;">Yes, reset the diagram</button>
-<button type="button" id="reset_graph_no" onclick="cancel_reset_graph(); return false;">Cancel</button>
+<button type="button" id="reset_graph_yes" onclick="resetGraphConfirmed(); return false;">Yes, reset the diagram</button>
+<button type="button" id="reset_graph_no" onclick="hideResetGraphWarning(); return false;">Cancel</button>
 </p>
 </div>
 
@@ -411,7 +411,7 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 </div>
 </div>
 <p id="reset_moves_area" class="form_elements1">
-Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type="button" id="reset_all_moved_nodes" onclick="resetMovedNodes(); return false;">Reset all moved Nodes</button>
+Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type="button" id="reset_all_moved_nodes" onclick="resetMovesAndRender(); return false;">Reset all moved Nodes</button>
 </p>
 
 <p id="chart">

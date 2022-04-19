@@ -345,12 +345,9 @@ d3.sankey = function() {
     // After the last layout step, store the original node coordinates
     // (to support drag moves):
     nodes.forEach(n => {
-        n.orig_x = n.x;
-        n.last_x = n.x;
-        n.move_x = 0;
-        n.orig_y = n.y;
-        n.last_y = n.y;
-        n.move_y = 0;
+        n.origPos = { x: n.x, y: n.y };
+        n.lastPos = { x: n.x, y: n.y };
+        n.move = [0, 0];
     });
   }
 

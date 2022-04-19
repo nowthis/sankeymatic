@@ -49,7 +49,9 @@ function clamp(n, min, max) {
 // Format is: nodeName => [move_x, move_y]
 glob.rememberedMoves = new Map();
 
-glob.resetMovedNodes = function () {
+// resetMovesAndRender: Clear all manual moves of nodes AND re-render the
+// diagram:
+glob.resetMovesAndRender = function () {
     glob.rememberedMoves.clear();
     process_sankey();
 }
@@ -300,18 +302,13 @@ glob.render_exportable_outputs = function () {
     return null;
 };
 
-function hide_reset_warning() {
+glob.hideResetGraphWarning = function () {
     // Hide the overwrite-warning paragraph (if it's showing)
     el('reset_graph_warning').style.display = "none";
     return null;
 }
 
-glob.cancel_reset_graph = function () {
-    hide_reset_warning();
-    return null;
-}
-
-glob.reset_graph_confirmed = function () {
+glob.resetGraphConfirmed = function () {
     const graphName = el('demo_graph_chosen').value;
     const newDiagramSpec = sampleDiagramRecipes.hasOwnProperty(graphName)
         ? sampleDiagramRecipes[graphName]
@@ -346,19 +343,16 @@ glob.reset_graph_confirmed = function () {
     // ... then replace it with the new content.
     flows_el.setRangeText(newFlowInputs, 0, flows_el.selectionEnd, 'start');
 
-    // Take away any remembered moves, just in case any share a name with a
-    // node in the new diagram:
-    glob.rememberedMoves.clear();
-
-    // Draw the new diagram immediately:
-    process_sankey();
-
-    // Un-focus the input field (on tablets, keeps the keyboard from
+    // Un-focus the input field (on tablets, this keeps the keyboard from
     // auto-popping-up):
     flows_el.blur();
 
     // If the reset-graph warning is showing, hide it:
-    hide_reset_warning();
+    glob.hideResetGraphWarning();
+
+    // Take away any remembered moves (just in case any share a name with a
+    // node in the new diagram) & immediately draw the new diagram::
+    glob.resetMovesAndRender();
     return null;
 }
 
@@ -381,7 +375,7 @@ glob.reset_graph = function (graphName) {
         if (flows_match_a_sample) {
             // If the user has NOT changed the input from one of the samples,
             // just go ahead with the change:
-            glob.reset_graph_confirmed();
+            glob.resetGraphConfirmed();
         } else {
             // Otherwise, show the warning and do NOT reset the graph:
             el('reset_graph_warning').style.display = "";
@@ -624,17 +618,17 @@ function render_sankey(all_nodes, all_flows, cfg) {
     // Given a Node index, apply its move to the SVG & remember it for later:
     function applyNodeMove(index) {
         const n = all_nodes[index],
-            isZeroMove = (n.move_x == 0 && n.move_y == 0),
-            reverse_x = el('reverse_graph').checked,
-            my_move_x = n.move_x * (reverse_x ? -1 : 1),
+            graphIsReversed = el('reverse_graph').checked,
+            // In the case of a reversed graph, we negate the x-move:
+            my_move_x = n.move[0] * (graphIsReversed ? -1 : 1),
             available_w = graph_w - n.dx,
             available_h = graph_h - n.dy;
 
         // Apply the move to the node (halting at the edges of the graph):
         n.x = Math.max(0,
-            Math.min(available_w, n.orig_x + available_w * my_move_x));
+            Math.min(available_w, n.origPos.x + available_w * my_move_x));
         n.y = Math.max(0,
-            Math.min(available_h, n.orig_y + available_h * n.move_y));
+            Math.min(available_h, n.origPos.y + available_h * n.move[1]));
 
         // Find everything which shares the class of the dragged node and
         // translate each with these offsets.
@@ -642,38 +636,37 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // (Why would we apply a null transform? Because it may have been
         // transformed already & we are now undoing the previous operation.)
         d3.selectAll(`#sankey_svg .for_r${index}`)
-            .attr("transform", isZeroMove
+            .attr("transform", (n.move == [0, 0])
                 ? null
-                : `translate(${ep(n.x - n.orig_x)},${ep(n.y - n.orig_y)})`);
+                : `translate(${ep(n.x - n.origPos.x)},${ep(n.y - n.origPos.y)})`
+                );
     }
 
     // Set the new starting point of any constrained move:
-    function updateLastNodePosition(n) {
-        n.last_x = n.x;
-        n.last_y = n.y;
-    }
+    function updateLastNodePosition(n) { n.lastPos = { x: n.x, y: n.y }; }
 
-    // After applying a move, save the record of the move percentages so they
-    // can be re-applied.
-    // We don't save after every pixel-move of a drag, just when the gesture is
-    // finished.
+    // rememberNodeMove: Save a move so it can be re-applied.
+    // The value saved is the % of the available size that the node was moved,
+    // not the literal pixel move. This helps when the user is changing
+    // spacing or diagram size.
     function rememberNodeMove(n) {
-        if (n.move_x == 0 && n.move_y == 0) {
-            // No move any more; forget it, if there was one:
+        // Always update lastPos when remembering moves:
+        updateLastNodePosition(n);
+
+        if (n.move == [0, 0]) {
+            // There's no actual move now. If one was stored, forget it:
             glob.rememberedMoves.delete(n.name);
         } else {
-            // We save moves keyed to their name (not their index), so they
+            // We save moves keyed to their NAME (not their index), so they
             // can be remembered even when the inputs change their order.
             //
-            // The value saved is the percentage of the graph's size that the
-            // node was moved, not the literal number of pixels. This helps
-            // when the user is changing spacing / diagram size.
-            //
-            // In the case of a remembered move, this will replace the
+            // In the case of a move already remembered, this will replace the
             // original moves with an identical copy...seems less trouble than
             // checking first.
-            glob.rememberedMoves.set(n.name, [n.move_x, n.move_y]);
+            glob.rememberedMoves.set(n.name, n.move);
         }
+        // The count of rememberedMoves may have changed, so also update the UI:
+        updateResetNodesUI();
     }
 
     // After one or more Node moves are done, call this:
@@ -707,7 +700,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         }
 
         // Draw 4 horizontal/vertical guide lines, along the edges of the
-        // place where the drag began (d.last_x/y):
+        // place where the drag began (d.lastPos):
         diag_helper_layer.append("path")
           .attr("id","helper_lines")
           // This SVG Path spec means:
@@ -716,8 +709,8 @@ function render_sankey(all_nodes, all_flows, cfg) {
           // [m]ove down by this node's height
           // [H]orizontal line back to the left edge (x=0)
           // ..Then the same operation [v]ertically, using this node's width.
-          .attr("d", `M0 ${ep(d.last_y)} h${ep(graph_w)} m0 ${ep(d.dy)} H0`
-                   + `M${ep(d.last_x)} 0 v${ep(graph_h)} m${ep(d.dx)} 0 V0`)
+          .attr("d", `M0 ${ep(d.lastPos.y)} h${ep(graph_w)} m0 ${ep(d.dy)} H0`
+                   + `M${ep(d.lastPos.x)} 0 v${ep(graph_h)} m${ep(d.dx)} 0 V0`)
           .style("stroke", grayColor)
           .style("stroke-width", 1)
           .style("stroke-dasharray", "1 3")
@@ -726,8 +719,8 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // Put a ghost rectangle where this node started out:
         diag_helper_layer.append("rect")
           .attr("id","helper_original_rect")
-          .attr("x", ep(d.orig_x))
-          .attr("y", ep(d.orig_y))
+          .attr("x", ep(d.origPos.x))
+          .attr("y", ep(d.origPos.y))
           .attr("height", ep(d.dy))
           .attr("width", cfg.node_width)
           .style("fill", d.color)
@@ -762,16 +755,16 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // Fun fact: In this context, event.subject is the same thing as 'd'.
         let my_x = event.x,
             my_y = event.y,
-            reverse_x = el('reverse_graph').checked;
+            graphIsReversed = el('reverse_graph').checked;
 
         // Check for the Shift key:
         if (event.sourceEvent && event.sourceEvent.shiftKey) {
             // Shift is pressed, so this is a constrained drag.
             // Figure out which direction the user has dragged _further_ in:
-            if (Math.abs(my_x - d.last_x) > Math.abs(my_y - d.last_y)) {
-                my_y = d.last_y; // Use X but reset Y to the most recent Y
+            if (Math.abs(my_x - d.lastPos.x) > Math.abs(my_y - d.lastPos.y)) {
+                my_y = d.lastPos.y; // Use X move; keep Y constant
             } else {
-                my_x = d.last_x; // Use Y but reset X to the most recent X
+                my_x = d.lastPos.x; // Use Y move; keep X constant
             }
             // If they've Shift-dragged, they don't need the hint any more -
             // remove it and don't bring it back until the next gesture.
@@ -782,13 +775,15 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // Calculate the percentages we want to save (which will stay
         // independent of the graph's edge constraints, even if the spacing,
         // etc. changes):
-        // If the graph is RTL, save the move as though it's LTR:
-        d.move_x = (my_x - d.orig_x)/(graph_w - d.dx) * (reverse_x ? -1 : 1);
-        d.move_y = (graph_h == d.dy) ? 0 : (my_y - d.orig_y)/(graph_h - d.dy);
+        d.move = [
+            // If the graph is RTL, calculate the x-move as though it is LTR:
+            (my_x - d.origPos.x)/(graph_w - d.dx) * (graphIsReversed ? -1 : 1),
+            (graph_h == d.dy) ? 0 : (my_y - d.origPos.y)/(graph_h - d.dy)
+        ];
 
         applyNodeMove(d.index);
-        // ...This is one place where we *don't* rememberNodeMove after every
-        // applyNodeMove...
+        // We don't rememberNodeMove after every pixel-move of a drag; just
+        // when a gesture is finished.
         reLayoutDiagram();
         return null;
     }
@@ -803,23 +798,16 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // After a drag is finished, any new constrained drag should use the
         // _new_ position as 'home'. Therefore we have to set this as the
         // 'last' position:
-        updateLastNodePosition(d);
         rememberNodeMove(d);
-        updateResetNodesUI();
         return null;
     }
 
     // A double-click resets a node to its default rendered position:
     function doubleClickNode(event, d) {
-        d.move_x = 0;
-        d.move_y = 0;
-
+        d.move = [0, 0];
         applyNodeMove(d.index);
-        updateLastNodePosition(d);
         rememberNodeMove(d);
-
         reLayoutDiagram();
-        updateResetNodesUI();
         return null;
     }
 
@@ -929,22 +917,19 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // Look for all node objects matching a name in the list:
         all_nodes.filter( n => movedNodes.has(n.name) )
             .forEach( n => {
-                const moves = glob.rememberedMoves.get(n.name);
-                n.move_x = moves[0];
-                n.move_y = moves[1];
+                n.move = glob.rememberedMoves.get(n.name);
                 // Make this move visible in the diagram:
                 applyNodeMove(n.index);
                 updateLastNodePosition(n);
-                // *Don't* rememberNodeMove here - if we do, then the last
-                // manual move will be unintentionally updated when the
-                // spacing is changed, for example.
+                // DON'T 'rememberNodeMove' here - if we do, then the last
+                // manual move will be unintentionally modified when only the
+                // spacing was changed, for example.
 
                 // Delete this moved node's name from the Set:
                 movedNodes.delete(n.name);
             });
-        // Any remaining items in the movedNodes Set must refer to Nodes which
-        // are no longer with us.
-        // Delete their moves from the global memory:
+        // Any remaining items in movedNodes must refer to Nodes which are no
+        // longer with us. Delete those from the global memory:
         movedNodes.forEach( nodeName => {
             glob.rememberedMoves.delete(nodeName);
         });
@@ -964,15 +949,15 @@ glob.process_sankey = function () {
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '',
-        reverse_the_graph = 0,
         max_node_index = 0, max_node_val = 0, flow_inherit = '',
         colorset_in = '', labelpos_in = '', fontface_in = '',
-        differences = [],
-        differences_el = el('imbalances'),
+        differences = [];
+    const differences_el = el('imbalances'),
         list_differences_el = el('flow_cross_check'),
         chart_el    = el('chart'),
         messages_el = el('messages_container'),
-        raw_source = el('flows_in').value;
+        raw_source = el('flows_in').value,
+        graphIsReversed = el('reverse_graph').checked;
 
     // Define utility functions:
 
@@ -1247,11 +1232,10 @@ glob.process_sankey = function () {
     } );
 
     // Given good_flows, make the lists of nodes and flows
-    reverse_the_graph = el('reverse_graph').checked;
     good_flows.forEach( function(flow) {
         // Look for extra content about this flow on the target-node end of the
         // string:
-        let possible_color, possible_nodename, flow_color = "", tmp = "",
+        let possible_color, possible_nodename, flow_color = "",
             opacity = "", opacity_on_hover = "", flow_struct = {};
         // Try to parse; there may be extra info that isn't actually the name:
         // Format of the Target node can be:
@@ -1295,8 +1279,8 @@ glob.process_sankey = function () {
             opacity:          opacity,
             opacity_on_hover: opacity_on_hover
         };
-        if (reverse_the_graph) {
-            tmp = flow_struct.source;
+        if (graphIsReversed) {
+            const tmp = flow_struct.source;
             flow_struct.source = flow_struct.target;
             flow_struct.target = tmp;
         }
@@ -1329,8 +1313,8 @@ glob.process_sankey = function () {
             index:   this_node.index,
             color:   this_node.color,
             opacity: this_node.opacity,
-            inherit_right: reverse_the_graph ? inherit_left  : inherit_right,
-            inherit_left:  reverse_the_graph ? inherit_right : inherit_left
+            inherit_right: graphIsReversed ? inherit_left  : inherit_right,
+            inherit_left:  graphIsReversed ? inherit_right : inherit_left
         };
 
         // Is this a new maximum node?
@@ -1434,7 +1418,7 @@ glob.process_sankey = function () {
     // Allowed values = source|target|none
     flow_inherit = radio_value("default_flow_inherit");
     if ( flow_inherit.match( /^(?:source|target|outside_in|none)$/ ) ) {
-        if (reverse_the_graph) {
+        if (graphIsReversed) {
             flow_inherit
                 = flow_inherit === "source" ? "target"
                 : flow_inherit === "target" ? "source"
