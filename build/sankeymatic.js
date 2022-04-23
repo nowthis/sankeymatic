@@ -944,22 +944,24 @@ glob.process_sankey = function () {
     const differences_el = el('imbalances'),
         list_differences_el = el('flow_cross_check'),
         chart_el    = el('chart'),
-        messages_el = el('messages_container'),
+        messages_el = el('top_messages_container'),
         graphIsReversed = el('reverse_graph').checked;
 
     // Define utility functions:
 
-    // add_message: Put a message on the page using the specified class:
-    function add_message( msg_class, msg_html, put_at_beginning ) {
-        const new_msg = '<div class="' + msg_class + '">' + msg_html + '</div>';
-        messages_el.innerHTML
-            = put_at_beginning
-                ? (new_msg + messages_el.innerHTML)
-                : (messages_el.innerHTML + new_msg);
+    // addMsgAbove: Put a message above the chart using the given class:
+    function addMsgAbove(msgHTML, msgClass, msgGoesFirst) {
+        const newMsg = `<div class="${msgClass}">${msgHTML}</div>`;
+        messages_el.innerHTML = msgGoesFirst
+            ? (newMsg + messages_el.innerHTML)
+            : (messages_el.innerHTML + newMsg);
     }
 
-    // set_differences_message: Show message using the correct class:
-    function set_differences_message(msgHTML) {
+    function setTotalsMsg(msgHTML) {
+        el('messages_container').innerHTML = `<div>${msgHTML}</div>`;
+    }
+
+    function setDifferencesMsg(msgHTML) {
         el('imbalance_messages').innerHTML =
             msgHTML.length ? `<div id="imbalance_msg">${msgHTML}</div>`: '';
     }
@@ -1098,7 +1100,7 @@ glob.process_sankey = function () {
             bad_lines.push(
                 { value: line_in,
                   message:
-                    'The line is not in the format: Source [Amount] Target' }
+                    'Does not match the format of a Flow or a Node.' }
             );
         }
         // and the final 'else' case is: a blank line.
@@ -1114,12 +1116,12 @@ glob.process_sankey = function () {
     // TODO: Disable useless precision checkbox if max_places === 0
     // TODO: Look for cycles and post errors about them
 
-    // Mention the bad lines in the message area:
-    bad_lines.forEach( function(parse_error) {
-        add_message('errormessage',
-            '&quot;<b>' + escapeHTML(parse_error.value) + '</b>&quot;: ' +
-             parse_error.message,
-             false );
+    // Mention any un-parseable lines:
+    bad_lines.forEach( parsingError => {
+        addMsgAbove(
+            '&quot;<b>' + escapeHTML(parsingError.value) + '</b>&quot;: ' +
+              parsingError.message,
+            'errormessage', false );
     });
 
     // Set up some data & functions that only matter from this point on:
@@ -1361,10 +1363,10 @@ glob.process_sankey = function () {
 
     // Are there any good flows at all? If not, offer a little help & exit:
     if ( good_flows.length === 0 ) {
-        add_message('okmessage',
-            'Enter a list of Flows (one per line). '
+        addMsgAbove(
+            'Enter a list of Flows &mdash; one per line. '
             + 'See the <a href="/manual/" target="_blank">Manual</a> for more help.',
-            false );
+            'okmessage', true );
 
         // Clear the contents of the graph in case there was an old graph left
         // over:
@@ -1500,12 +1502,12 @@ glob.process_sankey = function () {
                 + `<td>${diffRec.difference}</td></tr>`
             );
         });
-        set_differences_message(
+        setDifferencesMsg(
             `<table class="center_basic">${differenceRows.join("\n")}</table>`
         );
     } else {
         // Clear the messages area:
-        set_differences_message('');
+        setDifferencesMsg('');
     }
 
     // Reflect summary stats to the user:
@@ -1523,6 +1525,7 @@ glob.process_sankey = function () {
             + (total_inflow > total_outflow ? '&gt;' : '&lt;')
             + ` Total Outputs: <strong>${unit_fy(total_outflow)}</strong>`;
     }
+    setTotalsMsg(status_message);
 
     // Are there any mismatched rows?
     if (differences.length) {
@@ -1534,9 +1537,6 @@ glob.process_sankey = function () {
         list_differences_el.disabled = true;
         differences_el.setAttribute('aria-disabled', true);
     }
-
-    // always display main status line first:
-    add_message( "okmessage", status_message, true );
 
     updateColorThemeDisplay();
 

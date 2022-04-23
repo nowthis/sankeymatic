@@ -49,7 +49,16 @@ input[type="range"]:active::-webkit-slider-runnable-track {
   color: #600;
   border: 1px solid red;
   padding: 4px;
-  margin: -1px;
+  margin: 2px;
+}
+
+.okmessage {
+    text-align: center;
+    background-color: #DDEEFF;
+    color: #003366;
+    border: 1px solid #006699;
+    padding: 4px;
+    margin: 2px;
 }
 
 .importanttext {
