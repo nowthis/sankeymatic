@@ -379,42 +379,48 @@ glob.reset_graph = function (graphName) {
     return null;
 };
 
-glob.color_array_for = new Map([
-    //  0: Official name, 1: Array of colors, 2: Display name:
-    ['a', [ 'Category10', d3.schemeCategory10, 'Categories' ]],
-    ['b', [ 'Tableau10', d3.schemeTableau10, 'Tableau10' ]],
-    ['c', [ 'Dark2', d3.schemeDark2, 'Dark' ]],
-    ['d', [ 'Set3', d3.schemeSet3, 'Varied' ]],
+// colorThemes: The available color arrays to assign to Nodes.
+const colorThemes = new Map([
+    ['a', { colorset: d3.schemeCategory10,
+        nickname: 'Categories',
+        d3Name:   'Category10' }],
+    ['b', { colorset: d3.schemeTableau10,
+        nickname: 'Tableau10',
+        d3Name:   'Tableau10' }],
+    ['c', { colorset: d3.schemeDark2,
+        nickname: 'Dark',
+        d3Name:   'Dark2' }],
+    ['d', { colorset: d3.schemeSet3,
+        nickname: 'Varied',
+        d3Name:   'Set3', }],
 ]);
 
-function approved_color_theme(theme_key) {
+function approvedColorTheme(themeKey) {
     // Give back an empty theme if the key isn't valid:
-    return glob.color_array_for.get( theme_key.toLowerCase() ) || ['',[],''];
+    return colorThemes.get(themeKey.toLowerCase())
+        || { colorset: [], nickname: 'Invalid Theme', d3Name: '?' };
 }
 
-function color_theme_with_offset(theme_key, offset) {
-    const the_theme = approved_color_theme(theme_key),
-        approved_offset = clamp(offset, 0, the_theme[1].length);
-
-    // give back a copy of the array rotated by the offset:
-    return [the_theme[0],
-            the_theme[1].slice(approved_offset)
-                .concat(the_theme[1].slice(0, approved_offset)),
-            the_theme[2]
-        ];
+// rotateColors: Return a copy of a color array, rotated by the offset:
+function rotateColors(colors, offset) {
+    const goodOffset = clamp(offset, 0, colors.length);
+    return colors.slice(goodOffset).concat(colors.slice(0, goodOffset));
 }
 
-glob.update_theme_offset = function(theme_key, change) {
-    const the_theme = approved_color_theme(theme_key),
-        el_theme_offset = el(`theme_${theme_key}_offset`),
-        current_offset = el_theme_offset === null ? 0 : el_theme_offset.value,
-        new_offset = (+current_offset + +change + the_theme[1].length)
-            % the_theme[1].length;
+// nudgeColorTheme: Called directly from the page.
+// User just clicked an arrow on a color theme.
+// Rotate the theme colors & re-display the diagram with the new set.
+glob.nudgeColorTheme = function(themeKey, move) {
+    const themeOffset_el = el(`theme_${themeKey}_offset`),
+        currentOffset = (themeOffset_el === null) ? 0 : themeOffset_el.value,
+        colorsInTheme = approvedColorTheme(themeKey).colorset.length,
+        newOffset = (colorsInTheme + +currentOffset + +move) % colorsInTheme;
 
-    // Since the user is tweaking a theme, switch to that theme if it's not
-    // already selected:
-    el(`theme_${theme_key}_radio`).checked = true;
-    el_theme_offset.value = new_offset;
+    // Update the stored offset with the new value (0 .. last color):
+    themeOffset_el.value = newOffset;
+
+    // If the theme the user is updating is not the active one, switch to it:
+    el(`theme_${themeKey}_radio`).checked = true;
 
     process_sankey();
     return null;
@@ -485,10 +491,9 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // Make a color array with just the one value:
         d3_color_scale_fn = d3.scaleOrdinal([cfg.default_node_color]);
     } else {
+        const theme = approvedColorTheme(cfg.default_node_colorset);
         d3_color_scale_fn = d3.scaleOrdinal(
-            color_theme_with_offset(
-                cfg.default_node_colorset,
-                cfg.selected_theme_offset)[1]
+            rotateColors(theme.colorset, cfg.selected_theme_offset)
         );
     }
 
@@ -988,22 +993,26 @@ glob.process_sankey = function () {
     }
 
     // Update the display of all known themes given their offsets:
-    function update_theme_lists() {
+    function updateColorThemeDisplay() {
         // template string for the color swatches:
-        const make_span_tag = (color, css_class, theme_id) =>
-        `<span style="background-color: ${color};" class="${css_class}" title="${color} from d3 color scheme ${theme_id}">&nbsp;</span>`;
-        for (const t of glob.color_array_for.keys()) {
-            let theme_offset = el(`theme_${t}_offset`).value,
-                the_theme = color_theme_with_offset(t, theme_offset),
-                samples_class = `color_sample_${the_theme[1].length}`,
-                // Show the array rotated properly given the user's offset:
-                rendered_guide = the_theme[1]
-                    .map( c => make_span_tag(c, samples_class, the_theme[0]) )
+        const makeSpanTag = (color, count, themeName) =>
+            `<span style="background-color: ${color};" `
+            + `class="color_sample_${count}" `
+            + `title="${color} from d3 color scheme ${themeName}">`
+            + `&nbsp;</span>`;
+        for (const t of colorThemes.keys()) {
+            const theme = approvedColorTheme(t),
+                themeOffset = el(`theme_${t}_offset`).value,
+                colorset = rotateColors(theme.colorset, themeOffset),
+                // Show the array rotated properly given the offset:
+                renderedGuide = colorset
+                    .map(c => makeSpanTag(c, colorset.length, theme.d3Name))
                     .join('');
-                // SOMEDAY: Add an indicator for which colors are/are not in use?
-            el(`theme_${t}_guide`).innerHTML = rendered_guide;
-            el(`theme_${t}_label`).textContent = the_theme[2];
-        };
+                // SOMEDAY: Add an indicator for which colors are/are not
+                // in use?
+            el(`theme_${t}_guide`).innerHTML = renderedGuide;
+            el(`theme_${t}_label`).textContent = theme.nickname;
+        }
     }
 
     // BEGIN by resetting all messages:
@@ -1326,21 +1335,22 @@ glob.process_sankey = function () {
         }
     });
 
-    // Color theme offset fields:
-    for (const t of glob.color_array_for.keys()) {
-        const field_name = `theme_${t}_offset`,
+    // Vet the color theme offset fields:
+    colorThemes.forEach( (theme, themeKey) => {
+        const field_name = `theme_${themeKey}_offset`,
               field_val = el(field_name).value;
         // Verify that the number matches up with the possible offset
         // range for each theme.
         // It has to be either 1 or 2 digits (some ranges have > 9 options):
         if (field_val.match(/^\d{1,2}$/)
             // No '-', so it's at least a positive number. Is it too big?:
-            && Number(field_val) <= (glob.color_array_for.get(t)[1].length - 1)) {
+            && Number(field_val) <= (theme.colorset.length - 1)) {
+            // It's a valid offset, let it through:
             approved_config[field_name] = Number(field_val);
         } else {
             reset_field(field_name);
         }
-    };
+    });
 
     (["default_flow_color", "background_color", "font_color",
         "default_node_color" ]).forEach( function(field_name) {
@@ -1530,7 +1540,7 @@ glob.process_sankey = function () {
     // always display main status line first:
     add_message( "okmessage", status_message, true );
 
-    update_theme_lists();
+    updateColorThemeDisplay();
 
     // All is ready. Do the actual rendering:
     render_sankey( approved_nodes, approved_flows, approved_config );
