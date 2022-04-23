@@ -312,7 +312,7 @@ th#title {
   margin-right: 0.5em;
 }
 
-#reset_graph_warning {
+#replace_graph_warning {
   background-color: #FFA;
   color: darkred;
   margin: 0.2em 3em 0;
@@ -320,7 +320,7 @@ th#title {
   border-radius: 0.5em;
 }
 
-#reset_graph_yes {
+#replace_graph_yes {
   color: darkred;
 }
 

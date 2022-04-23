@@ -18,11 +18,12 @@ Requires:
 // el: shorthand for grabbing a DOM element:
 function el(domId) { return document.getElementById(domId); }
 
-// toggle_panel: hide or show one of the interface panels, by name
-glob.toggle_panel = function (el_id) {
-    const panel_el = el(el_id),
-        indicator_el = el( el_id + '_indicator' ),
-        hint_el      = el( el_id + '_hint' ),
+// togglePanel: Called directly from the page.
+// Given a panel's name, hide or show that control panel.
+glob.togglePanel = function (panel) {
+    const panel_el = el(panel),
+        indicator_el = el( panel + '_indicator' ),
+        hint_el      = el( panel + '_hint' ),
         hiding_now = ( panel_el.style.display !== "none" );
     panel_el.style.display = hiding_now ? "none"   : "";
     hint_el.innerHTML      = hiding_now ? "..."    : ":";
@@ -43,7 +44,7 @@ function clamp(n, min, max) {
 function radioRef(rId) { return document.forms['skm_form'].elements[rId]; }
 
 // rememberedMoves: Used to track the user's repositioning of specific nodes
-// which should be preserved across diagram renders.
+// (which should be preserved across diagram renders).
 // Format is: nodeName => [move_x, move_y]
 glob.rememberedMoves = new Map();
 
@@ -52,6 +53,7 @@ glob.rememberedMoves = new Map();
 glob.resetMovesAndRender = function () {
     glob.rememberedMoves.clear();
     process_sankey();
+    return null;
 }
 
 function updateResetNodesUI() {
@@ -266,10 +268,10 @@ function flatFlowPathMaker(f) {
         + `L${ep(xt)} ${ep(yt_bot)}v-${ep(f.dy)}z`;
 }
 
-// render_exportable_outputs: Kick off a re-render of the static image and the
-// user-copyable SVG code.
-// Called after the initial draw & when the user chooses a new PNG resolution
-glob.render_exportable_outputs = function () {
+// renderExportableOutputs: Called directly from the page (and from below).
+// Kick off a re-render of the static image and the user-copyable SVG code.
+// Used after each draw & when the user chooses a new PNG resolution.
+glob.renderExportableOutputs = function () {
     // Reset the existing export output areas:
     const png_link_el = el('download_png_link'),
         current_date = new Date();
@@ -289,13 +291,17 @@ glob.render_exportable_outputs = function () {
     return null;
 };
 
-glob.hideResetGraphWarning = function () {
+// hideReplaceGraphWarning: Called directly from the page (and from below)
+// Dismiss the note about overwriting the user's current inputs.
+glob.hideReplaceGraphWarning = function () {
     // Hide the overwrite-warning paragraph (if it's showing)
-    el('reset_graph_warning').style.display = "none";
+    el('replace_graph_warning').style.display = "none";
     return null;
 }
 
-glob.resetGraphConfirmed = function () {
+// replaceGraphConfirmed: Called directly from the page (and from below)
+// It's ok to overwrite the user's inputs now. Let's go.
+glob.replaceGraphConfirmed = function () {
     const graphName = el('demo_graph_chosen').value;
     const newDiagramSpec = sampleDiagramRecipes.hasOwnProperty(graphName)
         ? sampleDiagramRecipes[graphName]
@@ -334,8 +340,8 @@ glob.resetGraphConfirmed = function () {
     // auto-popping-up):
     flows_el.blur();
 
-    // If the reset-graph warning is showing, hide it:
-    glob.hideResetGraphWarning();
+    // If the replace-graph warning is showing, hide it:
+    glob.hideReplaceGraphWarning();
 
     // Take away any remembered moves (just in case any share a name with a
     // node in the new diagram) & immediately draw the new diagram::
@@ -343,7 +349,10 @@ glob.resetGraphConfirmed = function () {
     return null;
 }
 
-glob.reset_graph = function (graphName) {
+// replaceGraph: Called directly from the page.
+// User clicked a button which may cause their work to be erased.
+// Run some checks before we commit...
+glob.replaceGraph = function (graphName) {
     // Is there a recipe with the given key? If so, let's proceed.
     if (sampleDiagramRecipes.hasOwnProperty(graphName)) {
         // Set the 'demo_graph_chosen' value according to the user's click:
@@ -362,11 +371,11 @@ glob.reset_graph = function (graphName) {
         if (flows_match_a_sample) {
             // If the user has NOT changed the input from one of the samples,
             // just go ahead with the change:
-            glob.resetGraphConfirmed();
+            glob.replaceGraphConfirmed();
         } else {
-            // Otherwise, show the warning and do NOT reset the graph:
-            el('reset_graph_warning').style.display = "";
-            el('reset_graph_yes').innerHTML =
+            // Otherwise, show the warning and do NOT replace the graph:
+            el('replace_graph_warning').style.display = "";
+            el('replace_graph_yes').innerHTML =
                 `Yes, replace the graph with '${sampleDiagramRecipes[graphName].name}'`;
         }
     } else {
@@ -671,7 +680,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         diag_flows.attr("d", flow_path_fn);
 
         // Regenerate the exportable versions:
-        glob.render_exportable_outputs();
+        glob.renderExportableOutputs();
     }
 
     // Show helpful guides/content for the current drag. We put it all in a
@@ -933,6 +942,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
 } // end of render_sankey
 
 // MAIN FUNCTION:
+// process_sankey: Called directly from the page and within this script.
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = function () {
     let source_lines = [], good_flows = [], good_node_lines = [],
@@ -1374,7 +1384,7 @@ glob.process_sankey = function () {
         makeDiagramBlank(approved_config);
 
         // Also clear out any leftover export output by rendering the currently-blank canvas:
-        glob.render_exportable_outputs();
+        glob.renderExportableOutputs();
 
         // No point in proceeding any further. Return to the browser:
         return null;
@@ -1559,7 +1569,7 @@ glob.process_sankey = function () {
         + `px)`;
 
     // Re-make the PNG+SVG outputs in the background so they are ready to use:
-    glob.render_exportable_outputs();
+    glob.renderExportableOutputs();
 
     updateResetNodesUI();
 
