@@ -20,14 +20,14 @@ function el(domId) { return document.getElementById(domId); }
 
 // togglePanel: Called directly from the page.
 // Given a panel's name, hide or show that control panel.
-glob.togglePanel = function (panel) {
+glob.togglePanel = panel => {
     const panel_el = el(panel),
         indicator_el = el( panel + '_indicator' ),
         hint_el      = el( panel + '_hint' ),
-        hiding_now = ( panel_el.style.display !== "none" );
-    panel_el.style.display = hiding_now ? "none"   : "";
-    hint_el.innerHTML      = hiding_now ? "..."    : ":";
-    indicator_el.innerHTML = hiding_now ? "+" : "&ndash;";
+        hiding_now = ( panel_el.style.display !== 'none' );
+    panel_el.style.display = hiding_now ? 'none'   : '';
+    hint_el.innerHTML      = hiding_now ? '...'    : ':';
+    indicator_el.innerHTML = hiding_now ? '+' : '&ndash;';
     return null;
 };
 
@@ -299,42 +299,30 @@ glob.hideReplaceGraphWarning = function () {
     return null;
 }
 
-// replaceGraphConfirmed: Called directly from the page (and from below)
+// replaceGraphConfirmed: Called directly from the page (and from below).
 // It's ok to overwrite the user's inputs now. Let's go.
+// (Note: In order to reach this code, we have to have already verified the
+// presence of the named recipe, so we don't re-verify.)
 glob.replaceGraphConfirmed = function () {
-    const graphName = el('demo_graph_chosen').value;
-    const newDiagramSpec = sampleDiagramRecipes.hasOwnProperty(graphName)
-        ? sampleDiagramRecipes[graphName]
-        : null;
-    const newFlowInputs = newDiagramSpec !== null
-        ? newDiagramSpec.flows.replace("\\n","\n")
-        : "Requested sample diagram not found";
-    const newSettings = new Map(
-      newDiagramSpec !== null
-        ? Object.entries(newDiagramSpec.settings) || []
-        : []
-    );
+    const graphName = el('demo_graph_chosen').value,
+        savedRecipe = sampleDiagramRecipes.get(graphName);
 
-    // Update any settings specified in the stored diagram:
-    newSettings.forEach(
-        (newValue, setting) => {
-            const target_el = el(setting);
-            // Is this a true/false value (i.e. a radio or checkbox to update?)
-            if (newValue === true || newValue === false) {
-                target_el.checked = newValue;
-            } else {
-                // This is a regular setting:
-                target_el.value = newValue;
-            }
+    // Update any settings which accompany the stored diagram:
+    Object.entries(savedRecipe.settings).forEach( ([fld, newVal]) => {
+        if (typeof newVal === 'boolean') { // boolean => radio or checkbox
+            el(fld).checked = newVal;
+        } else { // non-boolean => an ordinary value to set
+            el(fld).value = newVal;
         }
-    );
+    });
 
-    // Select all the text...
+    // Select all the existing input text...
     const flows_el = el('flows_in')
     flows_el.focus();
     flows_el.select();
     // ... then replace it with the new content.
-    flows_el.setRangeText(newFlowInputs, 0, flows_el.selectionEnd, 'start');
+    flows_el.setRangeText(savedRecipe.flows, 0, flows_el.selectionEnd,
+        'start');
 
     // Un-focus the input field (on tablets, this keeps the keyboard from
     // auto-popping-up):
@@ -353,36 +341,35 @@ glob.replaceGraphConfirmed = function () {
 // User clicked a button which may cause their work to be erased.
 // Run some checks before we commit...
 glob.replaceGraph = function (graphName) {
-    // Is there a recipe with the given key? If so, let's proceed.
-    if (sampleDiagramRecipes.hasOwnProperty(graphName)) {
-        // Set the 'demo_graph_chosen' value according to the user's click:
-        el('demo_graph_chosen').value = graphName;
+    // Is there a recipe with the given key? If not, exit early:
+    const savedRecipe = sampleDiagramRecipes.get(graphName);
+    if (!savedRecipe) {
+        // (This shouldn't happen unless the user is messing around in the DOM)
+        console.log(`Requested sample diagram ${graphName} not found.`);
+        return null;
+    }
 
-        // Test the user's current input against the saved samples:
-        const user_input = el('flows_in').value;
-        let flows_match_a_sample = false;
-        Object.keys(sampleDiagramRecipes).forEach(
-            graph => {
-                if (user_input == sampleDiagramRecipes[graph].flows) {
-                    flows_match_a_sample = true;
-                }
-            }
-        );
-        if (flows_match_a_sample) {
-            // If the user has NOT changed the input from one of the samples,
-            // just go ahead with the change:
-            glob.replaceGraphConfirmed();
-        } else {
-            // Otherwise, show the warning and do NOT replace the graph:
-            el('replace_graph_warning').style.display = "";
-            el('replace_graph_yes').innerHTML =
-                `Yes, replace the graph with '${sampleDiagramRecipes[graphName].name}'`;
-        }
+    // Set the 'demo_graph_chosen' value according to the user's click:
+    el('demo_graph_chosen').value = graphName;
+
+    // When it's easy to revert to the user's current set of inputs, we don't
+    // bother asking to confirm. This happens in two scenarios:
+    // 1) the inputs are empty, or
+    // 2) the user is looking at inputs which exactly match any of the sample
+    // diagrams.
+    const userInputs = el('flows_in').value,
+        inputsMatchAnySample = Array.from(sampleDiagramRecipes.values())
+            .some(r => r.flows == userInputs);
+
+    if (inputsMatchAnySample || userInputs === '') {
+        // The user has NOT changed the input from one of the samples,
+        // or the whole field is blank. Go ahead with the change:
+        glob.replaceGraphConfirmed();
     } else {
-        console.log('graph name not found');
-        // the graph name wasn't valid.
-        // (this shouldn't happen unless the user is messing around in the DOM)
-        // give the user some feedback?
+        // Show the warning and do NOT replace the graph:
+        el('replace_graph_warning').style.display = "";
+        el('replace_graph_yes').innerHTML =
+            `Yes, replace the graph with '${savedRecipe.name}'`;
     }
 
     return null;
@@ -1383,7 +1370,8 @@ glob.process_sankey = function () {
         // over:
         makeDiagramBlank(approved_config);
 
-        // Also clear out any leftover export output by rendering the currently-blank canvas:
+        // Also clear out any leftover export output by rendering the
+        // currently-blank canvas:
         glob.renderExportableOutputs();
 
         // No point in proceeding any further. Return to the browser:
