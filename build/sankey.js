@@ -90,9 +90,12 @@ d3.sankey = function() {
   // computeNodeValues: Compute the value of each node by summing the
   // associated flows:
   function computeNodeValues() {
-    // Each node will equal the greater of the flows coming in or out:
     nodes.forEach(n => {
-      n.value = Math.max( valueSum(n.flowsOut), valueSum(n.flowsIn) );
+      // Remember the totals in & out:
+      n.totalIn = valueSum(n.flowsIn);
+      n.totalOut = valueSum(n.flowsOut);
+      // Each node's value will be the greater of the two:
+      n.value = Math.max(n.totalIn, n.totalOut);
     });
   }
 

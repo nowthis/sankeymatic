@@ -976,19 +976,20 @@ glob.process_sankey = function () {
             approved_config.display_full_precision);
     }
 
-    // explain_sum: Returns an html string showing the amounts used
-    // in a sum. If there are multiple amounts, it appears as a hover target
-    // with a tooltip showing the breakdown.
-    function explain_sum( amount, components ) {
+    // explainSum: Returns an html string showing the flow amounts which
+    // add up to a node's total value in or out.
+    function explainSum(amount, flowList) {
         const formatted_sum = unit_fy(amount);
-        if (components.length === 1) {
-            return formatted_sum;
-        }
-        return '<dfn title="' + formatted_sum + " from "
-            + components.length + " Flows: "
-            + components.sort( (a, b) => b - a )
-                .map( a => unit_fy(a) ).join(' + ')
-            + '">' + formatted_sum + "</dfn>";
+        if (flowList.length === 1) { return formatted_sum; }
+
+        // When there are multiple amounts, the amount appears as a hover
+        // target with a tooltip showing the breakdown in descending order.
+        const breakdown = flowList.map(f => f.value)
+                .sort((a,b) => b - a)
+                .map(v => unit_fy(v))
+                .join(' + ');
+        return `<dfn title="${formatted_sum} from ${flowList.length} `
+            + `Flows: ${breakdown}">${formatted_sum}</dfn>`;
     }
 
     // Update the display of all known themes given their offsets:
@@ -1108,11 +1109,6 @@ glob.process_sankey = function () {
         // whitespace if desired.
     }
 
-    // We know max_places now, so we can derive the smallest important difference.
-    // Defining it as smallest-input-decimal/10; this lets us work around various
-    // binary/decimal math issues.
-    epsilon_difference = Math.pow( 10, -max_places - 1 );
-
     // TODO: Disable useless precision checkbox if max_places === 0
     // TODO: Look for cycles and post errors about them
 
@@ -1172,8 +1168,6 @@ glob.process_sankey = function () {
         if ( !unique_nodes.hasOwnProperty(nodename) ) {
             // establish the hash:
             unique_nodes[nodename] = {
-                from_sum:  0,  to_sum:  0,
-                from_list: [], to_list: [],
                 index: node_order.length
             };
             node_order.push(nodename);
@@ -1279,12 +1273,6 @@ glob.process_sankey = function () {
             flow_struct.target = tmp;
         }
         approved_flows.push(flow_struct);
-
-        // Save useful information for the flow cross-check:
-        unique_nodes[flow.source].from_sum += Number(flow.amount);
-        unique_nodes[flow.source].from_list.push(flow.amount);
-        unique_nodes[flow.target].to_sum += Number(flow.amount);
-        unique_nodes[flow.target].to_list.push(flow.amount);
     });
 
     // Construct the approved_nodes structure:
@@ -1311,12 +1299,6 @@ glob.process_sankey = function () {
             inherit_left:  graphIsReversed ? inherit_right : inherit_left
         };
 
-        // Is this a new maximum node?
-        node_total = Math.max( this_node.from_sum, this_node.to_sum );
-        if (node_total > max_node_val) {
-            max_node_index = this_node.index;
-            max_node_val   = node_total;
-        }
         // approved_nodes = the real node list, formatted for the render routine:
         approved_nodes.push(readynode);
     });
@@ -1461,33 +1443,62 @@ glob.process_sankey = function () {
         }
     });
 
-    // Calculate some totals & stats for the graph.
-    node_order.forEach( nodeName => {
-        const n = unique_nodes[nodeName];
+    // All is ready. Do the actual rendering:
+    render_sankey( approved_nodes, approved_flows, approved_config );
 
+    // Re-make the PNG+SVG outputs in the background so they are ready to use:
+    glob.renderExportableOutputs();
+
+    // POST-RENDER ACTIVITY: various stats and UI updates.
+
+    // Given max_places, we can derive the smallest important difference,
+    // defined as smallest-input-decimal/10; this lets us work around various
+    // binary/decimal math issues.
+    epsilon_difference = Math.pow( 10, -max_places - 1 );
+
+    // After rendering, there are now more keys in the node records, including
+    // totalIn/Out and value.
+    approved_nodes.forEach( (n, i) => {
         // Skip checking any nodes with 0 as the From or To amount; those are
         // the origins & endpoints for the whole graph and don't qualify:
-        if ( n.from_sum > 0 && n.to_sum > 0) {
-            const difference = n.to_sum - n.from_sum;
+        if (n.totalIn > 0 && n.totalOut > 0) {
+            const difference = n.totalIn - n.totalOut;
             // Is there a difference big enough to matter? (i.e. > epsilon)
             // We'll always calculate this, even if not shown to the user.
             if ( Math.abs(difference) > epsilon_difference ) {
                 differences.push({
-                    name: nodeName,
-                    total_in: explain_sum(n.to_sum, n.to_list),
-                    total_out: explain_sum(n.from_sum, n.from_list),
+                    name: n.name,
+                    total_in: explainSum(n.totalIn, n.flowsIn),
+                    total_out: explainSum(n.totalOut, n.flowsOut),
                     difference: unit_fy(difference),
                 });
             }
         } else {
             // Accumulate totals in & out of the graph
             // (On this path, one of these values will be 0 every time.)
-            total_inflow  += n.from_sum;
-            total_outflow += n.to_sum;
+            total_inflow  += n.totalIn;
+            total_outflow += n.totalOut;
+        }
+
+        // Btw, check if this is a new maximum node:
+        if (n.value > max_node_val) {
+            max_node_index = i;
+            max_node_val   = n.value;
         }
     });
 
-    // Are there any differences, and does the user want to know?
+    // Update UI options based on the presence of mismatched rows:
+    if (differences.length) {
+        // Enable the controls for letting the user show the differences:
+        list_differences_el.disabled = false;
+        differences_el.setAttribute('aria-disabled', false);
+    } else {
+        // Disable the controls for telling the user about differences:
+        list_differences_el.disabled = true;
+        differences_el.setAttribute('aria-disabled', true);
+    }
+
+    // Were there any differences, and does the user want to know?
     if (differences.length && list_differences_el.checked) {
         // Construct a hyper-informative error message about any differences:
         let differenceRows = [
@@ -1527,21 +1538,7 @@ glob.process_sankey = function () {
     }
     setTotalsMsg(status_message);
 
-    // Are there any mismatched rows?
-    if (differences.length) {
-        // Enable the controls for letting the user show the differences:
-        list_differences_el.disabled = false;
-        differences_el.setAttribute('aria-disabled', false);
-    } else {
-        // Disable the controls for telling the user about differences:
-        list_differences_el.disabled = true;
-        differences_el.setAttribute('aria-disabled', true);
-    }
-
     updateColorThemeDisplay();
-
-    // All is ready. Do the actual rendering:
-    render_sankey( approved_nodes, approved_flows, approved_config );
 
     // Now that the SVG code has been generated, figure out this diagram's
     // Scale & make that available to the user:
@@ -1555,9 +1552,6 @@ glob.process_sankey = function () {
         + `per pixel (${unit_fy(max_node_val)}/`
         + fix_separators(d3.format(",.2f")(tallest_node_height),approved_config.seps)
         + `px)`;
-
-    // Re-make the PNG+SVG outputs in the background so they are ready to use:
-    glob.renderExportableOutputs();
 
     updateResetNodesUI();
 
