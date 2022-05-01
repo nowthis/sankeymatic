@@ -458,8 +458,8 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // 3. default-inheritance-from-source/target/outside_in
         // 4. default flow color
         return f.color ? f.color
-            : f.source.inherit_right ? f.source.color
-            : f.target.inherit_left ? f.target.color
+            : f.source.paint_right ? f.source.color
+            : f.target.paint_left ? f.target.color
             : cfg.default_flow_inherit === 'source' ? f.source.color
             : cfg.default_flow_inherit === 'target' ? f.target.color
             : cfg.default_flow_inherit === 'outside_in' ?
@@ -932,9 +932,8 @@ function render_sankey(all_nodes, all_flows, cfg) {
 // process_sankey: Called directly from the page and within this script.
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = function () {
-    let source_lines = [], good_flows = [], good_node_lines = [],
-        bad_lines = [], node_order = [], line_ix = 0, line_in = '',
-        unique_nodes = {}, matches = [],
+    let source_lines = [], good_flows = [], bad_lines = [],
+        line_ix = 0, line_in = '', matches = [], uniqueNodes = new Map(),
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '',
@@ -1057,13 +1056,14 @@ glob.process_sankey = function () {
         matches = line_in.match(
                 /^:(.+)\ #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i );
         if ( matches !== null ) {
-            good_node_lines.push(
-                { name:     matches[1].trim(),
-                  color:    matches[2],
-                  opacity:  matches[3],
-                  inherit1: matches[4],
-                  inherit2: matches[5]
-                } );
+            // Save/update it in the uniqueNodes structure:
+            updateNodeAttrs({
+                name:    matches[1].trim(),
+                color:   matches[2],
+                opacity: matches[3],
+                paint1:  matches[4],
+                paint2:  matches[5]
+            });
             // No need to process this as a Data line, let's move on:
             continue;
         }
@@ -1162,29 +1162,39 @@ glob.process_sankey = function () {
         theme_c_offset: 0, theme_d_offset: 0
     };
 
-    // save_node: Add (or update) a node in the 'unique' list:
-    function save_node( nodename, nodeparams ) {
-        // Have we NOT seen this node before? Then add it:
-        if ( !unique_nodes.hasOwnProperty(nodename) ) {
-            // establish the hash:
-            unique_nodes[nodename] = {
-                index: node_order.length
-            };
-            node_order.push(nodename);
+    // addNodeName: Make sure a node's name is present in the 'unique' list:
+    function addNodeName(nodeName) {
+        // Have we seen this node before? Then there's nothing to do.
+        if (uniqueNodes.has(nodeName)) { return; }
+         // Set up the node's basic object, keyed to the name:
+        uniqueNodes.set(nodeName, {
+            name: nodeName,
+            index: uniqueNodes.size,
+        });
+        return;
+    }
+
+    // updateNodeAttrs: Update an existing node's attributes.
+    // Note: If there are multiple lines specifying a value for the same
+    // parameter for a node, the LAST declaration will win.
+    function updateNodeAttrs(nodeParams) {
+        // Just in case this is the first appearance of the name, add it to
+        // the big list:
+        addNodeName(nodeParams.name);
+
+        // If there's a color and it's a color CODE, put back the #:
+        // TODO: honor or translate color names?
+        if ( nodeParams.color &&
+            nodeParams.color.match( /[0-9A-F]{3,6}/i ) ) {
+            nodeParams.color = '#' + nodeParams.color;
         }
-        // Even if we have seen a node, there still may be more parameters
-        // to add to its spec:
-        if ( typeof nodeparams === "object" ) {
-            Object.keys(nodeparams).forEach( function(p) {
-                // console.log(nodename, p,
-                //    unique_nodes[nodename].hasOwnProperty(p) );
-                if ( nodeparams[p] !== null && nodeparams[p] !== "" ) {
-                    // Note: If there are multiple lines specifying a value for
-                    // the same parameter for a node, the last one will win:
-                    unique_nodes[nodename][p] = nodeparams[p];
-                }
-            } );
-        }
+
+        Object.entries(nodeParams).forEach( ([pName, pVal]) => {
+            if ( typeof pVal != 'undefined'
+                && pVal !== null && pVal !== "") {
+                uniqueNodes.get(nodeParams.name)[pName] = pVal;
+            }
+        } );
     }
 
     // reset_field: We got bad input, so reset the form field to the default value
@@ -1208,16 +1218,6 @@ glob.process_sankey = function () {
             reset_field(field_name);
         }
     }
-
-    // First go through the Node list and set up any extra parameters we have:
-    good_node_lines.forEach( function(node) {
-        // If there's a color and it's a color CODE, put back the #:
-        // TODO: honor or translate color names?
-        if ( node.color && node.color.match( /[0-9A-F]{3,6}/i ) ) {
-            node.color = '#' + node.color;
-        }
-        save_node( node.name, node );
-    } );
 
     // Given good_flows, make the lists of nodes and flows
     good_flows.forEach( function(flow) {
@@ -1255,13 +1255,14 @@ glob.process_sankey = function () {
             }
             // Otherwise we just treat it as part of the nodename, e.g. "Team #1"
         }
-        save_node(flow.source);
-        save_node(flow.target);
+        // Make sure the node names get saved; it may their only appearance:
+        addNodeName(flow.source);
+        addNodeName(flow.target);
 
         // Add the encoded flow to the list of approved flows:
         const flow_struct = {
-            source: unique_nodes[flow.source].index,
-            target: unique_nodes[flow.target].index,
+            source: uniqueNodes.get(flow.source).index,
+            target: uniqueNodes.get(flow.target).index,
             value:  flow.amount,
             color:  flow_color,
             opacity:          opacity,
@@ -1275,33 +1276,25 @@ glob.process_sankey = function () {
         approved_flows.push(flow_struct);
     });
 
-    // Construct the approved_nodes structure:
-    node_order.forEach( function (nodename) {
-        let this_node = unique_nodes[nodename], readynode = {},
-            inherit_left = 0, inherit_right = 0, node_total = 0;
+    // Construct the final list of approved_nodes:
+    // NOTE: We don't have to sort this for the indices to line up, since
+    // .values() already gives us the items in insertion order.
+    for (const nodeData of uniqueNodes.values()) {
+        // Set up color inheritance signals.
+        // 'Right' & 'left' here correspond to >> and <<.
+        const paint_left =
+                (nodeData.paint1 === "<<" || nodeData.paint2 === "<<"),
+            paint_right =
+                (nodeData.paint1 === ">>" || nodeData.paint2 === ">>");
+        // If the graph is reversed, the directions are swapped:
+        nodeData.paint_right = graphIsReversed ? paint_left  : paint_right;
+        nodeData.paint_left  = graphIsReversed ? paint_right : paint_left;
+        // After establishing the above, the raw inputs aren't needed:
+        delete nodeData.paint1;
+        delete nodeData.paint2;
 
-        // Right & left here correspond to >> and <<. These will have to be
-        // swapped if the graph is reversed.
-        inherit_left =
-            ( this_node.inherit1 === "<<" || this_node.inherit2 === "<<" )
-            ? 1
-            : 0;
-        inherit_right =
-            ( this_node.inherit1 === ">>" || this_node.inherit2 === ">>" )
-            ? 1
-            : 0;
-        readynode = {
-            name:    nodename,
-            index:   this_node.index,
-            color:   this_node.color,
-            opacity: this_node.opacity,
-            inherit_right: graphIsReversed ? inherit_left  : inherit_right,
-            inherit_left:  graphIsReversed ? inherit_right : inherit_left
-        };
-
-        // approved_nodes = the real node list, formatted for the render routine:
-        approved_nodes.push(readynode);
-    });
+        approved_nodes.push(nodeData);
+    }
 
     // Whole positive numbers:
     ([ "canvas_width", "canvas_height", "font_size",
