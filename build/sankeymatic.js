@@ -932,8 +932,8 @@ function render_sankey(all_nodes, all_flows, cfg) {
 // process_sankey: Called directly from the page and within this script.
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = function () {
-    let source_lines = [], good_flows = [], bad_lines = [],
-        line_ix = 0, line_in = '', matches = [], uniqueNodes = new Map(),
+    let sourceLines = [], good_flows = [], bad_lines = [],
+        uniqueNodes = new Map(),
         approved_nodes = [], approved_flows = [], approved_config = {},
         total_inflow = 0, total_outflow = 0, max_places = 0,
         epsilon_difference = 0, status_message = '',
@@ -1041,21 +1041,22 @@ glob.process_sankey = function () {
     // Flows validation:
 
     // parse into structures: approved_nodes, approved_flows, approved_config
-    source_lines = el('flows_in').value.split("\n");
+    sourceLines = el('flows_in').value.split("\n");
 
-    // parse all the input lines, storing good ones vs bad ones:
-    for ( line_ix = 0; line_ix < source_lines.length; line_ix += 1 ) {
-        // Does this line match the basic format?
-        line_in = source_lines[line_ix].trim();
-        // Is it a comment? Skip it entirely:
-        // Currently comments can start with ' or // :
-        if ( line_in.match(/^'/) || line_in.match(/^\/\//) ) {
-            continue;
+    // Loop through all the input lines, storing good ones vs bad ones:
+    sourceLines.forEach( line_in => {
+        line_in = line_in.trim();
+
+        // Is it a blank line OR a comment? Skip it entirely.
+        // Currently comments can start with ' or //:
+        if ( line_in === '' || /^(?:'|\/\/)/.test(line_in) ) {
+            return;
         }
-        // Try to match the line to a Node spec:
-        matches = line_in.match(
-                /^:(.+)\ #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i );
-        if ( matches !== null ) {
+
+        // Does this line look like a Node?
+        let matches = line_in.match(
+            /^:(.+) #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i );
+        if (matches !== null) {
             // Save/update it in the uniqueNodes structure:
             updateNodeAttrs({
                 name:    matches[1].trim(),
@@ -1065,12 +1066,12 @@ glob.process_sankey = function () {
                 paint2:  matches[5]
             });
             // No need to process this as a Data line, let's move on:
-            continue;
+            return;
         }
 
-        // Try to match the line to a Data spec:
-        matches = line_in.match( /^(.+)\[([\d\.\s\+\-]+)\](.+)$/ );
-        if ( matches !== null ) {
+        // Does this line look like a Flow?
+        matches = line_in.match( /^(.+)\[([\d\s.+-]+)\](.+)$/ );
+        if (matches !== null) {
             // The Amount looked trivially like a number; reject the line
             // if it really isn't:
             const amount_in = matches[2].replace(/\s/g,'');
@@ -1078,36 +1079,40 @@ glob.process_sankey = function () {
                 bad_lines.push (
                     { value: line_in,
                       message: 'The Amount is not a valid decimal number.' } );
-            // The Sankey library doesn't currently support negative numbers or 0:
-            } else if (amount_in <= 0) {
+                return;
+            }
+
+            // Diagrams don't currently support negative numbers or 0:
+            if (amount_in <= 0) {
                 bad_lines.push (
                     { value: line_in,
                       message: 'Amounts must be greater than 0.' } );
-            } else {
-                // All seems well, save it as good (even if 0):
-                good_flows.push(
-                    { source: matches[1].trim(),
-                      target: matches[3].trim(),
-                      amount: amount_in } );
-                // We need to know the maximum precision of the inputs (greatest
-                // # of characters to the RIGHT of the decimal) for some error
-                // checking operations (& display) later:
-                max_places =
-                    Math.max( max_places,
-                        ( ( amount_in.split( /\./ ) )[1] || '' ).length );
+                return;
             }
-        // Did something make the input not match the pattern?:
-        } else if ( line_in !== '' ) {
-            bad_lines.push(
-                { value: line_in,
-                  message:
-                    'Does not match the format of a Flow or a Node.' }
+
+            // All seems well, save it as good (even if 0):
+            good_flows.push({
+                source: matches[1].trim(),
+                target: matches[3].trim(),
+                amount: amount_in
+            });
+
+            // We need to know the maximum precision of the inputs (greatest
+            // # of characters to the RIGHT of the decimal) for some error
+            // checking operations (& display) later:
+            max_places = Math.max( max_places,
+                ( ( amount_in.split( /\./ ) )[1] || '' ).length
             );
+            return;
         }
-        // and the final 'else' case is: a blank line.
-        // We just skip those silently, so you can separate your input lines with
-        // whitespace if desired.
-    }
+
+        // This is a non-blank line which did not match any pattern:
+        bad_lines.push(
+            { value: line_in,
+              message: 'Does not match the format of a Flow or a Node.' }
+        );
+        return;
+    });
 
     // TODO: Disable useless precision checkbox if max_places === 0
     // TODO: Look for cycles and post errors about them
@@ -1184,8 +1189,7 @@ glob.process_sankey = function () {
 
         // If there's a color and it's a color CODE, put back the #:
         // TODO: honor or translate color names?
-        if ( nodeParams.color &&
-            nodeParams.color.match( /[0-9A-F]{3,6}/i ) ) {
+        if ( nodeParams.color?.match(/[0-9A-F]{3,6}/i) ) {
             nodeParams.color = '#' + nodeParams.color;
         }
 
@@ -1220,47 +1224,47 @@ glob.process_sankey = function () {
     }
 
     // Given good_flows, make the lists of nodes and flows
-    good_flows.forEach( function(flow) {
+    good_flows.forEach( flow => {
         // Look for extra content about this flow on the target-node end of the
         // string:
-        let possible_color, possible_nodename, flow_color = "",
-            opacity = "", opacity_on_hover = "";
+        let flow_color = "", opacity = "", opacity_on_hover = "";
         // Try to parse; there may be extra info that isn't actually the name:
         // Format of the Target node can be:
         // TODO: Target node ["Custom name for flow"] [#color[.opacity]]
         // e.g. Clinton #CCDDEE
         // e.g. Gondor "Legolas" #998877.25
         // Look for an additional string starting with # for color info
-        matches = flow.target.match( /^(.+)\s+(#\S+)$/ );
-        if ( matches !== null ) {
+        let matches = flow.target.match( /^(.+)\s+(#\S+)$/ );
+        if (matches !== null) {
             // IFF the # string matches the pattern, separate the nodename
             // into parts. Assume a color will have at least 3 digits (rgb).
-            possible_nodename = matches[1];
-            possible_color    = matches[2];
+            const possible_nodename = matches[1],
+                possible_color = matches[2];
             matches = possible_color.match(
                 /^#([0-9A-F]{3,6})?(\.\d{1,4})?$/i );
-            if ( matches !== null ) {
-                // We got matches; rewrite the node & interpret the extra data
+            if (matches !== null) {
+                // Looks like we found a color or opacity or both.
+                // Update the target's name with the trimmed string:
                 flow.target = possible_nodename;
-                // Was there a color spec?
-                if ( matches[1] ) {
+                // If there was a color, adopt it:
+                if (matches[1]) {
                     flow_color = '#' + matches[1];
                 }
-                // Was there an opacity argument?
-                if ( matches[2] ) {
+                // If there was an opacity, adopt it:
+                if (matches[2]) {
                     opacity = matches[2];
                     // Make the hover opacity halfway between opacity and 1:
                     opacity_on_hover = ( Number(opacity) + 1 ) / 2;
                 }
             }
-            // Otherwise we just treat it as part of the nodename, e.g. "Team #1"
+            // Otherwise just treat it as part of the nodename, e.g. "Team #1"
         }
         // Make sure the node names get saved; it may their only appearance:
         addNodeName(flow.source);
         addNodeName(flow.target);
 
-        // Add the encoded flow to the list of approved flows:
-        const flow_struct = {
+        // Add the updated flow to the list of approved flows:
+        const f = {
             source: uniqueNodes.get(flow.source).index,
             target: uniqueNodes.get(flow.target).index,
             value:  flow.amount,
@@ -1269,11 +1273,9 @@ glob.process_sankey = function () {
             opacity_on_hover: opacity_on_hover
         };
         if (graphIsReversed) {
-            const tmp = flow_struct.source;
-            flow_struct.source = flow_struct.target;
-            flow_struct.target = tmp;
+            [f.source, f.target] = [f.target, f.source];
         }
-        approved_flows.push(flow_struct);
+        approved_flows.push(f);
     });
 
     // Construct the final list of approved_nodes:
