@@ -603,6 +603,11 @@ function render_sankey(all_nodes, all_flows, cfg) {
             return `${d.source.name} → ${d.target.name}:\n${units_format(d.value)}`;
         });
 
+    // MARK Drag functions
+
+    // isAZeroMove: simple test of whether every offset is 0 (no move at all):
+    function isAZeroMove(a) { return a.every((m) => m === 0); }
+
     // Given a Node index, apply its move to the SVG & remember it for later:
     function applyNodeMove(index) {
         const n = all_nodes[index],
@@ -624,7 +629,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
         // (Why would we apply a null transform? Because it may have been
         // transformed already & we are now undoing the previous operation.)
         d3.selectAll(`#sankey_svg .for_r${index}`)
-            .attr("transform", (n.move == [0, 0])
+            .attr("transform", isAZeroMove(n.move)
                 ? null
                 : `translate(${ep(n.x - n.origPos.x)},${ep(n.y - n.origPos.y)})`
                 );
@@ -640,8 +645,7 @@ function render_sankey(all_nodes, all_flows, cfg) {
     function rememberNodeMove(n) {
         // Always update lastPos when remembering moves:
         updateLastNodePosition(n);
-
-        if (n.move == [0, 0]) {
+        if (isAZeroMove(n.move)) {
             // There's no actual move now. If one was stored, forget it:
             glob.rememberedMoves.delete(n.name);
         } else {
