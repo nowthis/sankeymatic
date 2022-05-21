@@ -91,13 +91,6 @@ function escapeHTML(unsafeString) {
          .replaceAll("\n", "<br />");
 }
 
-// remove_zeroes: Strip off zeros from after any decimal
-function remove_zeroes(numberString) {
-    return numberString
-        .replace(/(\.\d*?)0+$/, '$1')
-        .replace(/\.$/, ''); // If no digits remain, remove the '.' as well.
-}
-
 // ep = "Enough Precision". Converts long decimals to have just 5 digits.
 // Why?:
 // SVG diagrams produced by SankeyMATIC don't really benefit from specifying
@@ -109,22 +102,26 @@ function remove_zeroes(numberString) {
 // The 'Number .. toString' call allows shortened output: 8 instead of 8.00000
 function ep(x) { return Number(x.toFixed(5)).toString(); }
 
-// fix_separators: given a US-formatted number, replace with user's preferred separators:
-function fix_separators(n, seps) {
-    // If desired format is not the US default, perform hacky-but-functional swap:
-    return (seps.thousands !== ","
-        // 3-step swap using ! as the placeholder:
-        ? n.replace(/,/g, "!")
-           .replace(/\./g, seps.decimal)
-           .replace(/!/g, seps.thousands)
-        : n);
+// updateMarks: given a US-formatted number string, replace with user's
+// preferred separators:
+function updateMarks(stringIn, numberMarks) {
+    // If the digit-group mark is a comma, implicitly the decimal is a dot...
+    // That's what we were given, so return:
+    if (numberMarks.group === ',') { return stringIn; }
+
+    // Perform hacky mark swap using ! as a placeholder:
+    return stringIn.replaceAll(',', '!')
+        .replaceAll('.', numberMarks.decimal)
+        .replaceAll('!', numberMarks.group);
 }
 
-// format_a_value: produce a fully prefixed, suffixed, & separated number for display:
-function format_a_value(number_in, places, separators, prefix, suffix, display_full_precision) {
-    let n = d3.format(`,.${places}f`)(number_in);
-    if (!display_full_precision) { n = remove_zeroes(n); }
-    return prefix + fix_separators(n, separators) + suffix;
+// formatUserData: produce a value in the user's designated format:
+function formatUserData(numberIn, nStyle) {
+    const nString = updateMarks(
+        d3.format(`,.${nStyle.decimalPlaces}${nStyle.trimString}f`)(numberIn),
+        nStyle.marks
+    );
+    return `${nStyle.prefix}${nString}${nStyle.suffix}`;
 }
 
 // svgBackgroundClass: Generate the class clause for the svg's top level:
@@ -430,28 +427,18 @@ glob.nudgeColorTheme = (themeKey, move) => {
 function render_sankey(allNodes, allFlows, cfg) {
     let stagesArr = []; // each Stage in the diagram (and the Nodes inside them)
 
+    // withUnits: Format a value with the current style.
+    function withUnits(n) { return formatUserData(n, cfg.numberStyle); }
+
     // Drawing curves with curvature of <= 0.1 looks bad and produces visual
     // artifacts, so let's just take the lowest value on the slider (0.1)
     // and call that 0/flat:
-    const flowsAreFlat = (cfg.curvature <= 0.1);
-
-    // units_format: produce a fully prefixed/suffixed/separated number string:
-    function units_format(n) {
-        return format_a_value(
-            n,
-            cfg.max_places,
-            cfg.seps,
-            cfg.unit_prefix,
-            cfg.unit_suffix,
-            cfg.display_full_precision
-        );
-    }
-
-    // flowPathFn is a function returning coordinates and specs for each flow
-    // (The function when flowsAreFlat is different from the curve function.)
-    const flowPathFn = flowsAreFlat
-        ? flatFlowPathMaker
-        : curvedFlowPathFunction(cfg.curvature);
+    const flowsAreFlat = (cfg.curvature <= 0.1),
+        // flowPathFn is a function returning coordinates and specs for each
+        // flow. (Flat flows use their own simpler function.)
+        flowPathFn = flowsAreFlat
+            ? flatFlowPathMaker
+            : curvedFlowPathFunction(cfg.curvature);
 
     // What color is a flow?
     function flow_final_color(f) {
@@ -599,7 +586,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // Add a tooltip for each flow:
     diagFlows.append("title")
-        .text((d) => `${d.source.name} → ${d.target.name}:\n${units_format(d.value)}`);
+        .text((d) => `${d.source.name} → ${d.target.name}:\n${withUnits(d.value)}`);
 
     // MARK Drag functions
 
@@ -833,7 +820,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         .style("stroke", (d) => d3.rgb(d.color).darker(2))
       // Add tooltips showing node totals:
       .append("title")
-        .text((d) => `${d.name}:\n${units_format(d.value)}`);
+        .text((d) => `${d.name}:\n${withUnits(d.value)}`);
 
     const diagLabels = diagMain.append("g")
         .attr("id", "sankey_labels")
@@ -874,7 +861,7 @@ function render_sankey(allNodes, allFlows, cfg) {
             .attr("class", (d) => `for_r${d.index}`)
             .text((d) => d.name
                 + (cfg.include_values_in_node_labels
-                    ? `: ${units_format(d.value)}`
+                    ? `: ${withUnits(d.value)}`
                     : ""))
           // Move the labels, potentially:
           .filter(
@@ -1138,12 +1125,6 @@ glob.process_sankey = () => {
     // approvedCfg begins with all the default values defined.
     // Values the user enters will override these (if present & valid).
     const approvedCfg = {
-        unit_prefix: "",
-        unit_suffix: "",
-        number_format: ",.",
-        seps: { thousands: ",", decimal: "." },
-        max_places: maxDecimalPlaces,
-        display_full_precision: 1,
         include_values_in_node_labels: 0,
         show_labels: 1,
         label_pos: "auto",
@@ -1173,21 +1154,17 @@ glob.process_sankey = () => {
         selected_theme_offset: 0,
         theme_a_offset: 7, theme_b_offset: 0,
         theme_c_offset: 0, theme_d_offset: 0,
+        numberStyle: {
+            marks: { group: ',', decimal: '.' },
+            decimalPlaces: maxDecimalPlaces,
+            trimString: '',
+            prefix: '',
+            suffix: '',
+        },
     };
 
-    // withUnits: Format a value using the units style the user has requested.
-    // Uses approved_config and maxDecimalPlaces (or a separately submitted
-    // 'places' param)
-    function withUnits(number_in, places) {
-        return format_a_value(
-            number_in,
-            (places || maxDecimalPlaces),
-            approvedCfg.seps,
-            approvedCfg.unit_prefix,
-            approvedCfg.unit_suffix,
-            approvedCfg.display_full_precision
-        );
-    }
+    // withUnits: Format a value with the current style.
+    function withUnits(n) { return formatUserData(n, approvedCfg.numberStyle); }
 
     // explainSum: Returns an html string showing the flow amounts which
     // add up to a node's total value in or out.
@@ -1367,26 +1344,26 @@ glob.process_sankey = () => {
     // Verify valid plain strings:
     (["unit_prefix", "unit_suffix"]).forEach((fldName) => {
         const fldVal = el(fldName).value;
-        if (typeof fldVal !== "undefined"
-            && fldVal !== null
-            && fldVal.length <= 10) {
-            approvedCfg[fldName] = fldVal;
-        } else {
-            reset_field(fldName);
-        }
+        approvedCfg.numberStyle[fldName.slice(-6)]
+            = (typeof fldVal !== 'undefined'
+                && fldVal !== null
+                && fldVal.length <= 10)
+                ? fldVal
+                : '';
     });
 
     // Interpret user's number format settings:
     (["number_format"]).forEach((fldName) => {
         const fldVal = el(fldName).value;
         if (fldVal.length === 2 && (/^[,. X][,.]$/.exec(fldVal))) {
-            // Grab the 1st character if it's a valid 'thousands' value:
-            const newThousands = (/^[,. X]/.exec(fldVal))[0];
+            // Grab the 1st character if it's a valid 'group' value:
+            const groupMark = (/^[,. X]/.exec(fldVal))[0];
             // No Separator (X) is a special case:
-            approvedCfg.seps.thousands
-                = newThousands === "X" ? "" : newThousands;
+            approvedCfg.numberStyle.marks.group
+                = groupMark === 'X' ? '' : groupMark;
             // Grab the 2nd character if it's a valid 'decimal' value:
-            approvedCfg.seps.decimal = (/^.([,.])/.exec(fldVal))[1];
+            approvedCfg.numberStyle.marks.decimal
+                = (/^.([,.])/.exec(fldVal))[1];
         } else {
             reset_field(fldName);
         }
@@ -1428,9 +1405,9 @@ glob.process_sankey = () => {
     }
 
     // Checkboxes:
-    (["display_full_precision", "include_values_in_node_labels",
-        "show_labels", "background_transparent", "justify_origins",
-        "justify_ends", "mention_sankeymatic"]).forEach((fldName) => {
+    (["include_values_in_node_labels", "show_labels",
+      "background_transparent", "justify_origins", "justify_ends",
+      "mention_sankeymatic"]).forEach((fldName) => {
         approvedCfg[fldName] = el(fldName).checked;
     });
 
@@ -1444,6 +1421,11 @@ glob.process_sankey = () => {
             reset_field(fldName);
         }
     });
+
+    // Finish setting up the numberStyle object. (It's used in render_sankey.)
+    // 'trimString' = string to be used in the d3.format expression later:
+    approvedCfg.numberStyle.trimString
+        = el('display_full_precision').checked ? '' : '~';
 
     // All is ready. Do the actual rendering:
     render_sankey(approvedNodes, approvedFlows, approvedCfg);
@@ -1546,14 +1528,20 @@ glob.process_sankey = () => {
     // Scale & make that available to the user:
     const tallestNodeHeight
         = parseFloat(el(`r${maxNodeIndex}`).getAttributeNS(null, "height")),
-        formattedPixelCount = fix_separators(
-            d3.format(",.2f")(tallestNodeHeight),
-            approvedCfg.seps
+        // Use <=2 decimal places to describe the tallest node's height:
+        formattedPixelCount = updateMarks(
+            d3.format(',.2~f')(tallestNodeHeight),
+            approvedCfg.numberStyle.marks
+        ),
+        // Show this value using the user's units, but override the number of
+        // decimal places to show 4 digits of precision:
+        unitsPerPixel = formatUserData(
+            maxNodeVal / tallestNodeHeight,
+            { ...approvedCfg.numberStyle, decimalPlaces: 4 }
         );
-    // Use plenty of precision for the scale output (4 decimal places):
     el('scale_figures').innerHTML
-        = `<strong>${withUnits(maxNodeVal / tallestNodeHeight, 4)}</strong> `
-        + `per pixel (${withUnits(maxNodeVal)}/${formattedPixelCount}px)`;
+        = `<strong>${unitsPerPixel}</strong> per pixel `
+        + `(${withUnits(maxNodeVal)}/${formattedPixelCount}px)`;
 
     updateResetNodesUI();
 
