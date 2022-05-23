@@ -534,7 +534,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         .attr("class", svgBackgroundClass(cfg.background_transparent));
 
     // If a background color is defined, add a backing rectangle with that color:
-    if (cfg.background_transparent !== 1) {
+    if (!cfg.background_transparent) {
         // Note: This just adds the rectangle *without* changing the d3
         // selection stored in diagramRoot:
         diagramRoot.append("rect")
