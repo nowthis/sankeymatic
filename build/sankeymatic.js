@@ -461,17 +461,6 @@ function render_sankey(allNodes, allFlows, cfg) {
             : cfg.default_flow_color;
     }
 
-    // What is the normal opacity for a flow?
-    function flow_normal_opacity(f) {
-        return f.opacity || cfg.default_flow_opacity;
-    }
-
-    // What is the opacity when a user hovers over this flow?
-    function flow_hover_opacity(f) {
-        return f.opacity_on_hover
-            || (Number(cfg.default_flow_opacity) + 1) / 2;
-    }
-
     // Establish a list of compatible colors to choose from:
     const userColorArray = cfg.default_node_colorset === "none"
         // User wants a color array with just the one value:
@@ -495,6 +484,12 @@ function render_sankey(allNodes, allFlows, cfg) {
                 = (/^\s*(\S+)/.exec(node.name) || ['', 'name-is-blank'])[1];
             node.color = colorScaleFn(firstBlock);
         }
+    });
+
+    // Fill in any missing opacity values and the 'hover' counterparts:
+    allFlows.forEach((f) => {
+        f.opacity = f.opacity || cfg.default_flow_opacity;
+        f.opacity_on_hover = (Number(f.opacity) + 1) / 2;
     });
 
     // At this point, allNodes and allFlows are ready to go.
@@ -543,6 +538,15 @@ function render_sankey(allNodes, allFlows, cfg) {
             .attr("fill", cfg.background_color);
     }
 
+    // Hovering over a flow increases its opacity:
+    function setFlowHoverOpacity(_, f) {
+        d3.select(this).style('opacity', f.opacity_on_hover);
+    }
+    // Leaving a flow restores its original opacity:
+    function setFlowOpacity(_, f) {
+        d3.select(this).style('opacity', f.opacity);
+    }
+
     // Add a [g]roup which moves the remaining diagram inward based on the
     // user's margins.
     const diagMain = diagramRoot.append("g")
@@ -558,14 +562,10 @@ function render_sankey(allNodes, allFlows, cfg) {
             .attr("class", "link")
             .attr("d", flowPathFn) // set the SVG path for each flow
             .style("stroke", (d) => flow_final_color(d))
-            .style("opacity", (d) => flow_normal_opacity(d))
+            .style("opacity", (f) => f.opacity)
           // add emphasis-on-hover behavior:
-          .on('mouseover', (d) => {
-            d3.select(this).style("opacity", flow_hover_opacity(d));
-            })
-          .on('mouseout', (d) => {
-            d3.select(this).style("opacity", flow_normal_opacity(d));
-            })
+          .on('mouseover', setFlowHoverOpacity)
+          .on('mouseout', setFlowOpacity)
           // Sort flows to be rendered from largest to smallest
           // (so if flows cross, the smaller are drawn on top of the larger):
           .sort((a, b) => b.dy - a.dy);
@@ -1210,7 +1210,6 @@ glob.process_sankey = () => {
         // string:
         let flowColor = "",
             opacity = "",
-            opacityOnHover = "",
             // Try to parse; there may be extra info that isn't actually the name:
             // Format of the Target node can be:
             // TODO: Target node ["Custom name for flow"] [#color[.opacity]]
@@ -1229,15 +1228,9 @@ glob.process_sankey = () => {
                 // Update the target's name with the trimmed string:
                 flow.target = possibleNodeName;
                 // If there was a color, adopt it:
-                if (matches[1]) {
-                    flowColor = `#${matches[1]}`;
-                }
+                if (matches[1]) { flowColor = `#${matches[1]}`; }
                 // If there was an opacity, adopt it:
-                if (matches[2]) {
-                    opacity = matches[2];
-                    // Make the hover opacity halfway between opacity and 1:
-                    opacityOnHover = (Number(opacity) + 1) / 2;
-                }
+                if (matches[2]) { opacity = matches[2]; }
             }
             // Otherwise just treat it as part of the nodename, e.g. "Team #1"
         }
@@ -1252,7 +1245,6 @@ glob.process_sankey = () => {
             value: flow.amount,
             color: flowColor,
             opacity: opacity,
-            opacity_on_hover: opacityOnHover,
         };
         if (graphIsReversed) {
             [f.source, f.target] = [f.target, f.source];

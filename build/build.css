@@ -250,11 +250,12 @@ p#chart {
   /* fill-opacity: .9; */
 }
 
-.node text {
+svg g#sankey_labels text {
   pointer-events: none;
 }
 
-/* Note on how the links are drawn: A path is specified but no line ('fill') is drawn on it.
+/* Note on how curved links are drawn:
+   A path is specified but no line ('fill') is drawn on it.
    The 'stroke' is all we are seeing, so that is what gets colored.
    The stroke styling is now done in the JS, not the overall CSS. */
 
