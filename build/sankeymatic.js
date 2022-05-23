@@ -427,6 +427,10 @@ glob.nudgeColorTheme = (themeKey, move) => {
 function render_sankey(allNodes, allFlows, cfg) {
     let stagesArr = []; // each Stage in the diagram (and the Nodes inside them)
 
+    // stagesMidpoint: Helpful value for deciding if something is in the first
+    // or last half of the diagram:
+    function stagesMidpoint() { return (stagesArr.length - 1) / 2; }
+
     // withUnits: Format a value with the current style.
     function withUnits(n) { return formatUserData(n, cfg.numberStyle); }
 
@@ -455,7 +459,7 @@ function render_sankey(allNodes, allFlows, cfg) {
             : cfg.default_flow_inherit === 'outside_in'
               // Is the midpoint of the flow in the right half, or left?
               // (If it's in the exact middle, we use the source color.)
-            ? ((f.source.stage + f.target.stage) / 2 <= (stagesArr.length - 1) / 2
+            ? ((f.source.stage + f.target.stage) / 2 <= stagesMidpoint()
                 ? f.source.color
                 : f.target.color)
             : cfg.default_flow_color;
@@ -516,6 +520,37 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // Get the final stages array (might be used for outside-in colors):
     stagesArr = sankeyObj.stages();
+
+    // Now that the stages & values are known, we can set up more label data:
+    if (cfg.show_labels) {
+        allNodes.forEach((n) => {
+            n.label_text
+                = cfg.include_values_in_node_labels
+                    ? `${n.name}: ${withUnits(n.value)}`
+                    : n.name;
+
+            let leftLabel = true;
+            switch (cfg.label_pos) {
+                case 'all_left': break;
+                case 'all_right': leftLabel = false; break;
+                // 'auto', a.k.a. 'inner': If the node's stage is in the FIRST
+                // half of all stages (excluding the middle stage if there is
+                // one), put the label AFTER the node.
+                case 'auto': leftLabel = n.stage >= stagesMidpoint();
+                // no default
+            }
+
+            // Having picked left/right, now we can set specific values:
+            n.label_x = leftLabel ? n.x - 6 : n.x + cfg.node_width + 6;
+            n.label_anchor = leftLabel ? 'end' : 'start';
+        });
+    }
+
+    // ...and fill in more Flow details as well:
+    allFlows.forEach((f) => {
+        f.tooltip
+            = `${f.source.name} → ${f.target.name}:\n${withUnits(f.value)}`;
+    });
 
     // Draw!
 
@@ -585,8 +620,7 @@ function render_sankey(allNodes, allFlows, cfg) {
     }
 
     // Add a tooltip for each flow:
-    diagFlows.append("title")
-        .text((d) => `${d.source.name} → ${d.target.name}:\n${withUnits(d.value)}`);
+    diagFlows.append('title').text((f) => f.tooltip);
 
     // MARK Drag functions
 
@@ -850,39 +884,15 @@ function render_sankey(allNodes, allFlows, cfg) {
           .data(allNodes)
           .enter()
           .append("text")
-            // Anchor the text to the left, ending at the node:
-            .attr("text-anchor", "end")
-            .attr("x", (d) => ep(d.x + -6))
-            .attr("y", (d) => ep(d.y + d.dy / 2))
+            .attr('x', (n) => ep(n.label_x))
+            .attr('y', (n) => ep(n.y + n.dy / 2))
+            .attr('text-anchor', (n) => n.label_anchor)
             // Move letters down by 1/3 of a wide letter's width
             // (makes them look vertically centered)
-            .attr("dy", ".35em")
+            .attr('dy', '.35em')
             // Associate this label with its node:
-            .attr("class", (d) => `for_r${d.index}`)
-            .text((d) => d.name
-                + (cfg.include_values_in_node_labels
-                    ? `: ${withUnits(d.value)}`
-                    : ""))
-          // Move the labels, potentially:
-          .filter(
-            // (filter = If this function returns TRUE, then the lines
-            // after this step are executed.)
-            // Check if this label should be right-of-node instead...
-            // First, has the user set a simple rule for all?
-            (d) => (
-                  cfg.label_pos === "all_left" ? 0
-                : cfg.label_pos === "all_right" ? 1
-                // Otherwise: if the node's x-coordinate is in the
-                // LEFT half of the graph, relocate the label to
-                // appear to the RIGHT of the node.
-                // (Here x is nudged by a node_width to make the
-                // *exact* middle of the diagram have left labels:
-                : (d.x + cfg.node_width) < (graphW / 2)
-                )
-            )
-            // Here is where the label is actually moved to the right:
-            .attr("text-anchor", "start")
-            .attr("x", (d) => ep(d.x + cfg.node_width + 6));
+            .attr('class', (n) => `for_r${n.index}`)
+            .text((n) => n.label_text);
     }
 
     // Now that all of the SVG nodes and labels exist, it's time to re-apply
@@ -921,8 +931,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = () => {
     let maxDecimalPlaces = 0, totalInflow = 0, totalOutflow = 0,
-        epsilonDifference = 0, statusMsg = '',
-        maxNodeIndex = 0, maxNodeVal = 0;
+        statusMsg = '', maxNodeIndex = 0, maxNodeVal = 0;
     const invalidLines = [],
         uniqueNodes = new Map(), approvedNodes = [],
         goodFlows = [], approvedFlows = [],
@@ -1430,7 +1439,7 @@ glob.process_sankey = () => {
     // Given maxDecimalPlaces, we can derive the smallest important
     // difference, defined as smallest-input-decimal/10; this lets us work
     // around various binary/decimal math issues.
-    epsilonDifference = 10 ** (-maxDecimalPlaces - 1);
+    const epsilonDifference = 10 ** (-maxDecimalPlaces - 1);
 
     // After rendering, there are now more keys in the node records, including
     // totalIn/Out and value.
