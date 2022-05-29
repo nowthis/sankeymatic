@@ -811,6 +811,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         // _new_ position as 'home'. Therefore we have to set this as the
         // 'last' position:
         rememberNodeMove(d);
+        reLayoutDiagram();
         return null;
     }
 
