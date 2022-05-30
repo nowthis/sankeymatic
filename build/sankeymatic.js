@@ -432,46 +432,6 @@ glob.nudgeColorTheme = (themeKey, move) => {
 
 // render_sankey: given nodes, flows, and other config, MAKE THE SVG DIAGRAM:
 function render_sankey(allNodes, allFlows, cfg) {
-    let stagesArr = []; // each Stage in the diagram (and the Nodes inside them)
-
-    // stagesMidpoint: Helpful value for deciding if something is in the first
-    // or last half of the diagram:
-    function stagesMidpoint() { return (stagesArr.length - 1) / 2; }
-
-    // withUnits: Format a value with the current style.
-    function withUnits(n) { return formatUserData(n, cfg.numberStyle); }
-
-    // Drawing curves with curvature of <= 0.1 looks bad and produces visual
-    // artifacts, so let's just take the lowest value on the slider (0.1)
-    // and call that 0/flat:
-    const flowsAreFlat = (cfg.curvature <= 0.1),
-        // flowPathFn is a function returning coordinates and specs for each
-        // flow. (Flat flows use their own simpler function.)
-        flowPathFn = flowsAreFlat
-            ? flatFlowPathMaker
-            : curvedFlowPathFunction(cfg.curvature);
-
-    // What color is a flow?
-    function flow_final_color(f) {
-        // Stroke Color priority order:
-        // 1. color defined specifically for the flow
-        // 2. single-inheritance-from-source (or target)
-        // 3. default-inheritance-from-source/target/outside_in
-        // 4. default flow color
-        return f.color ? f.color
-            : f.source.paint_right ? f.source.color
-            : f.target.paint_left ? f.target.color
-            : cfg.default_flow_inherit === 'source' ? f.source.color
-            : cfg.default_flow_inherit === 'target' ? f.target.color
-            : cfg.default_flow_inherit === 'outside_in'
-              // Is the midpoint of the flow in the right half, or left?
-              // (If it's in the exact middle, we use the source color.)
-            ? ((f.source.stage + f.target.stage) / 2 <= stagesMidpoint()
-                ? f.source.color
-                : f.target.color)
-            : cfg.default_flow_color;
-    }
-
     // Set the dimensions of the space:
     // (This will get much more complicated once we start auto-fitting labels.)
     const graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
@@ -492,21 +452,41 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     sankeyObj.layout(50); // Note: The 'layout()' step must be LAST.
 
-    // Get the final stages array (might be used for outside-in colors):
-    stagesArr = sankeyObj.stages();
-
     // Now that the stages & values are known, we can finish preparing the
     // Node & Flow objects for the SVG-rendering routine.
 
-    // Establish the right color theme array:
-    const userColorArray = cfg.default_node_colorset === "none"
-        // User wants a color array with just the one value:
-        ? [cfg.default_node_color]
-        : rotateColors(
-            approvedColorTheme(cfg.default_node_colorset).colorset,
-            cfg.selected_theme_offset
-            ),
-        colorScaleFn = d3.scaleOrdinal(userColorArray);
+    // First we have to set up some more values & functions..
+
+    // stagesArr = each Stage in the diagram (and the Nodes inside them)
+    // We get the final stages array here, since it will be used for
+    // auto-layout questions like where labels will land, or for the
+    // 'outside-in' flow color style):
+    const stagesArr = sankeyObj.stages(),
+        // Establish the right color theme array:
+        userColorArray = cfg.default_node_colorset === 'none'
+            // User wants a color array with just the one value:
+            ? [cfg.default_node_color]
+            : rotateColors(
+                approvedColorTheme(cfg.default_node_colorset).colorset,
+                cfg.selected_theme_offset
+                ),
+        colorScaleFn = d3.scaleOrdinal(userColorArray),
+        // Drawing curves with curvature of <= 0.1 looks bad and produces visual
+        // artifacts, so let's just take the lowest value on the slider (0.1)
+        // and use that value to mean 0/flat:
+        flowsAreFlat = (cfg.curvature <= 0.1),
+        // flowPathFn is a function producing an SVG path; the same function is
+        // used for all Flows. (Flat flows use a simpler function.)
+        flowPathFn = flowsAreFlat
+            ? flatFlowPathMaker
+            : curvedFlowPathFunction(cfg.curvature);
+
+    // stagesMidpoint: Helpful value for deciding if something is in the first
+    // or last half of the diagram:
+    function stagesMidpoint() { return (stagesArr.length - 1) / 2; }
+
+    // withUnits: Format a value with the current style.
+    function withUnits(n) { return formatUserData(n, cfg.numberStyle); }
 
     // Fill in presentation values for each Node (so the render routine
     // doesn't have to do any thinking):
@@ -546,7 +526,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 
             // Having picked left/right, now we can set specific values:
             n.label_anchor = leftLabel ? 'end' : 'start';
-            n.label_x = leftLabel ? n.x - 6 : n.x + cfg.node_width + 6;
+            n.label_x = leftLabel ? n.x - 6 : n.x + n.dx + 6;
             n.label_y = n.y + n.dy / 2;
             n.label_text
                 = cfg.include_values_in_node_labels
@@ -561,6 +541,43 @@ function render_sankey(allNodes, allFlows, cfg) {
         // Fill in any missing opacity values and the 'hover' counterparts:
         f.opacity = f.opacity || cfg.default_flow_opacity;
         f.opacity_on_hover = (Number(f.opacity) + 1) / 2;
+
+        // Derive any missing Flow colors.
+        if (f.color === '') {
+            // Stroke Color priority order:
+            // 1. color given directly to the flow (filtered out above)
+            // 2. inheritance-from-node-with-specific-paint-direction
+            // 3. default-inheritance-direction OR default flow color
+            if (f.source.paint_right) {
+                f.color = f.source.color;
+            } else if (f.target.paint_left) {
+                f.color = f.target.color;
+            } else {
+                const flowMidpoint = (f.source.stage + f.target.stage) / 2;
+                switch (cfg.default_flow_inherit) {
+                    case 'source': f.color = f.source.color; break;
+                    case 'target': f.color = f.target.color; break;
+                    case 'outside_in':
+                        // Is the flow's midpoint in the right half, or left?
+                        // (In the exact middle, we use the source color.)
+                        f.color = flowMidpoint <= stagesMidpoint()
+                            ? f.source.color
+                            : f.target.color;
+                        break;
+                    case 'none': f.color = cfg.default_flow_color;
+                    // no default
+                }
+            }
+        }
+        // When flows are flat:
+        //  * They're really parallelograms and so they need a 'fill' value.
+        //  * We still use a thin stroke because the outermost flows can look
+        //    overly thin otherwise. (They still do, even with the stroke.)
+        // When flows are curved:
+        //  * No fill; only stroke-width! It is set to always be at least 1px
+        //    wide, to make sure tiny flows can be seen.
+        [f.fill, f.stroke_width]
+            = flowsAreFlat ? [f.color, 0.5] : ['none', Math.max(1, f.dy)];
     });
 
     // At this point, allNodes and allFlows are ready to go. Draw!
@@ -607,7 +624,9 @@ function render_sankey(allNodes, allFlows, cfg) {
           .append("path")
             .attr("class", "link")
             .attr("d", flowPathFn) // set the SVG path for each flow
-            .style("stroke", (d) => flow_final_color(d))
+            .style("fill", (f) => f.fill)
+            .style("stroke", (f) => f.color)
+            .style("stroke-width", (f) => ep(f.stroke_width))
             .style("opacity", (f) => f.opacity)
           // add emphasis-on-hover behavior:
           .on('mouseover', setFlowHoverOpacity)
@@ -615,20 +634,6 @@ function render_sankey(allNodes, allFlows, cfg) {
           // Sort flows to be rendered from largest to smallest
           // (so if flows cross, the smaller are drawn on top of the larger):
           .sort((a, b) => b.dy - a.dy);
-
-    if (flowsAreFlat) {
-        // When flows have no curvature at all, they're really parallelograms.
-        // The fill is the main source of color then:
-        diagFlows.style("fill", (d) => flow_final_color(d))
-            // We add a little bit of a stroke because the outermost flows look
-            // overly thin otherwise. (They still can, even with this addition.)
-           .style("stroke-width", 0.5);
-    } else {
-        // When curved, there is no fill, only stroke-width:
-        diagFlows.style("fill", "none")
-            // Make sure any flow, no matter how small, is visible (1px wide):
-            .style("stroke-width", (d) => ep(Math.max(1, d.dy)));
-    }
 
     // Add a tooltip for each flow:
     diagFlows.append('title').text((f) => f.tooltip);
@@ -747,7 +752,7 @@ function render_sankey(allNodes, allFlows, cfg) {
           .attr("x", ep(d.origPos.x))
           .attr("y", ep(d.origPos.y))
           .attr("height", ep(d.dy))
-          .attr("width", cfg.node_width)
+          .attr("width", ep(d.dx))
           .style("fill", d.color)
           .style("fill-opacity", 0.3);
 
@@ -856,7 +861,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         .attr("x", (n) => ep(n.x))
         .attr("y", (n) => ep(n.y))
         .attr("height", (n) => ep(n.dy))
-        .attr("width", cfg.node_width)
+        .attr("width", (n) => ep(n.dx))
         // Give a unique ID & class to each rect that we can reference:
         .attr("id", (n) => n.dom_id)
         .attr("class", (n) => n.css_class)
