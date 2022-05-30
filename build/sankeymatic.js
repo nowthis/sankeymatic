@@ -472,39 +472,6 @@ function render_sankey(allNodes, allFlows, cfg) {
             : cfg.default_flow_color;
     }
 
-    // Establish a list of compatible colors to choose from:
-    const userColorArray = cfg.default_node_colorset === "none"
-        // User wants a color array with just the one value:
-        ? [cfg.default_node_color]
-        : rotateColors(
-            approvedColorTheme(cfg.default_node_colorset).colorset,
-            cfg.selected_theme_offset
-            ),
-        colorScaleFn = d3.scaleOrdinal(userColorArray);
-
-    // Fill in any un-set node colors up front so flows can inherit colors
-    // from them:
-    allNodes.forEach((node) => {
-        if (typeof node.color === 'undefined' || node.color === '') {
-            // Use the first non-blank portion of the label as the basis for
-            // adopting an already-used color or picking a new one.
-            // (Note: this is case sensitive!)
-            // If there are no non-blank strings in the node name, substitute
-            // a word-ish value (rather than crash):
-            const firstBlock
-                = (/^\s*(\S+)/.exec(node.name) || ['', 'name-is-blank'])[1];
-            node.color = colorScaleFn(firstBlock);
-        }
-    });
-
-    // Fill in any missing opacity values and the 'hover' counterparts:
-    allFlows.forEach((f) => {
-        f.opacity = f.opacity || cfg.default_flow_opacity;
-        f.opacity_on_hover = (Number(f.opacity) + 1) / 2;
-    });
-
-    // At this point, allNodes and allFlows are ready to go.
-
     // Set the dimensions of the space:
     // (This will get much more complicated once we start auto-fitting labels.)
     const graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
@@ -528,14 +495,44 @@ function render_sankey(allNodes, allFlows, cfg) {
     // Get the final stages array (might be used for outside-in colors):
     stagesArr = sankeyObj.stages();
 
-    // Now that the stages & values are known, we can set up more label data:
-    if (cfg.show_labels) {
-        allNodes.forEach((n) => {
-            n.label_text
-                = cfg.include_values_in_node_labels
-                    ? `${n.name}: ${withUnits(n.value)}`
-                    : n.name;
+    // Now that the stages & values are known, we can finish preparing the
+    // Node & Flow objects for the SVG-rendering routine.
 
+    // Establish the right color theme array:
+    const userColorArray = cfg.default_node_colorset === "none"
+        // User wants a color array with just the one value:
+        ? [cfg.default_node_color]
+        : rotateColors(
+            approvedColorTheme(cfg.default_node_colorset).colorset,
+            cfg.selected_theme_offset
+            ),
+        colorScaleFn = d3.scaleOrdinal(userColorArray);
+
+    // Fill in presentation values for each Node (so the render routine
+    // doesn't have to do any thinking):
+    allNodes.forEach((n) => {
+        n.dom_id = `r${n.index}`; // r0, r1... ('r' = '<rect>')
+        // This class is shared by the node's label, if present:
+        n.css_class = `for_${n.dom_id}`; // for_r0, for_r1...
+        n.tooltip = `${n.name}:\n${withUnits(n.value)}`;
+        n.opacity = n.opacity || cfg.default_node_opacity;
+
+        // Fill in any missing Node colors. (Flows may inherit from these.)
+        if (typeof n.color === 'undefined' || n.color === '') {
+            // Use the first non-blank portion of a label as the basis for
+            // adopting an already-used color or picking a new one.
+            // (Note: this is case sensitive!)
+            // If there are no non-blank strings in the node name, substitute
+            // a word-ish value (rather than crash):
+            const firstBlock
+                = (/^\s*(\S+)/.exec(n.name) || ['', 'name-is-blank'])[1];
+            n.color = colorScaleFn(firstBlock);
+        }
+        // Now that we're guaranteed a color, we can calculate the border shade:
+        n.border_color = d3.rgb(n.color).darker(2);
+
+        // Set up label text & position:
+        if (cfg.show_labels) {
             let leftLabel = true;
             switch (cfg.label_pos) {
                 case 'all_left': break;
@@ -548,18 +545,25 @@ function render_sankey(allNodes, allFlows, cfg) {
             }
 
             // Having picked left/right, now we can set specific values:
-            n.label_x = leftLabel ? n.x - 6 : n.x + cfg.node_width + 6;
             n.label_anchor = leftLabel ? 'end' : 'start';
-        });
-    }
+            n.label_x = leftLabel ? n.x - 6 : n.x + cfg.node_width + 6;
+            n.label_y = n.y + n.dy / 2;
+            n.label_text
+                = cfg.include_values_in_node_labels
+                    ? `${n.name}: ${withUnits(n.value)}` : n.name;
+        }
+    });
 
     // ...and fill in more Flow details as well:
     allFlows.forEach((f) => {
         f.tooltip
             = `${f.source.name} → ${f.target.name}:\n${withUnits(f.value)}`;
+        // Fill in any missing opacity values and the 'hover' counterparts:
+        f.opacity = f.opacity || cfg.default_flow_opacity;
+        f.opacity_on_hover = (Number(f.opacity) + 1) / 2;
     });
 
-    // Draw!
+    // At this point, allNodes and allFlows are ready to go. Draw!
 
     // Clear out any old contents:
     makeDiagramBlank(cfg);
@@ -831,7 +835,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         return null;
     }
 
-    // Set up the [g]roup of nodes, including drag behavior:
+    // Set up the <g>roup of Nodes, including drag behavior:
     const diagNodes = diagMain.append("g")
         .attr("id", "sankey_nodes")
         .attr("shape-rendering", "crispEdges")
@@ -847,22 +851,22 @@ function render_sankey(allNodes, allFlows, cfg) {
             .on("end", dragNodeEnded))
         .on("dblclick", doubleClickNode);
 
-    // Construct the actual rectangles for NODEs:
+    // Construct the actual <rect>angles for NODEs:
     diagNodes.append("rect")
-        .attr("x", (d) => ep(d.x))
-        .attr("y", (d) => ep(d.y))
-        .attr("height", (d) => ep(d.dy))
+        .attr("x", (n) => ep(n.x))
+        .attr("y", (n) => ep(n.y))
+        .attr("height", (n) => ep(n.dy))
         .attr("width", cfg.node_width)
         // Give a unique ID & class to each rect that we can reference:
-        .attr("id", (d) => `r${d.index}`)
-        .attr("class", (d) => `for_r${d.index}`)
+        .attr("id", (n) => n.dom_id)
+        .attr("class", (n) => n.css_class)
         // we made sure above there will be a color defined:
-        .style("fill", (d) => d.color)
-        .style("fill-opacity", (d) => d.opacity || cfg.default_node_opacity)
-        .style("stroke", (d) => d3.rgb(d.color).darker(2))
+        .style("fill", (n) => n.color)
+        .style("fill-opacity", (n) => n.opacity)
+        .style("stroke", (n) => n.border_color)
       // Add tooltips showing node totals:
       .append("title")
-        .text((d) => `${d.name}:\n${withUnits(d.value)}`);
+        .text((n) => n.tooltip);
 
     const diagLabels = diagMain.append("g")
         .attr("id", "sankey_labels")
@@ -893,13 +897,13 @@ function render_sankey(allNodes, allFlows, cfg) {
           .enter()
           .append("text")
             .attr('x', (n) => ep(n.label_x))
-            .attr('y', (n) => ep(n.y + n.dy / 2))
+            .attr('y', (n) => ep(n.label_y))
             .attr('text-anchor', (n) => n.label_anchor)
             // Move letters down by 1/3 of a wide letter's width
             // (makes them look vertically centered)
             .attr('dy', '.35em')
-            // Associate this label with its node:
-            .attr('class', (n) => `for_r${n.index}`)
+            // Associate this label with its Node using the CSS class:
+            .attr('class', (n) => n.css_class)
             .text((n) => n.label_text);
     }
 
@@ -1272,21 +1276,20 @@ glob.process_sankey = () => {
     // Construct the final list of approved_nodes:
     // NOTE: We don't have to sort this for the indices to line up, since
     // .values() already gives us the items in insertion order.
-    for (const nodeData of uniqueNodes.values()) {
+    for (const n of uniqueNodes.values()) {
         // Set up color inheritance signals.
-        // 'Right' & 'left' here correspond to >> and <<.
-        const paintLeft
-                = (nodeData.paint1 === "<<" || nodeData.paint2 === "<<"),
-            paintRight
-                = (nodeData.paint1 === ">>" || nodeData.paint2 === ">>");
+        // 'Right' & 'Left' here correspond to >> and <<.
+        const paintValues = [n.paint1, n.paint2],
+            paintL = paintValues.some((s) => s === '<<'),
+            paintR = paintValues.some((s) => s === '>>');
         // If the graph is reversed, the directions are swapped:
-        nodeData.paint_right = graphIsReversed ? paintLeft : paintRight;
-        nodeData.paint_left = graphIsReversed ? paintRight : paintLeft;
+        [n.paint_left, n.paint_right]
+            = graphIsReversed ? [paintR, paintL] : [paintL, paintR];
         // After establishing the above, the raw inputs aren't needed:
-        delete nodeData.paint1;
-        delete nodeData.paint2;
+        delete n.paint1;
+        delete n.paint2;
 
-        approvedNodes.push(nodeData);
+        approvedNodes.push(n);
     }
 
     // Whole positive numbers:
