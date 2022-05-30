@@ -310,7 +310,14 @@ glob.replaceGraphConfirmed = () => {
         }
     });
 
-    // Select all the existing input text...
+    // First, verify that the flow input field is visible.
+    // (If it's been hidden, the setting of flows won't work properly.)
+    const flowsPanel = 'input_options';
+    if (el(flowsPanel).style.display === 'none') {
+        glob.togglePanel(flowsPanel);
+    }
+
+    // Then select all the existing input text...
     const flowsEl = el('flows_in');
     flowsEl.focus();
     flowsEl.select();
