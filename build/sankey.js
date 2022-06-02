@@ -127,9 +127,7 @@ d3.sankey = () => {
 
     // This node needs a stage assigned/updated.
     function updateNode(n) {
-        // Set x-position and width:
         n.stage = furthestStage;
-        n.dx = nodeWidth;
         // Make sure its targets will be seen again:
         // (Only add it to the nextNodes list if it is not already present)
         n.flowsOut.filter((f) => !nextNodes.includes(f.target))
@@ -219,6 +217,7 @@ d3.sankey = () => {
           // Also: make sure each node is at least 1 pixel, even if its true
           // value is 0:
           n.dy = Math.max(1, n.value * ky);
+          n.dx = nodeWidth;
         });
       });
 

@@ -436,21 +436,27 @@ function render_sankey(allNodes, allFlows, cfg) {
     // (This will get much more complicated once we start auto-fitting labels.)
     const graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
         graphH = cfg.canvas_height - cfg.top_margin - cfg.bottom_margin,
-        // Create the sankey object & its properties.
-        // NOTE: The call to d3.sankey().setup() will further MODIFY the
-        // allNodes and allFlows objects -- filling in specifics about layout
-        // positions, etc.
+        // Create the sankey object & the properties needed for the skeleton.
+        // NOTE: The call to d3.sankey().setup() will MODIFY the allNodes and
+        // allFlows objects -- filling in specifics about connections, stages,
+        // etc.
         sankeyObj = d3.sankey()
-            .nodeWidth(cfg.node_width)
-            .nodeSpacingFactor(cfg.node_spacing / 100)
-            .size([graphW, graphH])
             .nodes(allNodes)
             .flows(allFlows)
             .rightJustifyEndpoints(cfg.justify_ends)
             .leftJustifyOrigins(cfg.justify_origins)
             .setup();
 
-    sankeyObj.layout(50); // Note: The 'layout()' step must be LAST.
+    // Coming soon, right here: Additional logic to calculate new automatic
+    // features, such as updating the margins to fit labels outside the
+    // main diagram.
+
+    // We have the skeleton set up; provide the inputs for final layout.
+    // (This call further alters allNodes+allFlows with specific coordinates.)
+    sankeyObj.size([graphW, graphH])
+        .nodeWidth(cfg.node_width)
+        .nodeSpacingFactor(cfg.node_spacing / 100)
+        .layout(50); // Note: The 'layout()' step must be LAST.
 
     // Now that the stages & values are known, we can finish preparing the
     // Node & Flow objects for the SVG-rendering routine.
