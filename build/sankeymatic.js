@@ -1080,8 +1080,16 @@ glob.process_sankey = () => {
         });
     }
 
-    // parse into structures: approved_nodes, approved_flows, approved_config
-    const sourceLines = el('flows_in').value.split("\n").map((l) => l.trim());
+    // Parse inputs into: approvedNodes, approvedFlows, approvedConfig
+    // As part of this step, we drop any zero-width spaces which may have
+    // been appended or prepended to lines (e.g. when pasted from
+    // PowerPoint), then trim again.
+    const sourceLines = el('flows_in').value
+        .split("\n")
+        .map((l) => l.trim()
+            .replace(/^\u200B+/, '')
+            .replace(/\u200B+$/, '')
+            .trim());
 
     // Loop through all the input lines, storing good ones vs bad ones:
     sourceLines.forEach((lineIn) => {
