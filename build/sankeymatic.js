@@ -500,7 +500,8 @@ function render_sankey(allNodes, allFlows, cfg) {
     // doesn't have to do any thinking):
     allNodes.forEach((n) => {
         n.dom_id = `r${n.index}`; // r0, r1... ('r' = '<rect>')
-        // This class is shared by the node's label, if present:
+        // Everything with this class value will move with the Node when it is
+        // dragged:
         n.css_class = `for_${n.dom_id}`; // for_r0, for_r1...
         n.tooltip = `${n.name}:\n${withUnits(n.value)}`;
         n.opacity = n.opacity || cfg.default_node_opacity;
@@ -676,7 +677,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         // Currently this means the node and its label, if present.
         // (Why would we apply a null transform? Because it may have been
         // transformed already & we are now undoing the previous operation.)
-        d3.selectAll(`#sankey_svg .for_r${index}`)
+        d3.selectAll(`#sankey_svg .${n.css_class}`)
             .attr("transform", isAZeroMove(n.move)
                 ? null
                 : `translate(${ep(n.x - n.origPos.x)},${ep(n.y - n.origPos.y)})`);
@@ -853,8 +854,6 @@ function render_sankey(allNodes, allFlows, cfg) {
     const diagNodes = diagMain.append("g")
         .attr("id", "sankey_nodes")
         .attr("shape-rendering", "crispEdges")
-        .attr('stroke-width', cfg.node_border || '0')
-        .attr('paint-order', 'stroke fill')
       .selectAll(".node")
       .data(allNodes)
       .enter()
@@ -866,7 +865,21 @@ function render_sankey(allNodes, allFlows, cfg) {
             .on("end", dragNodeEnded))
         .on("dblclick", doubleClickNode);
 
-    // Construct the actual <rect>angles for NODEs:
+    // Set up Node borders, if specified:
+    if (cfg.node_border) {
+        diagNodes.append('rect')
+          .attr('id', (n) => `${n.dom_id}_border`)
+          .attr('class', (n) => n.css_class)
+          .attr('x', (n) => ep(n.x))
+          .attr('y', (n) => ep(n.y))
+          .attr('height', (n) => ep(n.dy))
+          .attr('width', (n) => ep(n.dx))
+          .attr('stroke', (n) => n.border_color)
+          .attr('stroke-width', cfg.node_border)
+          .attr('fill', 'none');
+    }
+
+    // Construct the main <rect>angles for NODEs:
     diagNodes.append("rect")
         .attr("x", (n) => ep(n.x))
         .attr("y", (n) => ep(n.y))
@@ -878,7 +891,6 @@ function render_sankey(allNodes, allFlows, cfg) {
         // we made sure above there will be a color defined:
         .style("fill", (n) => n.color)
         .style("fill-opacity", (n) => n.opacity)
-        .style("stroke", (n) => n.border_color)
       // Add tooltips showing node totals:
       .append("title")
         .text((n) => n.tooltip);
