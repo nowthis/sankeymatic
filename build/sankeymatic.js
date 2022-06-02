@@ -485,7 +485,9 @@ function render_sankey(allNodes, allFlows, cfg) {
         // used for all Flows. (Flat flows use a simpler function.)
         flowPathFn = flowsAreFlat
             ? flatFlowPathMaker
-            : curvedFlowPathFunction(cfg.curvature);
+            : curvedFlowPathFunction(cfg.curvature),
+        // Is the diagram background dark or light?
+        darkBg = (cfg.background_color.toUpperCase() < '#888');
 
     // stagesMidpoint: Helpful value for deciding if something is in the first
     // or last half of the diagram:
@@ -515,7 +517,8 @@ function render_sankey(allNodes, allFlows, cfg) {
             n.color = colorScaleFn(firstBlock);
         }
         // Now that we're guaranteed a color, we can calculate the border shade:
-        n.border_color = d3.rgb(n.color).darker(2);
+        n.border_color
+            = darkBg ? d3.rgb(n.color).brighter(2) : d3.rgb(n.color).darker(2);
 
         // Set up label text & position:
         if (cfg.show_labels) {
@@ -850,7 +853,8 @@ function render_sankey(allNodes, allFlows, cfg) {
     const diagNodes = diagMain.append("g")
         .attr("id", "sankey_nodes")
         .attr("shape-rendering", "crispEdges")
-        .style("stroke-width", cfg.node_border || 0)
+        .attr('stroke-width', cfg.node_border || '0')
+        .attr('paint-order', 'stroke fill')
       .selectAll(".node")
       .data(allNodes)
       .enter()
