@@ -853,7 +853,6 @@ function render_sankey(allNodes, allFlows, cfg) {
     // Set up the <g>roup of Nodes, including drag behavior:
     const diagNodes = diagMain.append("g")
         .attr("id", "sankey_nodes")
-        .attr("shape-rendering", "crispEdges")
       .selectAll(".node")
       .data(allNodes)
       .enter()
