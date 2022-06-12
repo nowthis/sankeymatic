@@ -536,7 +536,10 @@ function render_sankey(allNodes, allFlows, cfg) {
 
             // Having picked left/right, now we can set specific values:
             n.label_anchor = leftLabel ? 'end' : 'start';
-            n.label_x = leftLabel ? n.x - 6 : n.x + n.dx + 6;
+            const distanceFromNode = 4 + (cfg.node_border / 2);
+            n.label_x = leftLabel
+                ? n.x - distanceFromNode
+                : n.x + n.dx + distanceFromNode;
             n.label_y = n.y + n.dy / 2;
             n.label_text
                 = cfg.include_values_in_node_labels
