@@ -487,7 +487,18 @@ function render_sankey(allNodes, allFlows, cfg) {
             ? flatFlowPathMaker
             : curvedFlowPathFunction(cfg.curvature),
         // Is the diagram background dark or light?
-        darkBg = (cfg.background_color.toUpperCase() < '#888');
+        darkBg = (cfg.background_color.toUpperCase() < '#888'),
+        // Is the label color more like black or like white?
+        darkLabel = (cfg.font_color.toUpperCase() < '#AAA'),
+        // Set up label highlight values:
+        hlStyle = {
+            orig: {
+                fill: darkLabel ? '#fff' : '#000',
+                stroke: 'none',
+                stroke_width: '0',
+                opacity: cfg.label_highlight,
+            },
+        };
 
     // stagesMidpoint: Helpful value for deciding if something is in the first
     // or last half of the diagram:
@@ -523,6 +534,12 @@ function render_sankey(allNodes, allFlows, cfg) {
 
         // Set up label text & position:
         if (cfg.show_labels) {
+            n.label_id = `label${n.index}`; // label0, label1..
+            n.label_bg_id = `${n.label_id}_bg`; // label0_bg, label1_bg..
+            n.label_text
+                = cfg.include_values_in_node_labels
+                    ? `${n.name}: ${withUnits(n.value)}` : n.name;
+
             let leftLabel = true;
             switch (cfg.label_pos) {
                 case 'all_left': break;
@@ -533,17 +550,13 @@ function render_sankey(allNodes, allFlows, cfg) {
                 case 'auto': leftLabel = n.stage >= stagesMidpoint();
                 // no default
             }
-
-            // Having picked left/right, now we can set specific values:
+            // Having picked left/right, now we can set the position:
             n.label_anchor = leftLabel ? 'end' : 'start';
             const distanceFromNode = 4 + (cfg.node_border / 2);
             n.label_x = leftLabel
                 ? n.x - distanceFromNode
                 : n.x + n.dx + distanceFromNode;
             n.label_y = n.y + n.dy / 2;
-            n.label_text
-                = cfg.include_values_in_node_labels
-                    ? `${n.name}: ${withUnits(n.value)}` : n.name;
         }
     });
 
@@ -675,9 +688,9 @@ function render_sankey(allNodes, allFlows, cfg) {
             Math.min(availableH, n.origPos.y + availableH * n.move[1])
             );
 
-        // Find everything which shares the class of the dragged node and
-        // translate each with these offsets.
-        // Currently this means the node and its label, if present.
+        // Find everything which shares the class of the dragged Node and
+        // translate all of them with these offsets.
+        // Currently this means the Node and the label+highlight, if present.
         // (Why would we apply a null transform? Because it may have been
         // transformed already & we are now undoing the previous operation.)
         d3.selectAll(`#sankey_svg .${n.css_class}`)
@@ -897,6 +910,7 @@ function render_sankey(allNodes, allFlows, cfg) {
       .append("title")
         .text((n) => n.tooltip);
 
+    // Create a top layer for labels & highlights, so nodes can't block them:
     const diagLabels = diagMain.append("g")
         .attr("id", "sankey_labels")
         // These font spec defaults apply to all labels within
@@ -925,6 +939,7 @@ function render_sankey(allNodes, allFlows, cfg) {
           .data(allNodes)
           .enter()
           .append("text")
+            .attr('id', (n) => n.label_id)
             .attr('x', (n) => ep(n.label_x))
             .attr('y', (n) => ep(n.label_y))
             .attr('text-anchor', (n) => n.label_anchor)
@@ -934,6 +949,32 @@ function render_sankey(allNodes, allFlows, cfg) {
             // Associate this label with its Node using the CSS class:
             .attr('class', (n) => n.css_class)
             .text((n) => n.label_text);
+
+        // Should there be a visible highlight?
+        if (hlStyle.orig.opacity > 0) {
+            // Use each label's size to make custom round-rects underneath:
+            allNodes.forEach((n) => {
+                const labelTextNode = `#${n.label_id}`,
+                    labelBBox
+                        = diagLabels.select(labelTextNode).node().getBBox(),
+                    xPad = 3, // For now, using constants; eventually should
+                    yPad = 2; //   set these based on em/en measurements.
+                // Put the highlight rectangle just before each text:
+                diagLabels.insert('rect', labelTextNode)
+                    .attr('id', n.label_bg_id)
+                    // Make sure a Node drag will affect this as well:
+                    .attr('class', n.css_class)
+                    .attr('x', ep(labelBBox.x - xPad))
+                    .attr('y', ep(labelBBox.y - yPad))
+                    .attr('width', ep(labelBBox.width + 2 * xPad))
+                    .attr('height', ep(labelBBox.height + 2 * yPad))
+                    .attr('rx', '5')
+                    .attr('fill', hlStyle.orig.fill)
+                    .attr('stroke', hlStyle.orig.stroke)
+                    .attr('stroke-width', hlStyle.orig.stroke_width)
+                    .attr('opacity', hlStyle.orig.opacity);
+            });
+        }
     }
 
     // Now that all of the SVG nodes and labels exist, it's time to re-apply
@@ -1209,6 +1250,7 @@ glob.process_sankey = () => {
         default_node_color: "#006699",
         default_node_colorset: "C",
         font_face: "sans-serif",
+        label_highlight: 0.5,
         selected_theme_offset: 0,
         theme_a_offset: 7, theme_b_offset: 0,
         theme_c_offset: 0, theme_d_offset: 0,
@@ -1461,7 +1503,7 @@ glob.process_sankey = () => {
     });
 
     // Decimal:
-    (["default_node_opacity", "default_flow_opacity",
+    (["default_node_opacity", "default_flow_opacity", "label_highlight",
         "curvature"]).forEach((fldName) => {
         const fldVal = el(fldName).value;
         if (fldVal.match(/^\d(?:.\d+)?$/)) {

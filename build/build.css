@@ -1,6 +1,7 @@
 body { font-size: 13px; }
 
 .smalllabel { font-size: 11px; }
+.slider_tiny { width: 3em; }
 .slider_narrow { width: 6em; }
 .slider_medium { width: 9.5em; }
 
@@ -250,7 +251,8 @@ p#chart {
   /* fill-opacity: .9; */
 }
 
-svg g#sankey_labels text {
+svg g#sankey_labels text,
+svg g#sankey_labels rect {
   pointer-events: none;
 }
 
@@ -360,6 +362,12 @@ th#title {
 
 .theme_container {
   white-space: nowrap;
+}
+
+#highlight_fld_label {
+  background-color: #fffc;
+  padding: .25em .3em;
+  border-radius: .5em;
 }
 
 /* Customize checkable things (radio & checkbox labels):

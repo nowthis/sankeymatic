@@ -112,7 +112,7 @@ Nodes<span id="node_options_hint">:</span></h2>
 <fieldset class="form_elements1">
 <legend>Default Node Colors:</legend>
 <div class="fieldset_contents">
-Use <input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color" class="ropt">a single color:</label>
+Use <input name="default_node_colorset" type="radio" id="node_use_color" value="none" onchange="process_sankey();" /><label for="node_use_color" class="ropt">one color:</label>
 <input type="color" id="default_node_color" size="7" maxlength="7" value="#004477" onchange="process_sankey();"> or a Theme:<br />
 <table id="color_themes">
 <tr>
@@ -195,16 +195,13 @@ Flows<span id="flow_options_hint">:</span></h2>
 
 <div class="fieldset_contents">
 
-Use colors from:
-<span class="no_wrap"><input name="default_flow_inherit" type="radio" id="flow_outside_in" value="outside_in" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_outside_in">outermost nodes (flowing in)</label></span>
-<br />
+Use <input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color" class="ropt">one color:</label>
 
+<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();" /> or colors from:<br />
 <span class="no_wrap"><input name="default_flow_inherit" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_source">each flow's Source</label></span>
 <span class="no_wrap"><input name="default_flow_inherit" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_target">each flow's Target</label></span>
 <br />
-
-<span>or: <input name="default_flow_inherit" type="radio" id="flow_use_color" value="none" onchange="process_sankey();" /><label for="flow_use_color" class="ropt">a single color:</label>
-<input type="color" id="default_flow_color" size="7" maxlength="7" value="#666666" onchange="process_sankey();" /></span><br />
+<span class="no_wrap"><input name="default_flow_inherit" type="radio" id="flow_outside_in" value="outside_in" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_outside_in">the outermost nodes (flowing in)</label></span>
 </div>
 
 </fieldset>
@@ -235,11 +232,12 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <p class="form_elements2">
 <label for="font_size"><strong>Size:</strong></label>
 <span class="no_wrap"><input type="text" class="wholenumber" id="font_size" size="2" maxlength="4" value="15" onchange="process_sankey();"> <label for="font_size">px</label></span>
+<input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
 
-<strong class="spaced_label">Face:</strong>
-<span class="no_wrap"><input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
-<span class="no_wrap"><input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
-<span class="no_wrap"><input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
+<span class="no_wrap spaced_label">
+<label for="label_highlight" id="highlight_fld_label"><strong>Highlight:</strong></label>
+<span class="smalllabel">0</span><input id="label_highlight" type="range" min="0" max="0.8" step="0.1" value="0.5" oninput="process_sankey();" onchange="process_sankey();" class="slider_narrow"><span class="smalllabel">Max</span>
+</span>
 
 </p>
 
@@ -252,20 +250,21 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 </div>
 
 <p class="form_elements2">
-<label for="font_color"><strong>Color:</strong></label>
-<input type="color" id="font_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
+<strong>Face:</strong>
+<span class="no_wrap"><input name="font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
+<span class="no_wrap"><input name="font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
 
-<label for="font_weight" class="spaced_label"><strong>Weight:</strong></label>
-<span class="no_wrap"><span class="smalllabel font_light">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" oninput="process_sankey();" onchange="process_sankey();" class="slider_narrow"><span class="smalllabel font_bolder">Bold</span></span><br />
+<label for="font_weight" class="spaced_label"><strong>Style:</strong></label>
+<span class="no_wrap"><span class="smalllabel font_light">Light</span><input id="font_weight" type="range" min="100" max="700" step="300" value="400" oninput="process_sankey();" onchange="process_sankey();" class="slider_tiny"><span class="smalllabel font_bolder">Bold</span></span><br />
 </p>
 
-<p class="form_elements1">
-<strong>Units:</strong>
+<fieldset class="form_elements1">
+<legend>Units:</legend>
+<div class="fieldset_contents">
 <span class="no_wrap"><label for="unit_prefix">Prefix =</label> <input type="text" id="unit_prefix" size="3" maxlength="10" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="unit_suffix">Suffix =</label> <input type="text" id="unit_suffix" size="5" maxlength="10" onchange="process_sankey();"></span>
-</p>
-
-<p class="form_elements2">
+<br />
 <label for="number_format"><strong>Number Format:</strong></label>
 <select id="number_format" onchange="process_sankey();">
 <option value=",." selected="selected">1,000,000.00</option>
@@ -275,7 +274,9 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <option value="X.">1000000.00</option>
 <option value="X,">1000000,00</option>
 </select>
-</p>
+</div>
+</fieldset>
+
 </div>
 
 <!-- LAYOUT OPTIONS -->
