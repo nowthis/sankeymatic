@@ -494,9 +494,19 @@ function render_sankey(allNodes, allFlows, cfg) {
         hlStyle = {
             orig: {
                 fill: darkLabel ? '#fff' : '#000',
+                fill_opacity: Number(cfg.label_highlight),
                 stroke: 'none',
-                stroke_width: '0',
-                opacity: cfg.label_highlight,
+                stroke_width: 0,
+                stroke_opacity: 0,
+            },
+            focus: {
+                fill: darkLabel ? '#ffb' : '#603',
+                // Given the user's opacity, calculate a reasonable hover
+                // value (2/3 of the distance to 1):
+                fill_opacity: 0.666 + Number(cfg.label_highlight) / 3,
+                stroke: darkLabel ? '#440' : '#fde',
+                stroke_width: 1,
+                stroke_opacity: 0.7,
             },
         };
 
@@ -563,10 +573,11 @@ function render_sankey(allNodes, allFlows, cfg) {
     // ...and fill in more Flow details as well:
     allFlows.forEach((f) => {
         f.tooltip
-            = `${f.source.name} → ${f.target.name}:\n${withUnits(f.value)}`;
+            = `${f.source.name} → ${f.target.name}: ${withUnits(f.value)}`;
         // Fill in any missing opacity values and the 'hover' counterparts:
         f.opacity = f.opacity || cfg.default_flow_opacity;
-        f.opacity_on_hover = (Number(f.opacity) + 1) / 2;
+        // Hover opacity = halfway between the user's opacity and 1.0:
+        f.opacity_on_hover = 0.5 + Number(f.opacity) / 2;
 
         // Derive any missing Flow colors.
         if (f.color === '') {
@@ -627,13 +638,29 @@ function render_sankey(allNodes, allFlows, cfg) {
             .attr("fill", cfg.background_color);
     }
 
-    // Hovering over a flow increases its opacity:
-    function setFlowHoverOpacity(_, f) {
-        d3.select(this).style('opacity', f.opacity_on_hover);
+    // Given a flow & a style struct, apply styles to source/target labels:
+    function applyLabelBgEffects(f, s) {
+        [f.source, f.target].forEach((n) => {
+            d3.select(`#${n.label_bg_id}`)
+                .attr('fill', s.fill)
+                .attr('fill-opacity', ep(s.fill_opacity))
+                .attr('stroke', s.stroke)
+                .attr('stroke-width', ep(s.stroke_width))
+                .attr('stroke-opacity', ep(s.stroke_opacity));
+        });
     }
-    // Leaving a flow restores its original opacity:
-    function setFlowOpacity(_, f) {
-        d3.select(this).style('opacity', f.opacity);
+
+    // Hovering over a flow increases its opacity & highlights the labels of
+    // the source+target:
+    function flowHoverEffectsOn(_, f) {
+        // Use overall 'opacity' because f might be either a fill or stroke:
+        d3.select(this).attr('opacity', f.opacity_on_hover);
+        applyLabelBgEffects(f, hlStyle.focus);
+    }
+    // Leaving a flow restores its original appearance:
+    function flowHoverEffectsOff(_, f) {
+        d3.select(this).attr('opacity', f.opacity);
+        applyLabelBgEffects(f, hlStyle.orig);
     }
 
     // Add a [g]roup which moves the remaining diagram inward based on the
@@ -655,8 +682,8 @@ function render_sankey(allNodes, allFlows, cfg) {
             .style("stroke-width", (f) => ep(f.stroke_width))
             .style("opacity", (f) => f.opacity)
           // add emphasis-on-hover behavior:
-          .on('mouseover', setFlowHoverOpacity)
-          .on('mouseout', setFlowOpacity)
+          .on('mouseover', flowHoverEffectsOn)
+          .on('mouseout', flowHoverEffectsOff)
           // Sort flows to be rendered from largest to smallest
           // (so if flows cross, the smaller are drawn on top of the larger):
           .sort((a, b) => b.dy - a.dy);
@@ -951,7 +978,8 @@ function render_sankey(allNodes, allFlows, cfg) {
             .text((n) => n.label_text);
 
         // Should there be a visible highlight?
-        if (hlStyle.orig.opacity > 0) {
+        const hls = hlStyle.orig;
+        if (hls.fill_opacity > 0) {
             // Use each label's size to make custom round-rects underneath:
             allNodes.forEach((n) => {
                 const labelTextNode = `#${n.label_id}`,
@@ -969,10 +997,11 @@ function render_sankey(allNodes, allFlows, cfg) {
                     .attr('width', ep(labelBBox.width + 2 * xPad))
                     .attr('height', ep(labelBBox.height + 2 * yPad))
                     .attr('rx', '5')
-                    .attr('fill', hlStyle.orig.fill)
-                    .attr('stroke', hlStyle.orig.stroke)
-                    .attr('stroke-width', hlStyle.orig.stroke_width)
-                    .attr('opacity', hlStyle.orig.opacity);
+                    .attr('fill', hls.fill)
+                    .attr('fill-opacity', ep(hls.fill_opacity))
+                    .attr('stroke', hls.stroke)
+                    .attr('stroke-width', ep(hls.stroke_width))
+                    .attr('stroke-opacity', ep(hls.stroke_opacity));
             });
         }
     }
