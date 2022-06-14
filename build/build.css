@@ -5,6 +5,42 @@ body { font-size: 13px; }
 .slider_narrow { width: 6em; }
 .slider_medium { width: 9.5em; }
 
+.fade-init {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.fade-in {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity .2s;
+}
+
+.fade-out {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s 1s, opacity 1s;
+}
+
+/* This is required in order to absolute-position anything inside an element: */
+.output_container { position: relative; }
+
+output {
+  position: absolute;
+  top: -1.5em;
+  padding: .15em .1em;
+  border-radius: .6em;
+  text-align: center;
+  background-color: #eef7ff;
+  color: #0077b3; /* same as a selected radio button */
+  border: 1px solid #036;
+}
+
+.output_narrow { width: 1.5em; left: 63%; }
+.output_medium { width: 2.5em; left: 56%; }
+.output_medium_long { width: 2.5em; left: 66%; }
+.output_wide { width: 3.3em; left: 52%; }
+
 .font_sans { font-family: sans-serif; }
 .font_serif { font-family: serif; }
 .font_mono { font-family: monospace; }
@@ -55,9 +91,9 @@ input[type="range"]:active::-webkit-slider-runnable-track {
 
 .okmessage {
     text-align: center;
-    background-color: #DDEEFF;
+    background-color: #def;
     color: #003366;
-    border: 1px solid #006699;
+    border: 1px solid #069;
     padding: 4px;
     margin: 2px;
 }
@@ -251,6 +287,7 @@ p#chart {
   /* fill-opacity: .9; */
 }
 
+output,
 svg g#sankey_labels text,
 svg g#sankey_labels rect {
   pointer-events: none;

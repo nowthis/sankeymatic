@@ -33,6 +33,49 @@ glob.togglePanel = (panel) => {
     return null;
 };
 
+function outputFieldEl(fld) { return el(`${fld}_val`); }
+
+// updateOutput: Called directly from the page.
+// Given a field's name, update the visible value shown to the user.
+glob.updateOutput = (fld) => {
+    const fldVal = el(fld).value,
+        oEl = outputFieldEl(fld),
+        formats = {
+            curvature: '|',
+            default_node_opacity: '.2',
+            default_flow_opacity: '.2',
+            label_highlight: '.2',
+            node_spacing: '%',
+            node_border: '',
+        };
+    switch (formats[fld]) {
+        case '|':
+            // 0.1 is treated as 0 for curvature. Display that:
+            if (fldVal <= 0.1) { oEl.innerHTML = '0.00'; break; }
+            // FALLS THROUGH to '.2' format when fldVal > 0.1:
+        case '.2': oEl.innerHTML = d3.format('.2f')(fldVal); break;
+        case '%': oEl.innerHTML = `${fldVal}%`; break;
+        default: oEl.innerHTML = fldVal;
+    }
+    return null;
+};
+
+glob.revealVal = (fld) => {
+    // First make sure the value is up to date.
+    glob.updateOutput(fld);
+
+    // Swap classes to make the output appear:
+    const cl = outputFieldEl(fld).classList;
+    cl.remove('fade-init', 'fade-out');
+    cl.add('fade-in');
+    return null;
+};
+
+glob.fadeVal = (fld) => {
+    outputFieldEl(fld).classList.replace('fade-in', 'fade-out');
+    return null;
+};
+
 // isNumeric: borrowed from jQuery/Angular
 function isNumeric(n) { return !Number.isNaN(n - parseFloat(n)); }
 
@@ -1279,7 +1322,7 @@ glob.process_sankey = () => {
         default_node_color: "#006699",
         default_node_colorset: "C",
         font_face: "sans-serif",
-        label_highlight: 0.5,
+        label_highlight: 0.55,
         selected_theme_offset: 0,
         theme_a_offset: 7, theme_b_offset: 0,
         theme_c_offset: 0, theme_d_offset: 0,
