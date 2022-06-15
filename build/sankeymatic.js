@@ -1711,6 +1711,9 @@ glob.process_sankey = () => {
     // All done. Give control back to the browser:
     return null;
 };
+
+// Render the default diagram on first load:
+glob.process_sankey();
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
