@@ -178,7 +178,7 @@ function makeDiagramBlank(cfg) {
     // Simply emptying the SVG tag doesn't seem to work well in Safari,
     // so we remake the whole tag instead:
     el('chart').innerHTML
-        = '<svg id="sankey_svg" xmlns="http://www.w3.org/2000/svg" version="1.1" '
+        = '<svg id="sankey_svg" xmlns="http://www.w3.org/2000/svg" '
         + `height="${cfg.canvas_height}" width="${cfg.canvas_width}" `
         + `class="${svgBackgroundClass(cfg.background_transparent)}"></svg>`;
 }
@@ -720,10 +720,10 @@ function render_sankey(allNodes, allFlows, cfg) {
           .append("path")
             .attr("class", "link")
             .attr("d", flowPathFn) // set the SVG path for each flow
-            .style("fill", (f) => f.fill)
-            .style("stroke", (f) => f.color)
-            .style("stroke-width", (f) => ep(f.stroke_width))
-            .style("opacity", (f) => f.opacity)
+            .attr("fill", (f) => f.fill)
+            .attr("stroke", (f) => f.color)
+            .attr("stroke-width", (f) => ep(f.stroke_width))
+            .attr("opacity", (f) => f.opacity)
           // add emphasis-on-hover behavior:
           .on('mouseover', flowHoverEffectsOn)
           .on('mouseout', flowHoverEffectsOff)
@@ -820,9 +820,9 @@ function render_sankey(allNodes, allFlows, cfg) {
             diagHelperLayer = diagMain.insert("g", "#sankey_nodes")
               .attr("id", "helper_layer")
               // Set up attributes common to all the stuff inside here..
-              .style("fill", grayColor)
-              .style("fill-opacity", 0.5)
-              .style("stroke", "none");
+              .attr("fill", grayColor)
+              .attr("fill-opacity", 0.5)
+              .attr("stroke", "none");
         }
 
         // Draw 4 horizontal/vertical guide lines, along the edges of the
@@ -837,10 +837,10 @@ function render_sankey(allNodes, allFlows, cfg) {
           // ..Then the same operation [v]ertically, using this node's width.
           .attr("d", `M0 ${ep(d.lastPos.y)} h${ep(graphW)} m0 ${ep(d.dy)} H0`
                    + `M${ep(d.lastPos.x)} 0 v${ep(graphH)} m${ep(d.dx)} 0 V0`)
-          .style("stroke", grayColor)
-          .style("stroke-width", 1)
-          .style("stroke-dasharray", "1 3")
-          .style("stroke-opacity", 0.7);
+          .attr("stroke", grayColor)
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "1 3")
+          .attr("stroke-opacity", 0.7);
 
         // Put a ghost rectangle where this node started out:
         diagHelperLayer.append("rect")
@@ -849,8 +849,8 @@ function render_sankey(allNodes, allFlows, cfg) {
           .attr("y", ep(d.origPos.y))
           .attr("height", ep(d.dy))
           .attr("width", ep(d.dx))
-          .style("fill", d.color)
-          .style("fill-opacity", 0.3);
+          .attr("fill", d.color)
+          .attr("fill-opacity", 0.3);
 
         // Check for the Shift key. If it's down when starting the drag, skip
         // the hint:
@@ -859,8 +859,8 @@ function render_sankey(allNodes, allFlows, cfg) {
             // in a [g]roup which can be removed later during dragging:
             const shiftHints = diagHelperLayer.append("g")
                   .attr("id", "helper_shift_hints")
-                  .style("font-size", "14px")
-                  .style("font-weight", "400"),
+                  .attr("font-size", "14px")
+                  .attr("font-weight", "400"),
                 hintHeights = graphH > 350 ? [0.05, 0.95] : [0.4];
             // Show the text so it's visible but not overwhelming:
             hintHeights.forEach((h) => {
@@ -974,8 +974,8 @@ function render_sankey(allNodes, allFlows, cfg) {
         .attr("id", (n) => n.dom_id)
         .attr("class", (n) => n.css_class)
         // we made sure above there will be a color defined:
-        .style("fill", (n) => n.color)
-        .style("fill-opacity", (n) => n.opacity)
+        .attr("fill", (n) => n.color)
+        .attr("fill-opacity", (n) => n.opacity)
       // Add tooltips showing node totals:
       .append("title")
         .text((n) => n.tooltip);
@@ -984,10 +984,10 @@ function render_sankey(allNodes, allFlows, cfg) {
     const diagLabels = diagMain.append("g")
         .attr("id", "sankey_labels")
         // These font spec defaults apply to all labels within
-        .style("font-family", cfg.font_face)
-        .style("font-size", `${cfg.font_size}px`)
-        .style("font-weight", cfg.font_weight)
-        .style("fill", cfg.font_color);
+        .attr("font-family", cfg.font_face)
+        .attr("font-size", `${cfg.font_size}px`)
+        .attr("font-weight", cfg.font_weight)
+        .attr("fill", cfg.font_color);
     if (cfg.mention_sankeymatic) {
         diagLabels.append("text")
             // Anchor the text to the midpoint of the canvas (not the graph):
@@ -997,9 +997,9 @@ function render_sankey(allNodes, allFlows, cfg) {
             .attr("x", cfg.canvas_width / 2 - cfg.left_margin)
             .attr("y", graphH + cfg.bottom_margin - 5)
             // Keep the current font, but make this small & grey:
-            .style("font-size", "11px")
-            .style("font-weight", "400")
-            .style("fill", contrasting_gray_color(cfg.background_color))
+            .attr("font-size", "11px")
+            .attr("font-weight", "400")
+            .attr("fill", contrasting_gray_color(cfg.background_color))
             .text("Made with SankeyMATIC");
     }
 
