@@ -11,7 +11,7 @@ Requires:
 */
 
 (function sankeymatic(glob) {
-"use strict";
+'use strict';
 
 // 'glob' points to the global object, either 'window' (browser) or 'global' (node.js)
 // This lets us contain everything in an IIFE (Immediately-Invoked Function Expression)
@@ -125,13 +125,13 @@ function contrasting_gray_color(hc) {
 // and for reflecting the user's input back to them in messages.
 function escapeHTML(unsafeString) {
     return unsafeString
-         .replaceAll('→', "&#8594;")
-         .replaceAll('&', "&amp;")
-         .replaceAll('<', "&lt;")
-         .replaceAll('>', "&gt;")
-         .replaceAll('"', "&quot;")
-         .replaceAll("'", "&#039;")
-         .replaceAll("\n", "<br />");
+         .replaceAll('→', '&#8594;')
+         .replaceAll('&', '&amp;')
+         .replaceAll('<', '&lt;')
+         .replaceAll('>', '&gt;')
+         .replaceAll('"', '&quot;')
+         .replaceAll("'", '&#039;')
+         .replaceAll('\n', '<br />');
 }
 
 // ep = "Enough Precision". Converts long decimals to have just 5 digits.
@@ -195,7 +195,7 @@ function render_png(curDate) {
         // Find the (hidden) canvas element in our page:
         canvasEl = el('png_preview'),
         // Set up the values Canvg will need:
-        canvasContext = canvasEl.getContext("2d"),
+        canvasContext = canvasEl.getContext('2d'),
         svgEl = el('sankey_svg'),
         svgContent = (new XMLSerializer()).serializeToString(svgEl),
         // More targets we'll be changing on the page:
@@ -234,12 +234,12 @@ function render_png(curDate) {
     canvgObj.render();
 
     // Convert canvas image to a URL-encoded PNG and update the link:
-    pngLinkEl.setAttribute("href", canvasEl.toDataURL('image/png'));
-    pngLinkEl.setAttribute("target", "_blank");
+    pngLinkEl.setAttribute('href', canvasEl.toDataURL('image/png'));
+    pngLinkEl.setAttribute('target', '_blank');
 
     // update download link & filename with dimensions:
     pngLinkEl.innerHTML = `Export ${scaledW} x ${scaledH} PNG`;
-    pngLinkEl.setAttribute("download", `sankeymatic_${fileTimestamp}_${scaledW}x${scaledH}.png`);
+    pngLinkEl.setAttribute('download', `sankeymatic_${fileTimestamp}_${scaledW}x${scaledH}.png`);
 }
 
 // produce_svg_code: take the current state of 'sankey_svg' and
@@ -256,12 +256,12 @@ function produce_svg_code(curDate) {
         // Insert some helpful tags in front of the FIRST inner tag:
         .replace(
             />/,
-            ">\n<title>Your Diagram Title</title>\n"
+            '>\n<title>Your Diagram Title</title>\n'
             + `<!-- Generated with SankeyMATIC: ${curDate.toLocaleString()} -->\n`
             )
         // Add some line breaks to highlight where [g]roups start/end
         // and where each [path] and [text] start:
-        .replace(/<(g|\/g|path|text)/g, "\n<$1");
+        .replace(/<(g|\/g|path|text)/g, '\n<$1');
 
   // Escape that whole batch of tags and put it in the <div> for copying:
   el('svg_for_export').innerHTML = escapeHTML(svgForCopying);
@@ -332,7 +332,7 @@ glob.renderExportableOutputs = () => {
 // Dismiss the note about overwriting the user's current inputs.
 glob.hideReplaceGraphWarning = () => {
     // Hide the overwrite-warning paragraph (if it's showing)
-    el('replace_graph_warning').style.display = "none";
+    el('replace_graph_warning').style.display = 'none';
     return null;
 };
 
@@ -410,7 +410,7 @@ glob.replaceGraph = (graphName) => {
         glob.replaceGraphConfirmed();
     } else {
         // Show the warning and do NOT replace the graph:
-        el('replace_graph_warning').style.display = "";
+        el('replace_graph_warning').style.display = '';
         el('replace_graph_yes').innerHTML
             = `Yes, replace the graph with '${savedRecipe.name}'`;
     }
@@ -666,19 +666,19 @@ function render_sankey(allNodes, allFlows, cfg) {
     makeDiagramBlank(cfg);
 
     // Select the svg canvas; set the defined dimensions:
-    const diagramRoot = d3.select("#sankey_svg")
-        .attr("height", cfg.canvas_height)
-        .attr("width", cfg.canvas_width)
-        .attr("class", svgBackgroundClass(cfg.background_transparent));
+    const diagramRoot = d3.select('#sankey_svg')
+        .attr('height', cfg.canvas_height)
+        .attr('width', cfg.canvas_width)
+        .attr('class', svgBackgroundClass(cfg.background_transparent));
 
     // If a background color is defined, add a backing rectangle with that color:
     if (!cfg.background_transparent) {
         // Note: This just adds the rectangle *without* changing the d3
         // selection stored in diagramRoot:
-        diagramRoot.append("rect")
-            .attr("height", cfg.canvas_height)
-            .attr("width", cfg.canvas_width)
-            .attr("fill", cfg.background_color);
+        diagramRoot.append('rect')
+            .attr('height', cfg.canvas_height)
+            .attr('width', cfg.canvas_width)
+            .attr('fill', cfg.background_color);
     }
 
     // Given a flow & a style struct, apply styles to source/target labels:
@@ -708,22 +708,22 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // Add a [g]roup which moves the remaining diagram inward based on the
     // user's margins.
-    const diagMain = diagramRoot.append("g")
-            .attr("transform", `translate(${cfg.left_margin},${cfg.top_margin})`),
+    const diagMain = diagramRoot.append('g')
+            .attr('transform', `translate(${cfg.left_margin},${cfg.top_margin})`),
         // Set up the [g]roup of rendered flows:
         // diagFlows = the d3 selection of all flow paths:
-        diagFlows = diagMain.append("g")
-            .attr("id", "sankey_flows")
-          .selectAll(".link")
+        diagFlows = diagMain.append('g')
+            .attr('id', 'sankey_flows')
+          .selectAll('.link')
           .data(allFlows)
           .enter()
-          .append("path")
-            .attr("class", "link")
-            .attr("d", flowPathFn) // set the SVG path for each flow
-            .attr("fill", (f) => f.fill)
-            .attr("stroke", (f) => f.color)
-            .attr("stroke-width", (f) => ep(f.stroke_width))
-            .attr("opacity", (f) => f.opacity)
+          .append('path')
+            .attr('class', 'link')
+            .attr('d', flowPathFn) // set the SVG path for each flow
+            .attr('fill', (f) => f.fill)
+            .attr('stroke', (f) => f.color)
+            .attr('stroke-width', (f) => ep(f.stroke_width))
+            .attr('opacity', (f) => f.opacity)
           // add emphasis-on-hover behavior:
           .on('mouseover', flowHoverEffectsOn)
           .on('mouseout', flowHoverEffectsOff)
@@ -764,7 +764,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         // (Why would we apply a null transform? Because it may have been
         // transformed already & we are now undoing the previous operation.)
         d3.selectAll(`#sankey_svg .${n.css_class}`)
-            .attr("transform", isAZeroMove(n.move)
+            .attr('transform', isAZeroMove(n.move)
                 ? null
                 : `translate(${ep(n.x - n.origPos.x)},${ep(n.y - n.origPos.y)})`);
     }
@@ -802,7 +802,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 
         // For every flow, update its 'd' path attribute with the new
         // calculated path:
-        diagFlows.attr("d", flowPathFn);
+        diagFlows.attr('d', flowPathFn);
 
         // Regenerate the exportable versions:
         glob.renderExportableOutputs();
@@ -812,63 +812,63 @@ function render_sankey(allNodes, allFlows, cfg) {
     // distinct 'g'roup for helper content so we can remove it easily later:
     function dragNodeStarted(event, d) {
         const grayColor = contrasting_gray_color(cfg.background_color);
-        let diagHelperLayer = diagMain.select("#helper_layer");
+        let diagHelperLayer = diagMain.select('#helper_layer');
         // Create the helper layer if it doesn't exist:
         if (!diagHelperLayer.nodes.length) {
             // Insert it just before (i.e. 'under') the 'nodes' layer, so it
             // doesn't interfere with things like double-clicks on nodes.
-            diagHelperLayer = diagMain.insert("g", "#sankey_nodes")
-              .attr("id", "helper_layer")
+            diagHelperLayer = diagMain.insert('g', '#sankey_nodes')
+              .attr('id', 'helper_layer')
               // Set up attributes common to all the stuff inside here..
-              .attr("fill", grayColor)
-              .attr("fill-opacity", 0.5)
-              .attr("stroke", "none");
+              .attr('fill', grayColor)
+              .attr('fill-opacity', 0.5)
+              .attr('stroke', 'none');
         }
 
         // Draw 4 horizontal/vertical guide lines, along the edges of the
         // place where the drag began (d.lastPos):
-        diagHelperLayer.append("path")
-          .attr("id", "helper_lines")
+        diagHelperLayer.append('path')
+          .attr('id', 'helper_lines')
           // This SVG Path spec means:
           // [M]ove to the left edge of the graph at this node's top
           // [h]orizontal line across the whole graph width
           // [m]ove down by this node's height
           // [H]orizontal line back to the left edge (x=0)
           // ..Then the same operation [v]ertically, using this node's width.
-          .attr("d", `M0 ${ep(d.lastPos.y)} h${ep(graphW)} m0 ${ep(d.dy)} H0`
+          .attr('d', `M0 ${ep(d.lastPos.y)} h${ep(graphW)} m0 ${ep(d.dy)} H0`
                    + `M${ep(d.lastPos.x)} 0 v${ep(graphH)} m${ep(d.dx)} 0 V0`)
-          .attr("stroke", grayColor)
-          .attr("stroke-width", 1)
-          .attr("stroke-dasharray", "1 3")
-          .attr("stroke-opacity", 0.7);
+          .attr('stroke', grayColor)
+          .attr('stroke-width', 1)
+          .attr('stroke-dasharray', '1 3')
+          .attr('stroke-opacity', 0.7);
 
         // Put a ghost rectangle where this node started out:
-        diagHelperLayer.append("rect")
-          .attr("id", "helper_original_rect")
-          .attr("x", ep(d.origPos.x))
-          .attr("y", ep(d.origPos.y))
-          .attr("height", ep(d.dy))
-          .attr("width", ep(d.dx))
-          .attr("fill", d.color)
-          .attr("fill-opacity", 0.3);
+        diagHelperLayer.append('rect')
+          .attr('id', 'helper_original_rect')
+          .attr('x', ep(d.origPos.x))
+          .attr('y', ep(d.origPos.y))
+          .attr('height', ep(d.dy))
+          .attr('width', ep(d.dx))
+          .attr('fill', d.color)
+          .attr('fill-opacity', 0.3);
 
         // Check for the Shift key. If it's down when starting the drag, skip
         // the hint:
         if (!(event.sourceEvent && event.sourceEvent.shiftKey)) {
             // Place hint text where it can hopefully be seen,
             // in a [g]roup which can be removed later during dragging:
-            const shiftHints = diagHelperLayer.append("g")
-                  .attr("id", "helper_shift_hints")
-                  .attr("font-size", "14px")
-                  .attr("font-weight", "400"),
+            const shiftHints = diagHelperLayer.append('g')
+                  .attr('id', 'helper_shift_hints')
+                  .attr('font-size', '14px')
+                  .attr('font-weight', '400'),
                 hintHeights = graphH > 350 ? [0.05, 0.95] : [0.4];
             // Show the text so it's visible but not overwhelming:
             hintHeights.forEach((h) => {
-                shiftHints.append("text")
-                  .attr("text-anchor", "middle")
-                  .attr("x", graphW / 2)
-                  .attr("y", graphH * h)
-                 .text("Hold down Shift to move in only one direction");
+                shiftHints.append('text')
+                  .attr('text-anchor', 'middle')
+                  .attr('x', graphW / 2)
+                  .attr('y', graphH * h)
+                 .text('Hold down Shift to move in only one direction');
             });
         }
         return null;
@@ -892,7 +892,7 @@ function render_sankey(allNodes, allFlows, cfg) {
             }
             // If they've Shift-dragged, they don't need the hint any more -
             // remove it and don't bring it back until the next gesture.
-            const shiftHint = diagMain.select("#helper_shift_hints");
+            const shiftHint = diagMain.select('#helper_shift_hints');
             if (shiftHint.nodes) { shiftHint.remove(); }
         }
 
@@ -916,7 +916,7 @@ function render_sankey(allNodes, allFlows, cfg) {
     // into skipping this work if no actual move has happened.)
     function dragNodeEnded(event, d) {
         // Take away the helper guides:
-        const helperLayer = diagMain.select("#helper_layer");
+        const helperLayer = diagMain.select('#helper_layer');
         if (helperLayer.nodes) { helperLayer.remove(); }
 
         // After a drag is finished, any new constrained drag should use the
@@ -937,18 +937,18 @@ function render_sankey(allNodes, allFlows, cfg) {
     }
 
     // Set up the <g>roup of Nodes, including drag behavior:
-    const diagNodes = diagMain.append("g")
-        .attr("id", "sankey_nodes")
-      .selectAll(".node")
+    const diagNodes = diagMain.append('g')
+        .attr('id', 'sankey_nodes')
+      .selectAll('.node')
       .data(allNodes)
       .enter()
-      .append("g")
-        .attr("class", "node")
+      .append('g')
+        .attr('class', 'node')
         .call(d3.drag()
-            .on("start", dragNodeStarted)
-            .on("drag", draggingNode)
-            .on("end", dragNodeEnded))
-        .on("dblclick", doubleClickNode);
+            .on('start', dragNodeStarted)
+            .on('drag', draggingNode)
+            .on('end', dragNodeEnded))
+        .on('dblclick', doubleClickNode);
 
     // Set up Node borders, if specified:
     if (cfg.node_border) {
@@ -965,42 +965,42 @@ function render_sankey(allNodes, allFlows, cfg) {
     }
 
     // Construct the main <rect>angles for NODEs:
-    diagNodes.append("rect")
-        .attr("x", (n) => ep(n.x))
-        .attr("y", (n) => ep(n.y))
-        .attr("height", (n) => ep(n.dy))
-        .attr("width", (n) => ep(n.dx))
+    diagNodes.append('rect')
+        .attr('x', (n) => ep(n.x))
+        .attr('y', (n) => ep(n.y))
+        .attr('height', (n) => ep(n.dy))
+        .attr('width', (n) => ep(n.dx))
         // Give a unique ID & class to each rect that we can reference:
-        .attr("id", (n) => n.dom_id)
-        .attr("class", (n) => n.css_class)
+        .attr('id', (n) => n.dom_id)
+        .attr('class', (n) => n.css_class)
         // we made sure above there will be a color defined:
-        .attr("fill", (n) => n.color)
-        .attr("fill-opacity", (n) => n.opacity)
+        .attr('fill', (n) => n.color)
+        .attr('fill-opacity', (n) => n.opacity)
       // Add tooltips showing node totals:
-      .append("title")
+      .append('title')
         .text((n) => n.tooltip);
 
     // Create a top layer for labels & highlights, so nodes can't block them:
-    const diagLabels = diagMain.append("g")
-        .attr("id", "sankey_labels")
+    const diagLabels = diagMain.append('g')
+        .attr('id', 'sankey_labels')
         // These font spec defaults apply to all labels within
-        .attr("font-family", cfg.font_face)
-        .attr("font-size", `${cfg.font_size}px`)
-        .attr("font-weight", cfg.font_weight)
-        .attr("fill", cfg.font_color);
+        .attr('font-family', cfg.font_face)
+        .attr('font-size', `${cfg.font_size}px`)
+        .attr('font-weight', cfg.font_weight)
+        .attr('fill', cfg.font_color);
     if (cfg.mention_sankeymatic) {
-        diagLabels.append("text")
+        diagLabels.append('text')
             // Anchor the text to the midpoint of the canvas (not the graph):
-            .attr("text-anchor", "middle")
+            .attr('text-anchor', 'middle')
             // x = graphW/2 is wrong when the L/R margins are uneven.. We
             // have to use the whole width & adjust for the graph's transform:
-            .attr("x", cfg.canvas_width / 2 - cfg.left_margin)
-            .attr("y", graphH + cfg.bottom_margin - 5)
+            .attr('x', cfg.canvas_width / 2 - cfg.left_margin)
+            .attr('y', graphH + cfg.bottom_margin - 5)
             // Keep the current font, but make this small & grey:
-            .attr("font-size", "11px")
-            .attr("font-weight", "400")
-            .attr("fill", contrasting_gray_color(cfg.background_color))
-            .text("Made with SankeyMATIC");
+            .attr('font-size', '11px')
+            .attr('font-weight', '400')
+            .attr('fill', contrasting_gray_color(cfg.background_color))
+            .text('Made with SankeyMATIC');
     }
 
     if (cfg.show_labels) {
@@ -1008,7 +1008,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         diagLabels.selectAll()
           .data(allNodes)
           .enter()
-          .append("text")
+          .append('text')
             .attr('id', (n) => n.label_id)
             .attr('x', (n) => ep(n.label_x))
             .attr('y', (n) => ep(n.label_y))
@@ -1084,11 +1084,17 @@ function render_sankey(allNodes, allFlows, cfg) {
 // process_sankey: Called directly from the page and within this script.
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = () => {
-    let maxDecimalPlaces = 0, totalInflow = 0, totalOutflow = 0,
-        statusMsg = '', maxNodeIndex = 0, maxNodeVal = 0;
+    let maxDecimalPlaces = 0,
+        totalInflow = 0,
+        totalOutflow = 0,
+        statusMsg = '',
+        maxNodeIndex = 0,
+        maxNodeVal = 0;
     const invalidLines = [],
-        uniqueNodes = new Map(), approvedNodes = [],
-        goodFlows = [], approvedFlows = [],
+        uniqueNodes = new Map(),
+        approvedNodes = [],
+        goodFlows = [],
+        approvedFlows = [],
         differences = [],
         differencesEl = el('imbalances'),
         listDifferencesEl = el('flow_cross_check'),
@@ -1120,7 +1126,7 @@ glob.process_sankey = () => {
             `<span style="background-color: ${color};" `
             + `class="color_sample_${count}" `
             + `title="${color} from d3 color scheme ${themeName}">`
-            + `&nbsp;</span>`
+            + '&nbsp;</span>'
         );
         for (const t of colorThemes.keys()) {
             const theme = approvedColorTheme(t),
@@ -1153,13 +1159,13 @@ glob.process_sankey = () => {
 
     // If the user is setting Label positions to either left or right (i.e. not
     // 'auto'), show the margin hint:
-    const labelPosVal = radioRef("label_pos").value;
+    const labelPosVal = radioRef('label_pos').value;
     el('label_pos_note').innerHTML
-        = (labelPosVal === "all_left"
-            ? "Adjust the <strong>Left Margin</strong> above to fit your labels"
-            : labelPosVal === "all_right"
-            ? "Adjust the <strong>Right Margin</strong> above to fit your labels"
-            : "");
+        = (labelPosVal === 'all_left'
+            ? 'Adjust the <strong>Left Margin</strong> above to fit your labels'
+            : labelPosVal === 'all_right'
+            ? 'Adjust the <strong>Right Margin</strong> above to fit your labels'
+            : '');
 
     // Flows validation:
 
@@ -1190,7 +1196,7 @@ glob.process_sankey = () => {
 
         Object.entries(nodeParams).forEach(([pName, pVal]) => {
             if (typeof pVal !== 'undefined'
-                && pVal !== null && pVal !== "") {
+                && pVal !== null && pVal !== '') {
                 uniqueNodes.get(nodeParams.name)[pName] = pVal;
             }
         });
@@ -1201,7 +1207,7 @@ glob.process_sankey = () => {
     // been appended or prepended to lines (e.g. when pasted from
     // PowerPoint), then trim again.
     const sourceLines = el('flows_in').value
-        .split("\n")
+        .split('\n')
         .map((l) => l.trim()
             .replace(/^\u200B+/, '')
             .replace(/\u200B+$/, '')
@@ -1298,7 +1304,7 @@ glob.process_sankey = () => {
     const approvedCfg = {
         include_values_in_node_labels: 0,
         show_labels: 1,
-        label_pos: "auto",
+        label_pos: 'auto',
         canvas_width: 600,
         canvas_height: 600,
         font_size: 15,
@@ -1314,14 +1320,14 @@ glob.process_sankey = () => {
         justify_origins: 0,
         justify_ends: 0,
         curvature: 0.5,
-        default_flow_inherit: "outside_in",
-        default_flow_color: "#666666",
-        background_color: "#FFFFFF",
+        default_flow_inherit: 'outside_in',
+        default_flow_color: '#666666',
+        background_color: '#FFFFFF',
         background_transparent: 0,
-        font_color: "#000000",
-        default_node_color: "#006699",
-        default_node_colorset: "C",
-        font_face: "sans-serif",
+        font_color: '#000000',
+        default_node_color: '#006699',
+        default_node_colorset: 'C',
+        font_face: 'sans-serif',
         label_highlight: 0.55,
         selected_theme_offset: 0,
         theme_a_offset: 7, theme_b_offset: 0,
@@ -1380,8 +1386,8 @@ glob.process_sankey = () => {
     goodFlows.forEach((flow) => {
         // Look for extra content about this flow on the target-node end of the
         // string:
-        let flowColor = "",
-            opacity = "",
+        let flowColor = '',
+            opacity = '',
             // Try to parse; there may be extra info that isn't actually the name:
             // Format of the Target node can be:
             // TODO: Target node ["Custom name for flow"] [#color[.opacity]]
@@ -1444,10 +1450,10 @@ glob.process_sankey = () => {
     }
 
     // Whole positive numbers:
-    (["canvas_width", "canvas_height", "font_size",
-        "top_margin", "right_margin", "bottom_margin",
-        "left_margin", "font_weight", "node_spacing",
-        "node_width", "node_border"]).forEach((fldName) => {
+    (['canvas_width', 'canvas_height', 'font_size',
+        'top_margin', 'right_margin', 'bottom_margin',
+        'left_margin', 'font_weight', 'node_spacing',
+        'node_width', 'node_border']).forEach((fldName) => {
         const fldVal = el(fldName).value;
         if (fldVal.length < 10 && fldVal.match(/^\d+$/)) {
             approvedCfg[fldName] = Number(fldVal);
@@ -1473,8 +1479,8 @@ glob.process_sankey = () => {
         }
     });
 
-    (["default_flow_color", "background_color", "font_color",
-        "default_node_color"]).forEach((fldName) => {
+    (['default_flow_color', 'background_color', 'font_color',
+        'default_node_color']).forEach((fldName) => {
         get_color_input(fldName);
     });
 
@@ -1505,7 +1511,7 @@ glob.process_sankey = () => {
     }
 
     // Verify valid plain strings:
-    (["unit_prefix", "unit_suffix"]).forEach((fldName) => {
+    (['unit_prefix', 'unit_suffix']).forEach((fldName) => {
         const fldVal = el(fldName).value;
         approvedCfg.numberStyle[fldName.slice(-6)]
             = (typeof fldVal !== 'undefined'
@@ -1516,7 +1522,7 @@ glob.process_sankey = () => {
     });
 
     // Interpret user's number format settings:
-    (["number_format"]).forEach((fldName) => {
+    (['number_format']).forEach((fldName) => {
         const fldVal = el(fldName).value;
         if (fldVal.length === 2 && (/^[,. X][,.]$/.exec(fldVal))) {
             // Grab the 1st character if it's a valid 'group' value:
@@ -1536,28 +1542,28 @@ glob.process_sankey = () => {
 
     // Direction of flow color inheritance:
     // Allowed values = source|target|none
-    let flowInherit = radioRef("default_flow_inherit").value;
+    let flowInherit = radioRef('default_flow_inherit').value;
     if (flowInherit.match(/^(?:source|target|outside_in|none)$/)) {
         if (graphIsReversed) {
             flowInherit
-                = flowInherit === "source" ? "target"
-                : flowInherit === "target" ? "source"
+                = flowInherit === 'source' ? 'target'
+                : flowInherit === 'target' ? 'source'
                 : flowInherit;
         }
         approvedCfg.default_flow_inherit = flowInherit;
     } // otherwise skip & use the default
 
-    const labelPosIn = radioRef("label_pos").value;
+    const labelPosIn = radioRef('label_pos').value;
     if (labelPosIn.match(/^(?:all_left|auto|all_right)$/)) {
         approvedCfg.label_pos = labelPosIn;
     }
 
-    const fontFaceIn = radioRef("font_face").value;
+    const fontFaceIn = radioRef('font_face').value;
     if (fontFaceIn.match(/^(?:serif|sans-serif|monospace)$/)) {
         approvedCfg.font_face = fontFaceIn;
     }
 
-    const colorsetIn = radioRef("default_node_colorset").value;
+    const colorsetIn = radioRef('default_node_colorset').value;
     if (colorsetIn.match(/^(?:[abcd]|none)$/)) {
         approvedCfg.default_node_colorset = colorsetIn;
         // Given the selected theme, what's the specific offset for that theme?
@@ -1568,15 +1574,15 @@ glob.process_sankey = () => {
     }
 
     // Checkboxes:
-    (["include_values_in_node_labels", "show_labels",
-      "background_transparent", "justify_origins", "justify_ends",
-      "mention_sankeymatic"]).forEach((fldName) => {
+    (['include_values_in_node_labels', 'show_labels',
+      'background_transparent', 'justify_origins', 'justify_ends',
+      'mention_sankeymatic']).forEach((fldName) => {
         approvedCfg[fldName] = el(fldName).checked;
     });
 
     // Decimal:
-    (["default_node_opacity", "default_flow_opacity", "label_highlight",
-        "curvature"]).forEach((fldName) => {
+    (['default_node_opacity', 'default_flow_opacity', 'label_highlight',
+        'curvature']).forEach((fldName) => {
         const fldVal = el(fldName).value;
         if (fldVal.match(/^\d(?:.\d+)?$/)) {
             approvedCfg[fldName] = fldVal;
@@ -1649,7 +1655,7 @@ glob.process_sankey = () => {
     if (differences.length && listDifferencesEl.checked) {
         // Construct a hyper-informative error message about any differences:
         const differenceRows = [
-            "<tr><td></td><th>Total In</th><th>Total Out</th><th>Difference</th></tr>",
+            '<tr><td></td><th>Total In</th><th>Total Out</th><th>Difference</th></tr>',
         ];
         // Make a nice table of the differences:
         differences.forEach((diffRec) => {
@@ -1661,7 +1667,7 @@ glob.process_sankey = () => {
             );
         });
         setDifferencesMsg(
-            `<table class="center_basic">${differenceRows.join("\n")}</table>`
+            `<table class="center_basic">${differenceRows.join('\n')}</table>`
         );
     } else {
         // Clear the messages area:
@@ -1690,7 +1696,7 @@ glob.process_sankey = () => {
     // Now that the SVG code has been generated, figure out this diagram's
     // Scale & make that available to the user:
     const tallestNodeHeight
-        = parseFloat(el(`r${maxNodeIndex}`).getAttributeNS(null, "height")),
+        = parseFloat(el(`r${maxNodeIndex}`).getAttributeNS(null, 'height')),
         // Use <=2 decimal places to describe the tallest node's height:
         formattedPixelCount = updateMarks(
             d3.format(',.2~f')(tallestNodeHeight),

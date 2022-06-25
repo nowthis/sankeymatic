@@ -1,5 +1,5 @@
 d3.sankey = () => {
-  "use strict";
+  'use strict';
 
   const sankey = {};
   let nodeWidth = 9,
@@ -73,8 +73,8 @@ d3.sankey = () => {
     // Connect each flow to its two nodes:
     flows.forEach((f) => {
       // When a value is an index, convert it to the node object:
-      if (typeof f.source === "number") { f.source = nodes[f.source]; }
-      if (typeof f.target === "number") { f.target = nodes[f.target]; }
+      if (typeof f.source === 'number') { f.source = nodes[f.source]; }
+      if (typeof f.target === 'number') { f.target = nodes[f.target]; }
 
       // Add this flow to the affected source & target:
       f.source.flowsOut.push(f);
