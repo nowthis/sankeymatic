@@ -805,7 +805,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // Show helpful guides/content for the current drag. We put it all in a
     // distinct 'g'roup for helper content so we can remove it easily later:
-    function dragNodeStarted(event, d) {
+    function dragNodeStarted(event, n) {
         const grayColor = contrasting_gray_color(cfg.background_color);
         let diagHelperLayer = diagMain.select('#helper_layer');
         // Create the helper layer if it doesn't exist:
@@ -830,8 +830,8 @@ function render_sankey(allNodes, allFlows, cfg) {
           // [m]ove down by this node's height
           // [H]orizontal line back to the left edge (x=0)
           // ..Then the same operation [v]ertically, using this node's width.
-          .attr('d', `M0 ${ep(d.lastPos.y)} h${ep(graphW)} m0 ${ep(d.dy)} H0`
-                   + `M${ep(d.lastPos.x)} 0 v${ep(graphH)} m${ep(d.dx)} 0 V0`)
+          .attr('d', `M0 ${ep(n.lastPos.y)} h${ep(graphW)} m0 ${ep(n.dy)} H0`
+                   + `M${ep(n.lastPos.x)} 0 v${ep(graphH)} m${ep(n.dx)} 0 V0`)
           .attr('stroke', grayColor)
           .attr('stroke-width', 1)
           .attr('stroke-dasharray', '1 3')
@@ -840,11 +840,11 @@ function render_sankey(allNodes, allFlows, cfg) {
         // Put a ghost rectangle where this node started out:
         diagHelperLayer.append('rect')
           .attr('id', 'helper_original_rect')
-          .attr('x', ep(d.origPos.x))
-          .attr('y', ep(d.origPos.y))
-          .attr('height', ep(d.dy))
-          .attr('width', ep(d.dx))
-          .attr('fill', d.color)
+          .attr('x', ep(n.origPos.x))
+          .attr('y', ep(n.origPos.y))
+          .attr('height', ep(n.dy))
+          .attr('width', ep(n.dx))
+          .attr('fill', n.color)
           .attr('fill-opacity', 0.3);
 
         // Check for the Shift key. If it's down when starting the drag, skip
@@ -870,7 +870,7 @@ function render_sankey(allNodes, allFlows, cfg) {
     }
 
     // This is called _during_ Node drags:
-    function draggingNode(event, d) {
+    function draggingNode(event, n) {
         // Fun fact: In this context, event.subject is the same thing as 'd'.
         let myX = event.x,
             myY = event.y;
@@ -880,10 +880,10 @@ function render_sankey(allNodes, allFlows, cfg) {
         if (event.sourceEvent && event.sourceEvent.shiftKey) {
             // Shift is pressed, so this is a constrained drag.
             // Figure out which direction the user has dragged _further_ in:
-            if (Math.abs(myX - d.lastPos.x) > Math.abs(myY - d.lastPos.y)) {
-                myY = d.lastPos.y; // Use X move; keep Y constant
+            if (Math.abs(myX - n.lastPos.x) > Math.abs(myY - n.lastPos.y)) {
+                myY = n.lastPos.y; // Use X move; keep Y constant
             } else {
-                myX = d.lastPos.x; // Use Y move; keep X constant
+                myX = n.lastPos.x; // Use Y move; keep X constant
             }
             // If they've Shift-dragged, they don't need the hint any more -
             // remove it and don't bring it back until the next gesture.
@@ -894,13 +894,13 @@ function render_sankey(allNodes, allFlows, cfg) {
         // Calculate the percentages we want to save (which will stay
         // independent of the graph's edge constraints, even if the spacing,
         // etc. changes to distort them):
-        d.move = [
+        n.move = [
             // If the graph is RTL, calculate the x-move as though it is LTR:
-            (graphIsReversed ? -1 : 1) * ((myX - d.origPos.x) / (graphW - d.dx)),
-            (graphH === d.dy) ? 0 : (myY - d.origPos.y) / (graphH - d.dy),
+            (graphIsReversed ? -1 : 1) * ((myX - n.origPos.x) / (graphW - n.dx)),
+            (graphH === n.dy) ? 0 : (myY - n.origPos.y) / (graphH - n.dy),
         ];
 
-        applyNodeMove(d.index);
+        applyNodeMove(n.index);
         // Note: We DON'T rememberNodeMove after every pixel-move of a drag;
         // just when a gesture is finished.
         reLayoutDiagram();
@@ -909,7 +909,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // (Investigate: This is called on every ordinary *click* as well; look
     // into skipping this work if no actual move has happened.)
-    function dragNodeEnded(event, d) {
+    function dragNodeEnded(event, n) {
         // Take away the helper guides:
         const helperLayer = diagMain.select('#helper_layer');
         if (helperLayer.nodes) { helperLayer.remove(); }
@@ -917,16 +917,16 @@ function render_sankey(allNodes, allFlows, cfg) {
         // After a drag is finished, any new constrained drag should use the
         // _new_ position as 'home'. Therefore we have to set this as the
         // 'last' position:
-        rememberNodeMove(d);
+        rememberNodeMove(n);
         reLayoutDiagram();
         return null;
     }
 
     // A double-click resets a node to its default rendered position:
-    function doubleClickNode(event, d) {
-        d.move = [0, 0];
-        applyNodeMove(d.index);
-        rememberNodeMove(d);
+    function doubleClickNode(event, n) {
+        n.move = [0, 0];
+        applyNodeMove(n.index);
+        rememberNodeMove(n);
         reLayoutDiagram();
         return null;
     }
