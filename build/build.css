@@ -339,6 +339,7 @@ th#title {
   overflow: auto;
   text-align: left;
   margin: auto;
+  white-space: pre;
 }
 
 #example_diagrams {

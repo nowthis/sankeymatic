@@ -25,11 +25,11 @@ glob.togglePanel = (panel) => {
     const panelEl = el(panel),
         // Set up the new values:
         newVals = panelEl.style.display === 'none'
-            ? { display: '', suffix: ':', action: '&ndash;' }
+            ? { display: '', suffix: ':', action: String.fromCharCode(8211) }
             : { display: 'none', suffix: '...', action: '+' };
     panelEl.style.display = newVals.display;
-    el(`${panel}_hint`).innerHTML = newVals.suffix;
-    el(`${panel}_indicator`).innerHTML = newVals.action;
+    el(`${panel}_hint`).textContent = newVals.suffix;
+    el(`${panel}_indicator`).textContent = newVals.action;
     return null;
 };
 
@@ -51,11 +51,11 @@ glob.updateOutput = (fld) => {
     switch (formats[fld]) {
         case '|':
             // 0.1 is treated as 0 for curvature. Display that:
-            if (fldVal <= 0.1) { oEl.innerHTML = '0.00'; break; }
+            if (fldVal <= 0.1) { oEl.textContent = '0.00'; break; }
             // FALLS THROUGH to '.2' format when fldVal > 0.1:
-        case '.2': oEl.innerHTML = d3.format('.2f')(fldVal); break;
-        case '%': oEl.innerHTML = `${fldVal}%`; break;
-        default: oEl.innerHTML = fldVal;
+        case '.2': oEl.textContent = d3.format('.2f')(fldVal); break;
+        case '%': oEl.textContent = `${fldVal}%`; break;
+        default: oEl.textContent = fldVal;
     }
     return null;
 };
@@ -167,20 +167,20 @@ function formatUserData(numberIn, nStyle) {
     return `${nStyle.prefix}${nString}${nStyle.suffix}`;
 }
 
-// svgBackgroundClass: Generate the class clause for the svg's top level:
-function svgBackgroundClass(transparent) {
-    return `svg_background_${transparent ? 'transparent' : 'default'}`;
-}
-
-// makeDiagramBlank: reset the SVG tag to be empty, with a pattern backing
-// if the user wants it to be transparent:
-function makeDiagramBlank(cfg) {
-    // Simply emptying the SVG tag doesn't seem to work well in Safari,
-    // so we remake the whole tag instead:
-    el('chart').innerHTML
-        = '<svg id="sankey_svg" xmlns="http://www.w3.org/2000/svg" '
-        + `height="${cfg.canvas_height}" width="${cfg.canvas_width}" `
-        + `class="${svgBackgroundClass(cfg.background_transparent)}"></svg>`;
+// initializeDiagram: Reset the SVG tag to have the chosen size &
+// background (with a pattern showing through if the user wants it to be
+// transparent):
+function initializeDiagram(cfg) {
+    const svgEl = el('sankey_svg');
+    svgEl.setAttribute('height', cfg.canvas_height);
+    svgEl.setAttribute('width', cfg.canvas_width);
+    svgEl.setAttribute(
+        'class',
+        cfg.background_transparent
+            ? 'svg_background_transparent'
+            : 'svg_background_default'
+        );
+    svgEl.textContent = ''; // Someday use replaceChildren() instead
 }
 
 // render_png: Build a PNG file in the background
@@ -214,8 +214,8 @@ function render_png(curDate) {
     canvasEl.height = scaledH;
 
     // Update img tag hint with user's original dimensions:
-    el('img_tag_hint_w').innerHTML = origW;
-    el('img_tag_hint_h').innerHTML = origH;
+    el('img_tag_hint_w').textContent = origW;
+    el('img_tag_hint_h').textContent = origH;
 
     // Give Canvg what it needs to produce a rendered image:
     const canvgObj = canvg.Canvg.fromString(
@@ -238,33 +238,31 @@ function render_png(curDate) {
     pngLinkEl.setAttribute('target', '_blank');
 
     // update download link & filename with dimensions:
-    pngLinkEl.innerHTML = `Export ${scaledW} x ${scaledH} PNG`;
+    pngLinkEl.textContent = `Export ${scaledW} x ${scaledH} PNG`;
     pngLinkEl.setAttribute('download', `sankeymatic_${fileTimestamp}_${scaledW}x${scaledH}.png`);
 }
 
 // produce_svg_code: take the current state of 'sankey_svg' and
 // relay it nicely to the user
 function produce_svg_code(curDate) {
-  // For the user-consumable SVG code, make a copy of the real SVG & put in a
-  // title placeholder & credit:
+  // For the user-facing SVG code, make a copy of the real SVG & make a
+  // few small changes:
   const svgForCopying
-    // Read the live SVG structure and tweak it:
-    = el('chart').innerHTML
+    = el('sankey_svg').outerHTML
         // Take out the id and the class declaration for the background:
         .replace(' id="sankey_svg"', '')
         .replace(/ class="svg_background_[a-z]+"/, '')
-        // Insert some helpful tags in front of the FIRST inner tag:
+        // Add a title placeholder & credit comment after the FIRST tag:
         .replace(
             />/,
-            '>\n<title>Your Diagram Title</title>\n'
-            + `<!-- Generated with SankeyMATIC: ${curDate.toLocaleString()} -->\n`
+            '>\r\n<title>Your Diagram Title</title>\r\n'
+            + `<!-- Generated with SankeyMATIC: ${curDate.toLocaleString()} -->\r\n`
             )
         // Add some line breaks to highlight where [g]roups start/end
-        // and where each [path] and [text] start:
-        .replace(/<(g|\/g|path|text)/g, '\n<$1');
-
-  // Escape that whole batch of tags and put it in the <div> for copying:
-  el('svg_for_export').innerHTML = escapeHTML(svgForCopying);
+        // and where each path/text/rect begins:
+        .replace(/><(g|\/g|path|text|rect)/g, '>\r\n<$1');
+  // Display the result in the <div> as text for copying:
+  el('svg_for_export').textContent = svgForCopying;
 }
 
 // Pure functions for generating SVG path specs:
@@ -314,11 +312,11 @@ glob.renderExportableOutputs = () => {
         curDate = new Date();
 
     // Clear out the old image link, cue user that the graphic isn't yet ready:
-    pngLinkEl.innerHTML = '...creating downloadable graphic...';
+    pngLinkEl.textContent = '...creating downloadable graphic...';
     pngLinkEl.setAttribute('href', '#');
 
     // Wipe out the SVG from the old diagram:
-    el('svg_for_export').innerHTML = '(generating SVG code...)';
+    el('svg_for_export').textContent = '(generating SVG code...)';
 
     // Fire off asynchronous events for generating the export output,
     // so we can give control back asap:
@@ -411,7 +409,7 @@ glob.replaceGraph = (graphName) => {
     } else {
         // Show the warning and do NOT replace the graph:
         el('replace_graph_warning').style.display = '';
-        el('replace_graph_yes').innerHTML
+        el('replace_graph_yes').textContent
             = `Yes, replace the graph with '${savedRecipe.name}'`;
     }
 
@@ -662,14 +660,11 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // At this point, allNodes and allFlows are ready to go. Draw!
 
-    // Clear out any old contents:
-    makeDiagramBlank(cfg);
+    // Clear out any old contents & update the size and class:
+    initializeDiagram(cfg);
 
-    // Select the svg canvas; set the defined dimensions:
-    const diagramRoot = d3.select('#sankey_svg')
-        .attr('height', cfg.canvas_height)
-        .attr('width', cfg.canvas_width)
-        .attr('class', svgBackgroundClass(cfg.background_transparent));
+    // Select the svg canvas:
+    const diagramRoot = d3.select('#sankey_svg');
 
     // If a background color is defined, add a backing rectangle with that color:
     if (!cfg.background_transparent) {
@@ -1144,7 +1139,7 @@ glob.process_sankey = () => {
     }
 
     // BEGIN by resetting all messages:
-    messagesEl.innerHTML = '';
+    messagesEl.textContent = '';
 
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
@@ -1500,7 +1495,7 @@ glob.process_sankey = () => {
 
         // Clear the contents of the graph in case there was an old graph left
         // over:
-        makeDiagramBlank(approvedCfg);
+        initializeDiagram(approvedCfg);
 
         // Also clear out any leftover export output by rendering the
         // currently-blank canvas:
