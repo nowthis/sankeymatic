@@ -613,6 +613,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // ...and fill in more Flow details as well:
     allFlows.forEach((f) => {
+        f.dom_id = `flow${f.index}`; // flow0, flow1...
         f.tooltip
             = `${f.source.name} → ${f.target.name}: ${withUnits(f.value)}`;
         // Fill in any missing opacity values and the 'hover' counterparts:
@@ -676,8 +677,10 @@ function render_sankey(allNodes, allFlows, cfg) {
             .attr('fill', cfg.background_color);
     }
 
-    // Given a flow & a style struct, apply styles to source/target labels:
-    function applyLabelBgEffects(f, s) {
+    // Given an opacity & a style struct, update a flow & its label effects:
+    function applyFlowEffects(f, o, s) {
+        // Use overall 'opacity' because f might use either a fill or stroke:
+        d3.select(`#${f.dom_id}`).attr('opacity', o);
         [f.source, f.target].forEach((n) => {
             d3.select(`#${n.label_bg_id}`)
                 .attr('fill', s.fill)
@@ -690,15 +693,16 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // Hovering over a flow increases its opacity & highlights the labels of
     // the source+target:
-    function flowHoverEffectsOn(_, f) {
-        // Use overall 'opacity' because f might be either a fill or stroke:
-        d3.select(this).attr('opacity', f.opacity_on_hover);
-        applyLabelBgEffects(f, hlStyle.focus);
+    function turnOnFlowHoverEffects(_, f) {
+        f.hovering = true;
+        applyFlowEffects(f, f.opacity_on_hover, hlStyle.focus);
     }
+
     // Leaving a flow restores its original appearance:
-    function flowHoverEffectsOff(_, f) {
-        d3.select(this).attr('opacity', f.opacity);
-        applyLabelBgEffects(f, hlStyle.orig);
+    function turnOffFlowHoverEffects(_, f) {
+        applyFlowEffects(f, f.opacity, hlStyle.orig);
+        // don't clear the flag until the job is done:
+        f.hovering = false;
     }
 
     // Add a [g]roup which moves the remaining diagram inward based on the
@@ -709,21 +713,21 @@ function render_sankey(allNodes, allFlows, cfg) {
         // diagFlows = the d3 selection of all flow paths:
         diagFlows = diagMain.append('g')
             .attr('id', 'sankey_flows')
-          .selectAll('.link')
+          .selectAll()
           .data(allFlows)
           .enter()
           .append('path')
-            .attr('class', 'link')
+            .attr('id', (f) => f.dom_id)
             .attr('d', flowPathFn) // set the SVG path for each flow
             .attr('fill', (f) => f.fill)
             .attr('stroke', (f) => f.color)
             .attr('stroke-width', (f) => ep(f.stroke_width))
             .attr('opacity', (f) => f.opacity)
           // add emphasis-on-hover behavior:
-          .on('mouseover', flowHoverEffectsOn)
-          .on('mouseout', flowHoverEffectsOff)
+          .on('mouseover', turnOnFlowHoverEffects)
+          .on('mouseout', turnOffFlowHoverEffects)
           // Sort flows to be rendered from largest to smallest
-          // (so if flows cross, the smaller are drawn on top of the larger):
+          // (so if flows cross, the smaller ones are drawn on top):
           .sort((a, b) => b.dy - a.dy);
 
     // Add a tooltip for each flow:
@@ -918,6 +922,15 @@ function render_sankey(allNodes, allFlows, cfg) {
         // _new_ position as 'home'. Therefore we have to set this as the
         // 'last' position:
         rememberNodeMove(n);
+
+        // Sometimes the pointer has ALSO been over a flow, which means
+        // that any flow & its labels could be highlighted in the produced
+        // SVG and PNG - which is not what we want.
+        // Therefore, at the end of any drag, turn *off* any lingering
+        // hover-effects before we render the PNG+SVG:
+        allFlows.filter((f) => f.hovering)
+            .forEach((f) => { turnOffFlowHoverEffects(null, f); });
+
         reLayoutDiagram();
         return null;
     }
@@ -961,13 +974,13 @@ function render_sankey(allNodes, allFlows, cfg) {
 
     // Construct the main <rect>angles for NODEs:
     diagNodes.append('rect')
+        // Give a unique ID & class to each rect that we can reference:
+        .attr('id', (n) => n.dom_id)
+        .attr('class', (n) => n.css_class)
         .attr('x', (n) => ep(n.x))
         .attr('y', (n) => ep(n.y))
         .attr('height', (n) => ep(n.dy))
         .attr('width', (n) => ep(n.dx))
-        // Give a unique ID & class to each rect that we can reference:
-        .attr('id', (n) => n.dom_id)
-        .attr('class', (n) => n.css_class)
         // we made sure above there will be a color defined:
         .attr('fill', (n) => n.color)
         .attr('fill-opacity', (n) => n.opacity)
@@ -1413,11 +1426,13 @@ glob.process_sankey = () => {
 
         // Add the updated flow to the list of approved flows:
         const f = {
+            index: approvedFlows.length,
             source: uniqueNodes.get(flow.source).index,
             target: uniqueNodes.get(flow.target).index,
             value: flow.amount,
             color: flowColor,
             opacity: opacity,
+            hovering: false,
         };
         if (graphIsReversed) {
             [f.source, f.target] = [f.target, f.source];
