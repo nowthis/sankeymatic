@@ -1,10 +1,15 @@
 body { font-size: 13px; }
 
 .smalllabel { font-size: 11px; }
+
+/* Sizes for various controls: */
 .slider_tiny { width: 3em; }
 .slider_narrow { width: 6em; }
 .slider_medium { width: 9.5em; }
 
+.number_100s { width: 3em; }
+
+/* Hover effects for slider value display: */
 .fade-init {
   visibility: hidden;
   opacity: 0;
