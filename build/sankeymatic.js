@@ -532,24 +532,11 @@ function render_sankey(allNodes, allFlows, cfg) {
         // Is the label color more like black or like white?
         darkLabel = (cfg.font_color.toUpperCase() < '#AAA'),
         // Set up label highlight values:
-        hlStyle = {
-            orig: {
-                fill: darkLabel ? '#fff' : '#000',
-                fill_opacity: Number(cfg.label_highlight),
-                stroke: 'none',
-                stroke_width: 0,
-                stroke_opacity: 0,
-            },
-            focus: {
-                fill: darkLabel ? '#ffb' : '#603',
-                // Given the user's opacity, calculate a reasonable hover
-                // value (2/3 of the distance to 1):
-                fill_opacity: 0.666 + Number(cfg.label_highlight) / 3,
-                stroke: darkLabel ? '#440' : '#fde',
-                stroke_width: 1,
-                stroke_opacity: 0.7,
-            },
-        };
+        hlStyle = highlightStyles[darkLabel ? 'dark' : 'light'];
+        hlStyle.orig.fill_opacity = Number(cfg.label_highlight);
+        // Given the user's opacity, calculate a reasonable hover
+        // value (2/3 of the distance to 1):
+        hlStyle.hover.fill_opacity = 0.666 + Number(cfg.label_highlight) / 3;
 
     // stagesMidpoint: Helpful value for deciding if something is in the first
     // or last half of the diagram:
@@ -695,7 +682,7 @@ function render_sankey(allNodes, allFlows, cfg) {
     // the source+target:
     function turnOnFlowHoverEffects(_, f) {
         f.hovering = true;
-        applyFlowEffects(f, f.opacity_on_hover, hlStyle.focus);
+        applyFlowEffects(f, f.opacity_on_hover, hlStyle.hover);
     }
 
     // Leaving a flow restores its original appearance:
@@ -1733,4 +1720,4 @@ glob.process_sankey();
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
-/* global d3, canvg, sampleDiagramRecipes, global */
+/* global d3, canvg, sampleDiagramRecipes, global, highlightStyles */
