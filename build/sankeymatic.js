@@ -473,9 +473,91 @@ glob.nudgeColorTheme = (themeKey, move) => {
 
 // render_sankey: given nodes, flows, and other config, MAKE THE SVG DIAGRAM:
 function render_sankey(allNodes, allFlows, cfg) {
-    // Set the dimensions of the space:
-    // (This will get much more complicated once we start auto-fitting labels.)
-    const graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
+    // Set up functions and measurements we will need:
+
+    // withUnits: Format a value with the current style.
+    function withUnits(n) { return formatUserData(n, cfg.numberStyle); }
+
+    // To measure text sizes, first we make a dummy SVG area the user won't
+    // see, with the same size and font details as the real diagram:
+    const scratchRoot = d3.select('#svg_scratch')
+        .attr('height', cfg.canvas_height)
+        .attr('width', cfg.canvas_width)
+        .attr('text-anchor', 'middle')
+        .attr('opacity', '0') // Keep all this invisible...
+        .attr('font-family', cfg.font_face)
+        .attr('font-size', `${cfg.font_size}px`)
+        .attr('font-weight', cfg.font_weight);
+    scratchRoot.selectAll('*').remove(); // Clear out any past items
+
+    // measureText(string, id):
+    //   Measure an SVG text element, placed at the hidden canvas' midpoint
+    function measureText(txt, id) {
+        const txtId = `bb_${id}`, // (bb for 'BoundingBox')
+            txtElement = scratchRoot
+              .append('text')
+                .attr('id', txtId)
+                .attr('x', cfg.canvas_width / 2)
+                .attr('y', cfg.canvas_height / 2)
+                .text(txt),
+            bb = txtElement.node().getBBox();
+        return { w: bb.width, h: bb.height };
+    }
+
+    // setUpTextDimensions():
+    //   Compute padding values for label highlights, etc.
+    function setUpTextDimensions() {
+        // isFirefox(): checks for Firefox-ness of the browser.
+        // Why? Because we have to adjust SVG font spacing for Firefox's
+        // sake.
+        // It would be better if SVG-font-sizing differences were detectable
+        // directly, but so far I haven't figured out how to test for just
+        // that, so we check for Firefox. (Many use 'InstallTrigger' to
+        // check for FF, but that's been deprecated.)
+        function isFirefox() {
+            return navigator
+                && /firefox/i.test(
+                    navigator.userAgent || navigator.vendor || ''
+                );
+        }
+
+        // First, how big are an em and an ex in the current font, roughly?
+        const emSize = measureText('m', 'em'),
+            boundingBoxH = emSize.h, // (same for all characters)
+            emW = emSize.w,
+            // The WIDTH of an 'x' is a crude estimate of the x-HEIGHT, but
+            // it's what we have for now:
+            exH = measureText('x', 'ex').w,
+            // Firefox has unique SVG measurements in 2022, so we look for it:
+            browserKey = isFirefox() ? 'firefox' : '*',
+            metrics
+                = fontMetrics[browserKey][cfg.font_face]
+                    || fontMetrics[browserKey]['*'],
+            m = {
+                dy: metrics.dy * boundingBoxH,
+                top: metrics.top * exH,
+                bot: metrics.bot * exH,
+                inner: metrics.inner * emW,
+                outer: metrics.outer * emW,
+                };
+        // Compute the remaining values (which depend on values above).
+        // lblMarginRight = total margin to give a label when it is to the right
+        //   of a node. (Note: this value basically includes m.inner)
+        // lblMarginLeft = total margin when label is to the left
+        m.lblMarginRight
+            = (cfg.node_border / 2)
+                + metrics.marginRight * m.inner;
+        m.lblMarginLeft
+            = (cfg.node_border / 2)
+                + (metrics.marginRight + metrics.marginAdjLeft) * m.inner;
+        return m;
+    }
+
+    const padding = setUpTextDimensions(),
+        // Set the dimensions of the space:
+        // (This will get much more complicated once we start auto-fitting
+        // labels.)
+        graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
         graphH = cfg.canvas_height - cfg.top_margin - cfg.bottom_margin,
         // Create the sankey object & the properties needed for the skeleton.
         // NOTE: The call to d3.sankey().setup() will MODIFY the allNodes and
@@ -542,9 +624,6 @@ function render_sankey(allNodes, allFlows, cfg) {
     // or last half of the diagram:
     function stagesMidpoint() { return (stagesArr.length - 1) / 2; }
 
-    // withUnits: Format a value with the current style.
-    function withUnits(n) { return formatUserData(n, cfg.numberStyle); }
-
     // Fill in presentation values for each Node (so the render routine
     // doesn't have to do any thinking):
     allNodes.forEach((n) => {
@@ -572,12 +651,9 @@ function render_sankey(allNodes, allFlows, cfg) {
 
         // Set up label text & position:
         if (cfg.show_labels) {
-            n.label_id = `label${n.index}`; // label0, label1..
-            n.label_bg_id = `${n.label_id}_bg`; // label0_bg, label1_bg..
-            n.label_text
+            n.labelText
                 = cfg.include_values_in_node_labels
                     ? `${n.name}: ${withUnits(n.value)}` : n.name;
-
             let leftLabel = true;
             switch (cfg.label_pos) {
                 case 'all_left': break;
@@ -588,13 +664,31 @@ function render_sankey(allNodes, allFlows, cfg) {
                 case 'auto': leftLabel = n.stage >= stagesMidpoint();
                 // no default
             }
-            // Having picked left/right, now we can set the position:
-            n.label_anchor = leftLabel ? 'end' : 'start';
-            const distanceFromNode = 4 + (cfg.node_border / 2);
-            n.label_x = leftLabel
-                ? n.x - distanceFromNode
-                : n.x + n.dx + distanceFromNode;
-            n.label_y = n.y + n.dy / 2;
+
+            // Having calculated the above, now we can set all label values:
+            n.label = {
+                dom_id: `label${n.index}`, // label0, label1..
+                anchor: leftLabel ? 'end' : 'start',
+                x: leftLabel
+                    ? n.x - padding.lblMarginLeft
+                    : n.x + n.dx + padding.lblMarginRight,
+                y: n.y + n.dy / 2,
+                dy: padding.dy,
+                };
+
+            // Will there be any highlights? If not, n.label.bg will be null:
+            if (hlStyle.orig.fill_opacity > 0) {
+                n.label.bg = {
+                    dom_id: `${n.label.dom_id}_bg`, // label0_bg, label1_bg..
+                    offset: {
+                        x: leftLabel ? -padding.outer : -padding.inner,
+                        y: -padding.top,
+                        w: padding.inner + padding.outer,
+                        h: padding.top + padding.bot,
+                    },
+                    ...hlStyle.orig,
+                };
+            }
         }
     });
 
@@ -668,13 +762,14 @@ function render_sankey(allNodes, allFlows, cfg) {
     function applyFlowEffects(f, o, s) {
         // Use overall 'opacity' because f might use either a fill or stroke:
         d3.select(`#${f.dom_id}`).attr('opacity', o);
-        [f.source, f.target].forEach((n) => {
-            d3.select(`#${n.label_bg_id}`)
-                .attr('fill', s.fill)
-                .attr('fill-opacity', ep(s.fill_opacity))
-                .attr('stroke', s.stroke)
-                .attr('stroke-width', ep(s.stroke_width))
-                .attr('stroke-opacity', ep(s.stroke_opacity));
+        [f.source, f.target].filter((n) => n.label.bg)
+            .forEach((n) => {
+                d3.select(`#${n.label.bg.dom_id}`)
+                  .attr('fill', s.fill)
+                  .attr('fill-opacity', ep(s.fill_opacity))
+                  .attr('stroke', s.stroke)
+                  .attr('stroke-width', ep(s.stroke_width))
+                  .attr('stroke-opacity', ep(s.stroke_opacity));
         });
     }
 
@@ -1004,44 +1099,40 @@ function render_sankey(allNodes, allFlows, cfg) {
           .data(allNodes)
           .enter()
           .append('text')
-            .attr('id', (n) => n.label_id)
-            .attr('x', (n) => ep(n.label_x))
-            .attr('y', (n) => ep(n.label_y))
-            .attr('text-anchor', (n) => n.label_anchor)
-            // Move letters down by 1/3 of a wide letter's width
-            // (makes them look vertically centered)
-            .attr('dy', '.35em')
+            .attr('id', (n) => n.label.dom_id)
             // Associate this label with its Node using the CSS class:
             .attr('class', (n) => n.css_class)
-            .text((n) => n.label_text);
+            .attr('text-anchor', (n) => n.label.anchor)
+            .attr('x', (n) => ep(n.label.x))
+            .attr('y', (n) => ep(n.label.y))
+            // Nudge letters down to be vertically centered:
+            .attr('dy', (n) => n.label.dy)
+            .text((n) => n.labelText);
 
-        // Should there be a visible highlight?
-        const hls = hlStyle.orig;
-        if (hls.fill_opacity > 0) {
+        // For any nodes with a label highlight defined, render it:
+        allNodes.filter((n) => n.label.bg)
+            .forEach((n) => {
             // Use each label's size to make custom round-rects underneath:
-            allNodes.forEach((n) => {
-                const labelTextNode = `#${n.label_id}`,
-                    labelBBox
-                        = diagLabels.select(labelTextNode).node().getBBox(),
-                    xPad = 3, // For now, using constants; eventually should
-                    yPad = 2; //   set these based on em/en measurements.
-                // Put the highlight rectangle just before each text:
-                diagLabels.insert('rect', labelTextNode)
-                    .attr('id', n.label_bg_id)
-                    // Make sure a Node drag will affect this as well:
-                    .attr('class', n.css_class)
-                    .attr('x', ep(labelBBox.x - xPad))
-                    .attr('y', ep(labelBBox.y - yPad))
-                    .attr('width', ep(labelBBox.width + 2 * xPad))
-                    .attr('height', ep(labelBBox.height + 2 * yPad))
-                    .attr('rx', '5')
-                    .attr('fill', hls.fill)
-                    .attr('fill-opacity', ep(hls.fill_opacity))
-                    .attr('stroke', hls.stroke)
-                    .attr('stroke-width', ep(hls.stroke_width))
-                    .attr('stroke-opacity', ep(hls.stroke_opacity));
-            });
-        }
+            const labelTextSelector = `#${n.label.dom_id}`,
+                labelBB
+                    = diagLabels.select(labelTextSelector).node().getBBox(),
+                bg = n.label.bg;
+            // Put the highlight rectangle just before each text:
+            diagLabels.insert('rect', labelTextSelector)
+                .attr('id', bg.dom_id)
+                // Make sure a Node drag will affect this as well:
+                .attr('class', n.css_class)
+                .attr('x', ep(labelBB.x + bg.offset.x))
+                .attr('y', ep(labelBB.y + bg.offset.y))
+                .attr('width', ep(labelBB.width + bg.offset.w))
+                .attr('height', ep(labelBB.height + bg.offset.h))
+                .attr('rx', 5)
+                .attr('fill', bg.fill)
+                .attr('fill-opacity', ep(bg.fill_opacity))
+                .attr('stroke', bg.stroke)
+                .attr('stroke-width', ep(bg.stroke_width))
+                .attr('stroke-opacity', ep(bg.stroke_opacity));
+        });
     }
 
     // Now that all of the SVG nodes and labels exist, it's time to re-apply
@@ -1720,4 +1811,4 @@ glob.process_sankey();
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
-/* global d3, canvg, sampleDiagramRecipes, global, highlightStyles */
+/* global d3, canvg, sampleDiagramRecipes, global, fontMetrics, highlightStyles */

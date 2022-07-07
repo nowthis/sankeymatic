@@ -1,7 +1,55 @@
-// Reference file with several constant values used in sankeymatic.js
+// constants.js: Reference file with several values used in sankeymatic.js
 /* eslint-disable no-unused-vars */
 
-const highlightStyles
+// fontMetrics = measurements relating to labels & their highlights
+//   Structure:
+//     browserKey ('firefox' or '*')
+//       -> font-face or '*'
+//         -> values
+//   Value list:
+//     - dy: what fraction of the BoundingBox to lower labels to make them
+//       vertically-centered relative to their Node
+//     - top, bot: how many x-heights to pad above/below the BoundingBox
+//     - inner: how many em-widths to pad between the label and the
+//       highlight's edge (could be on the left or right)
+//     - outer: how many em-widths to pad at the end furthest from the Node
+//     - marginRight: what multiple of 'inner' to move labels to the right
+//     - marginAdjLeft: offset to add to marginRight when moving labels
+//       to left
+const fontMetrics
+  = {
+    firefox: {
+      'sans-serif': {
+        dy: 0.35, top: 0.55, bot: 0.25, inner: 0.35, outer: 0.35,
+        marginRight: 1.4, marginAdjLeft: 0,
+        },
+      monospace: {
+        dy: 0.31, top: 0.3, bot: 0.25, inner: 0.35, outer: 0.35,
+        marginRight: 1.48, marginAdjLeft: -0.08,
+        },
+      '*': {
+        dy: 0.31, top: 0.3, bot: 0.25, inner: 0.35, outer: 0.35,
+        marginRight: 1.35, marginAdjLeft: -0.05,
+        },
+    },
+    '*': {
+      monospace: {
+        dy: 0.28, top: 0.3, bot: 0.3, inner: 0.35, outer: 0.38,
+        marginRight: 1.45, marginAdjLeft: 0,
+        },
+      '*': {
+        dy: 0.29, top: 0.3, bot: 0.3, inner: 0.35, outer: 0.38,
+        marginRight: 1.35, marginAdjLeft: 0,
+        },
+    },
+  },
+
+  // highlightStyles = settings relating to label highlight appearance
+  //   Structure:
+  //     mode ('dark' or 'light')
+  //       -> state ('orig' or 'hover')
+  //         -> values (directly applied as SVG attributes)
+  highlightStyles
   = {
     // When text is dark-on-light:
     dark: {

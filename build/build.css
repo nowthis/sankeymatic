@@ -57,6 +57,11 @@ output {
 .text_left { text-align: left; }
 .text_center { text-align: center; }
 
+.hidden_under {
+  z-index: -1;
+  position: absolute;
+}
+
 /* START WEBKIT TWEAKS
    Make WebKit (Safari/Chrome) sliders a tiny bit more accessible:
    (Firefox doesn't have this issue.) */
