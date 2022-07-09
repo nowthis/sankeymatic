@@ -8,6 +8,7 @@ body { font-size: 13px; }
 .slider_medium { width: 9.5em; }
 
 .number_100s { width: 3em; }
+.number_10000s { width: 4.25em; }
 
 /* Hover effects for slider value display: */
 .fade-init {

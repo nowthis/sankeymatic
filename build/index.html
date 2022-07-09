@@ -91,9 +91,7 @@ Nodes<span id="node_options_hint">:</span></h2>
 <div id="node_options" class="form_chunk">
 <p class="form_elements1">
 <span class="no_wrap"><label for="node_width"><strong>Width:</strong></label>
-<input type="text" class="wholenumber" id="node_width" size="2" maxlength="4" value="9" onchange="process_sankey();"> px</span>
-
-&nbsp;
+<input id="node_width" type="number" class="wholenumber number_100s" min="0" value="9" step="1" onchange="process_sankey();"></span>
 
 <span class="no_wrap output_container" onmouseover="revealVal('node_spacing');" onmouseout="fadeVal('node_spacing');">
 <label for="node_spacing" class="spaced_label"><strong>Spacing:</strong></label>
@@ -102,15 +100,13 @@ Nodes<span id="node_options_hint">:</span></h2>
 </p>
 
 <p class="form_elements2">
+<span class="no_wrap"><label for="node_border"><strong>Border:</strong></label>
+<input id="node_border" type="number" class="wholenumber number_100s" min="0" value="0" step="1" onchange="process_sankey();"></span>
+
 <span class="no_wrap output_container" onmouseover="revealVal('default_node_opacity');" onmouseout="fadeVal('default_node_opacity');">
-<label for="default_node_opacity"><strong>Opacity:</strong></label>
+<label for="default_node_opacity" class="spaced_label"><strong>Opacity:</strong></label>
 <span class="smalllabel">0</span><input id="default_node_opacity" class="slider_narrow" type="range" min="0" max="1" step="0.05" value="1.0" onfocus="revealVal('default_node_opacity');" onblur="fadeVal('default_node_opacity');" oninput="updateOutput('default_node_opacity'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">1</span>
 <output id="default_node_opacity_val" for="default_node_opacity" class="fade-init output_medium"></output></span>
-
-<span class="no_wrap output_container" onmouseover="revealVal('node_border');" onmouseout="fadeVal('node_border');">
-<label for="node_border" class="spaced_label"><strong>Border:</strong></label>
-<span class="smalllabel">0</span><input id="node_border" class="slider_narrow" type="range" min="0" max="9" step="1" value="0" onfocus="revealVal('node_border');" onblur="fadeVal('node_border');" oninput="updateOutput('node_border'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">9</span>
-<output id="node_border_val" for="node_border" class="fade-init output_narrow"></output></span>
 </p>
 
 <fieldset class="form_elements1">
@@ -399,9 +395,9 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1">
 <span class="no_wrap"><label for="canvas_width" title="Diagram Width in pixels"><strong>Width:</strong></label>
-<input type="text" class="wholenumber" id="canvas_width" size="5" maxlength="6" value="600" onchange="process_sankey();"></span>
+<input id="canvas_width" type="number" class="wholenumber number_10000s" min="40" value="600" step="2" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="canvas_height" class="spaced_label" title="Diagram Height in pixels"><strong>Height:</strong></label>
-<input type="text" class="wholenumber" id="canvas_height" size="5" maxlength="6" value="600" onchange="process_sankey();"></span>
+<input id="canvas_height" type="number" class="wholenumber number_10000s" min="40" value="600" step="2" onchange="process_sankey();"></span>
 
 <label for="background_color" class="spaced_label"><strong>Background Color:</strong></label>
 <input type="color" id="background_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
@@ -411,13 +407,13 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 <p class="form_elements2">
 <strong>Margins:</strong>
 <span class="no_wrap"><label for="left_margin" class="spaced_label">Left</label>
-<input type="text" class="wholenumber" id="left_margin" size="3" maxlength="5" value="12" onchange="process_sankey();">
+<input id="left_margin" type="number" class="wholenumber number_100s" min="0" value="12" step="1" onchange="process_sankey();">
 <label for="right_margin">Right</label>
-<input type="text" class="wholenumber" id="right_margin" size="3" maxlength="5" value="12" onchange="process_sankey();"></span>
+<input id="right_margin" type="number" class="wholenumber number_100s" min="0" value="12" step="1" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="top_margin" class="spaced_label">Top</label>
-<input type="text" class="wholenumber" id="top_margin" size="3" maxlength="5" value="18" onchange="process_sankey();">
+<input id="top_margin" type="number" class="wholenumber number_100s" min="0" value="18" step="1" onchange="process_sankey();">
 <label for="bottom_margin">Bot</label>
-<input type="text" class="wholenumber" id="bottom_margin" size="3" maxlength="5" value="20" onchange="process_sankey();"></span>
+<input id="bottom_margin" type="number" class="wholenumber number_100s" min="0" value="20" step="1" onchange="process_sankey();"></span>
 </p>
 </div>
 </div>

@@ -46,7 +46,6 @@ glob.updateOutput = (fld) => {
             default_flow_opacity: '.2',
             label_highlight: '.2',
             node_spacing: '%',
-            node_border: '',
         };
     switch (formats[fld]) {
         case '|':
@@ -1195,7 +1194,7 @@ function render_sankey(allNodes, allFlows, cfg) {
                 .attr('y', ep(labelBB.y + bg.offset.y))
                 .attr('width', ep(labelBB.width + bg.offset.w))
                 .attr('height', ep(labelBB.height + bg.offset.h))
-                .attr('rx', ep(cfg.font_size/4))
+                .attr('rx', ep(cfg.font_size / 4))
                 .attr('fill', bg.fill)
                 .attr('fill-opacity', ep(bg.fill_opacity))
                 .attr('stroke', bg.stroke)
@@ -1454,10 +1453,10 @@ glob.process_sankey = () => {
         font_weight: 400,
         top_margin: 18, right_margin: 12, bottom_margin: 20, left_margin: 12,
         default_flow_opacity: 0.45,
-        default_node_opacity: 0.9,
+        default_node_opacity: 1.0,
         mention_sankeymatic: 1,
         node_width: 9,
-        node_spacing: 24,
+        node_spacing: 50,
         node_border: 0,
         reverse_graph: 0,
         justify_origins: 0,
