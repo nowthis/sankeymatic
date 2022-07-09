@@ -553,7 +553,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         return m;
     }
 
-    const padding = setUpTextDimensions(),
+    const pad = setUpTextDimensions(),
         // Set the dimensions of the space:
         // (This will get much more complicated once we start auto-fitting
         // labels.)
@@ -649,7 +649,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         n.border_color
             = darkBg ? d3.rgb(n.color).brighter(2) : d3.rgb(n.color).darker(2);
 
-        // Set up label text & position:
+        // Set up label presentation values:
         if (cfg.show_labels) {
             n.labelText
                 = cfg.include_values_in_node_labels
@@ -670,21 +670,20 @@ function render_sankey(allNodes, allFlows, cfg) {
                 dom_id: `label${n.index}`, // label0, label1..
                 anchor: leftLabel ? 'end' : 'start',
                 x: leftLabel
-                    ? n.x - padding.lblMarginLeft
-                    : n.x + n.dx + padding.lblMarginRight,
+                    ? n.x - pad.lblMarginLeft
+                    : n.x + n.dx + pad.lblMarginRight,
                 y: n.y + n.dy / 2,
-                dy: padding.dy,
+                dy: pad.dy,
                 };
-
             // Will there be any highlights? If not, n.label.bg will be null:
             if (hlStyle.orig.fill_opacity > 0) {
                 n.label.bg = {
                     dom_id: `${n.label.dom_id}_bg`, // label0_bg, label1_bg..
                     offset: {
-                        x: leftLabel ? -padding.outer : -padding.inner,
-                        y: -padding.top,
-                        w: padding.inner + padding.outer,
-                        h: padding.top + padding.bot,
+                        x: leftLabel ? -pad.outer : -pad.inner,
+                        y: -pad.top,
+                        w: pad.inner + pad.outer,
+                        h: pad.top + pad.bot,
                     },
                     ...hlStyle.orig,
                 };
@@ -758,11 +757,19 @@ function render_sankey(allNodes, allFlows, cfg) {
             .attr('fill', cfg.background_color);
     }
 
-    // Given an opacity & a style struct, update a flow & its label effects:
+    // Add a [g]roup which moves the remaining diagram inward based on the
+    // user's margins.
+    const diagMain
+        = diagramRoot.append('g')
+            .attr('transform', `translate(${cfg.left_margin},${cfg.top_margin})`);
+
+    // MARK Functions for Flow hover effects
+    // applyFlowEffects(flow, opacity, styles):
+    //   Update a flow & its related labels based on the hover state:
     function applyFlowEffects(f, o, s) {
         // Use overall 'opacity' because f might use either a fill or stroke:
         d3.select(`#${f.dom_id}`).attr('opacity', o);
-        [f.source, f.target].filter((n) => n.label.bg)
+        [f.source, f.target].filter((n) => n.label?.bg)
             .forEach((n) => {
                 d3.select(`#${n.label.bg.dom_id}`)
                   .attr('fill', s.fill)
@@ -787,13 +794,9 @@ function render_sankey(allNodes, allFlows, cfg) {
         f.hovering = false;
     }
 
-    // Add a [g]roup which moves the remaining diagram inward based on the
-    // user's margins.
-    const diagMain = diagramRoot.append('g')
-            .attr('transform', `translate(${cfg.left_margin},${cfg.top_margin})`),
-        // Set up the [g]roup of rendered flows:
-        // diagFlows = the d3 selection of all flow paths:
-        diagFlows = diagMain.append('g')
+    // Set up the [g]roup of rendered flows:
+    // diagFlows = the d3 selection of all flow paths:
+    const diagFlows = diagMain.append('g')
             .attr('id', 'sankey_flows')
           .selectAll()
           .data(allFlows)
@@ -815,7 +818,7 @@ function render_sankey(allNodes, allFlows, cfg) {
     // Add a tooltip for each flow:
     diagFlows.append('title').text((f) => f.tooltip);
 
-    // MARK Drag functions
+    // MARK Drag functions for Nodes
 
     // isAZeroMove: simple test of whether every offset is 0 (no move at all):
     function isAZeroMove(a) { return a.every((m) => m === 0); }
@@ -1633,13 +1636,14 @@ glob.process_sankey = () => {
     let flowInherit = radioRef('default_flow_inherit').value;
     if (flowInherit.match(/^(?:source|target|outside_in|none)$/)) {
         if (graphIsReversed) {
-            flowInherit
-                = flowInherit === 'source' ? 'target'
-                : flowInherit === 'target' ? 'source'
-                : flowInherit;
+            switch (flowInherit) {
+                case 'source': flowInherit = 'target'; break;
+                case 'target': flowInherit = 'source'; break;
+                // no default
+            }
         }
         approvedCfg.default_flow_inherit = flowInherit;
-    } // otherwise skip & use the default
+    }
 
     const labelPosIn = radioRef('label_pos').value;
     if (labelPosIn.match(/^(?:all_left|auto|all_right)$/)) {
