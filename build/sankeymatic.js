@@ -87,6 +87,9 @@ function clamp(n, min, max) {
 // radioRef: get the object which lets you get/set a radio input value:
 function radioRef(rId) { return document.forms.skm_form.elements[rId]; }
 
+// checkRadio: Given a radio field's id, check it.
+glob.checkRadio = (id) => { el(id).checked = true; };
+
 // rememberedMoves: Used to track the user's repositioning of specific nodes
 // (which should be preserved across diagram renders).
 // Format is: nodeName => [moveX, moveY]
@@ -1695,9 +1698,8 @@ glob.process_sankey = () => {
     // RADIO VALUES:
 
     // Direction of flow color inheritance:
-    // Allowed values = source|target|none
     let flowInherit = radioRef('default_flow_inherit').value;
-    if (flowInherit.match(/^(?:source|target|outside_in|none)$/)) {
+    if (['source', 'target', 'outside_in', 'none'].includes(flowInherit)) {
         if (graphIsReversed) {
             switch (flowInherit) {
                 case 'source': flowInherit = 'target'; break;
@@ -1709,17 +1711,17 @@ glob.process_sankey = () => {
     }
 
     const labelPosIn = radioRef('label_pos').value;
-    if (labelPosIn.match(/^(?:before|after|inside|outside)$/)) {
+    if (['before', 'after', 'inside', 'outside'].includes(labelPosIn)) {
         approvedCfg.label_pos = labelPosIn;
     }
 
     const fontFaceIn = radioRef('font_face').value;
-    if (fontFaceIn.match(/^(?:serif|sans-serif|monospace)$/)) {
+    if (['serif', 'sans-serif', 'monospace'].includes(fontFaceIn)) {
         approvedCfg.font_face = fontFaceIn;
     }
 
     const colorsetIn = radioRef('default_node_colorset').value;
-    if (colorsetIn.match(/^(?:[abcd]|none)$/)) {
+    if (['a', 'b', 'c', 'd', 'none'].includes(colorsetIn)) {
         approvedCfg.default_node_colorset = colorsetIn;
         // Given the selected theme, what's the specific offset for that theme?
         approvedCfg.selected_theme_offset
