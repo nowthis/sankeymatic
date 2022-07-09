@@ -609,27 +609,37 @@ function render_sankey(allNodes, allFlows, cfg) {
             // If any labels are on the LEFT, get stage[0]'s maxLabelWidth:
             leadingW
                 = ['before', 'outside'].includes(cfg.label_pos)
-                  ? maxLabelWidth(stagesArr[0], true) : 0,
+                    ? maxLabelWidth(stagesArr[0], true)
+                    : cfg.node_border / 2,
             // If any are on the RIGHT, get stage[-1]'s maxLabelWidth:
             trailingW
                 = ['after', 'outside'].includes(cfg.label_pos)
-                  ? maxLabelWidth(stagesArr[stagesArr.length - 1], false) : 0,
+                    ? maxLabelWidth(stagesArr[stagesArr.length - 1], false)
+                    : cfg.node_border / 2,
             // Compute the ideal width to fit everything successfully:
             idealW = graphW - leadingW - trailingW,
             // Find the smallest width we will allow -- all the Node widths
-            // plus 5px for every Flow region:
-            minimumW = (stagesArr.length * (cfg.node_width + 5)) - 5,
+            // plus (5px + node_border) for every Flow region:
+            minimumW
+                = (stagesArr.length * cfg.node_width)
+                    + ((stagesArr.length - 1) * (cfg.node_border + 5)),
             // Pick which width we will actually use:
             finalW = Math.max(idealW, minimumW),
-            // Compute the left margin we will actually use...
             // Is any part of the diagram going to be cut off?
-            //   If so, we have to decide how to distribute the bad news.
+            // If so, we have to decide how to distribute the bad news.
+            //
+            // This derives the proportion of any potential cut-off area
+            // which shall be attributed to the leading side:
+            leadingShareOfError
+                = leadingW + trailingW > 0
+                    ? (leadingW / (leadingW + trailingW))
+                    : 0.5,
+            // The actual amount of error (if any) for the leading side:
             leadingCutOffAdjustment
                 = idealW < minimumW
-                  // This derives the proportion of the cut-off area which
-                  // can be attributed to the leading side:
-                  ? (idealW - minimumW) * (leadingW / (leadingW + trailingW))
+                  ? (idealW - minimumW) * leadingShareOfError
                   : 0,
+            // Compute the left margin we will actually use:
             finalLeftMargin
                 = cfg.left_margin + leadingW + leadingCutOffAdjustment;
         return { w: finalW, h: graphH, leftMargin: finalLeftMargin };
