@@ -554,11 +554,6 @@ function render_sankey(allNodes, allFlows, cfg) {
     }
 
     const pad = setUpTextDimensions(),
-        // Set the dimensions of the space:
-        // (This will get much more complicated once we start auto-fitting
-        // labels.)
-        graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
-        graphH = cfg.canvas_height - cfg.top_margin - cfg.bottom_margin,
         // Create the sankey object & the properties needed for the skeleton.
         // NOTE: The call to d3.sankey().setup() will MODIFY the allNodes and
         // allFlows objects -- filling in specifics about connections, stages,
@@ -570,29 +565,98 @@ function render_sankey(allNodes, allFlows, cfg) {
             .leftJustifyOrigins(cfg.justify_origins)
             .setup();
 
-    // Coming soon, right here: Additional logic to calculate new automatic
-    // features, such as updating the margins to fit labels outside the
-    // main diagram.
+    // After the .setup() step, Nodes are divided up into Stages.
+    // stagesArr = each Stage in the diagram (and the Nodes inside them)
+    let stagesArr = sankeyObj.stages();
 
-    // We have the skeleton set up; provide the inputs for final layout.
-    // (This call further alters allNodes+allFlows with specific coordinates.)
-    sankeyObj.size([graphW, graphH])
+    // MARK Label-measuring time
+    // Depending on where labels are meant to be placed, we measure their
+    // sizes and calculate how much room has to be reserved for them (and
+    // subtracted from the graph area):
+
+    if (cfg.show_labels) {
+        // Set up 'labelText' for all the Nodes. (This is done earlier than
+        // it used to be, but we need to know now for the sake of layout):
+        allNodes.forEach((n) => {
+            n.labelText
+                = cfg.include_values_in_node_labels
+                    ? `${n.name}: ${withUnits(n.value)}` : n.name;
+        });
+    }
+
+    // maxLabelWidth(stageArr, labelsOnLeft):
+    //   Compute the total space required by the widest label in a stage
+    function maxLabelWidth(stageArr, labelsOnLeft) {
+        let maxWidth = 0;
+        stageArr.filter((n) => n.labelText)
+            .forEach((n) => {
+                const labelW
+                    = measureText(n.labelText, n.dom_id).w
+                      + (labelsOnLeft
+                        ? pad.lblMarginLeft
+                        : pad.lblMarginRight)
+                      + pad.outer;
+                maxWidth = Math.max(maxWidth, labelW);
+            });
+        return maxWidth;
+    }
+
+    // setUpDiagramSize(): Compute the final size of the graph
+    function setUpDiagramSize() {
+        // Calculate the actual room we have to draw in...
+        // Start from the user's declared canvas size + margins:
+        const graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
+            graphH = cfg.canvas_height - cfg.top_margin - cfg.bottom_margin,
+            // If any labels are on the LEFT, get stage[0]'s maxLabelWidth:
+            leadingW
+                = cfg.label_pos === 'all_left'
+                  ? maxLabelWidth(stagesArr[0], true) : 0,
+            // If any are on the RIGHT, get stage[-1]'s maxLabelWidth:
+            trailingW
+                = cfg.label_pos === 'all_right'
+                  ? maxLabelWidth(stagesArr[stagesArr.length - 1], false) : 0,
+            // Compute the ideal width to fit everything successfully:
+            idealW = graphW - leadingW - trailingW,
+            // Find the smallest width we will allow -- all the Node widths
+            // plus 5px for every Flow region:
+            minimumW = (stagesArr.length * (cfg.node_width + 5)) - 5,
+            // Pick which width we will actually use:
+            finalW = Math.max(idealW, minimumW),
+            // Compute the left margin we will actually use...
+            // Is any part of the diagram going to be cut off?
+            //   If so, we have to decide how to distribute the bad news.
+            leadingCutOffAdjustment
+                = idealW < minimumW
+                  // This derives the proportion of the cut-off area which
+                  // can be attributed to the leading side:
+                  ? (idealW - minimumW) * (leadingW / (leadingW + trailingW))
+                  : 0,
+            finalLeftMargin
+                = cfg.left_margin + leadingW + leadingCutOffAdjustment;
+        return { w: finalW, h: graphH, leftMargin: finalLeftMargin };
+    }
+
+    const graph = setUpDiagramSize();
+
+    // Ready for final layout!
+    // We have the skeleton set up; add the remaining dimension values.
+    // (Note: This call further alters allNodes & allFlows with their
+    // specific coordinates.)
+    sankeyObj.size([graph.w, graph.h])
         .nodeWidth(cfg.node_width)
         .nodeSpacingFactor(cfg.node_spacing / 100)
         .layout(50); // Note: The 'layout()' step must be LAST.
 
+    // We *update* the final stages array here, because in theory it may
+    // have been changed. The final array will be used for some layout
+    // questions (like where labels will land inside the diagram, or for
+    // the 'outside-in' flow color style):
+    stagesArr = sankeyObj.stages();
+
     // Now that the stages & values are known, we can finish preparing the
     // Node & Flow objects for the SVG-rendering routine.
 
-    // First we have to set up some more values & functions..
-
-    // stagesArr = each Stage in the diagram (and the Nodes inside them)
-    // We get the final stages array here, since it will be used for
-    // auto-layout questions like where labels will land, or for the
-    // 'outside-in' flow color style):
-    const stagesArr = sankeyObj.stages(),
-        // Establish the right color theme array:
-        userColorArray = cfg.default_node_colorset === 'none'
+    const userColorArray = cfg.default_node_colorset === 'none'
             // User wants a color array with just the one value:
             ? [cfg.default_node_color]
             : rotateColors(
@@ -651,9 +715,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 
         // Set up label presentation values:
         if (cfg.show_labels) {
-            n.labelText
-                = cfg.include_values_in_node_labels
-                    ? `${n.name}: ${withUnits(n.value)}` : n.name;
+            // Which side of the node will the label be on?
             let leftLabel = true;
             switch (cfg.label_pos) {
                 case 'all_left': break;
@@ -665,7 +727,6 @@ function render_sankey(allNodes, allFlows, cfg) {
                 // no default
             }
 
-            // Having calculated the above, now we can set all label values:
             n.label = {
                 dom_id: `label${n.index}`, // label0, label1..
                 anchor: leftLabel ? 'end' : 'start',
@@ -674,7 +735,7 @@ function render_sankey(allNodes, allFlows, cfg) {
                     : n.x + n.dx + pad.lblMarginRight,
                 y: n.y + n.dy / 2,
                 dy: pad.dy,
-                };
+            };
             // Will there be any highlights? If not, n.label.bg will be null:
             if (hlStyle.orig.fill_opacity > 0) {
                 n.label.bg = {
@@ -761,7 +822,7 @@ function render_sankey(allNodes, allFlows, cfg) {
     // user's margins.
     const diagMain
         = diagramRoot.append('g')
-            .attr('transform', `translate(${cfg.left_margin},${cfg.top_margin})`);
+            .attr('transform', `translate(${graph.leftMargin},${cfg.top_margin})`);
 
     // MARK Functions for Flow hover effects
     // applyFlowEffects(flow, opacity, styles):
@@ -829,8 +890,8 @@ function render_sankey(allNodes, allFlows, cfg) {
             graphIsReversed = el('reverse_graph').checked,
             // In the case of a reversed graph, we negate the x-move:
             myXMove = n.move[0] * (graphIsReversed ? -1 : 1),
-            availableW = graphW - n.dx,
-            availableH = graphH - n.dy;
+            availableW = graph.w - n.dx,
+            availableH = graph.h - n.dy;
 
         // Apply the move to the node (halting at the edges of the graph):
         n.x = Math.max(
@@ -919,8 +980,8 @@ function render_sankey(allNodes, allFlows, cfg) {
           // [m]ove down by this node's height
           // [H]orizontal line back to the left edge (x=0)
           // ..Then the same operation [v]ertically, using this node's width.
-          .attr('d', `M0 ${ep(n.lastPos.y)} h${ep(graphW)} m0 ${ep(n.dy)} H0`
-                   + `M${ep(n.lastPos.x)} 0 v${ep(graphH)} m${ep(n.dx)} 0 V0`)
+          .attr('d', `M0 ${ep(n.lastPos.y)} h${ep(graph.w)} m0 ${ep(n.dy)} H0`
+                   + `M${ep(n.lastPos.x)} 0 v${ep(graph.h)} m${ep(n.dx)} 0 V0`)
           .attr('stroke', grayColor)
           .attr('stroke-width', 1)
           .attr('stroke-dasharray', '1 3')
@@ -945,13 +1006,13 @@ function render_sankey(allNodes, allFlows, cfg) {
                   .attr('id', 'helper_shift_hints')
                   .attr('font-size', '14px')
                   .attr('font-weight', '400'),
-                hintHeights = graphH > 350 ? [0.05, 0.95] : [0.4];
+                hintHeights = graph.h > 350 ? [0.05, 0.95] : [0.4];
             // Show the text so it's visible but not overwhelming:
             hintHeights.forEach((h) => {
                 shiftHints.append('text')
                   .attr('text-anchor', 'middle')
-                  .attr('x', graphW / 2)
-                  .attr('y', graphH * h)
+                  .attr('x', graph.w / 2)
+                  .attr('y', graph.h * h)
                  .text('Hold down Shift to move in only one direction');
             });
         }
@@ -985,8 +1046,8 @@ function render_sankey(allNodes, allFlows, cfg) {
         // etc. changes to distort them):
         n.move = [
             // If the graph is RTL, calculate the x-move as though it is LTR:
-            (graphIsReversed ? -1 : 1) * ((myX - n.origPos.x) / (graphW - n.dx)),
-            (graphH === n.dy) ? 0 : (myY - n.origPos.y) / (graphH - n.dy),
+            (graphIsReversed ? -1 : 1) * ((myX - n.origPos.x) / (graph.w - n.dx)),
+            (graph.h === n.dy) ? 0 : (myY - n.origPos.y) / (graph.h - n.dy),
         ];
 
         applyNodeMove(n.index);
@@ -1087,8 +1148,8 @@ function render_sankey(allNodes, allFlows, cfg) {
             .attr('text-anchor', 'middle')
             // x = graphW/2 is wrong when the L/R margins are uneven.. We
             // have to use the whole width & adjust for the graph's transform:
-            .attr('x', cfg.canvas_width / 2 - cfg.left_margin)
-            .attr('y', graphH + cfg.bottom_margin - 5)
+            .attr('x', cfg.canvas_width / 2 - graph.leftMargin)
+            .attr('y', graph.h + cfg.bottom_margin - 5)
             // Keep the current font, but make this small & grey:
             .attr('font-size', '11px')
             .attr('font-weight', '400')
@@ -1238,23 +1299,11 @@ glob.process_sankey = () => {
     // Go through lots of validation with plenty of bailout points and
     // informative messages for the poor soul trying to do this.
 
-    // MARK UI updates based on user choices
-
     // Checking the 'Transparent' background-color box *no longer* means that
     // the color-picker is pointless; it still affects the color value which
     // will be given to "Made with SankeyMATIC".
     // Therefore, we no longer disable the Background Color element, even when
     // 'Transparent' is checked.
-
-    // If the user is setting Label positions to either left or right (i.e. not
-    // 'auto'), show the margin hint:
-    const labelPosVal = radioRef('label_pos').value;
-    el('label_pos_note').innerHTML
-        = (labelPosVal === 'all_left'
-            ? 'Adjust the <strong>Left Margin</strong> above to fit your labels'
-            : labelPosVal === 'all_right'
-            ? 'Adjust the <strong>Right Margin</strong> above to fit your labels'
-            : '');
 
     // Flows validation:
 
