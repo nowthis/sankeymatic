@@ -1195,7 +1195,7 @@ function render_sankey(allNodes, allFlows, cfg) {
                 .attr('y', ep(labelBB.y + bg.offset.y))
                 .attr('width', ep(labelBB.width + bg.offset.w))
                 .attr('height', ep(labelBB.height + bg.offset.h))
-                .attr('rx', 5)
+                .attr('rx', ep(cfg.font_size/4))
                 .attr('fill', bg.fill)
                 .attr('fill-opacity', ep(bg.fill_opacity))
                 .attr('stroke', bg.stroke)
