@@ -609,11 +609,11 @@ function render_sankey(allNodes, allFlows, cfg) {
             graphH = cfg.canvas_height - cfg.top_margin - cfg.bottom_margin,
             // If any labels are on the LEFT, get stage[0]'s maxLabelWidth:
             leadingW
-                = cfg.label_pos === 'all_left'
+                = ['before', 'outside'].includes(cfg.label_pos)
                   ? maxLabelWidth(stagesArr[0], true) : 0,
             // If any are on the RIGHT, get stage[-1]'s maxLabelWidth:
             trailingW
-                = cfg.label_pos === 'all_right'
+                = ['after', 'outside'].includes(cfg.label_pos)
                   ? maxLabelWidth(stagesArr[stagesArr.length - 1], false) : 0,
             // Compute the ideal width to fit everything successfully:
             idealW = graphW - leadingW - trailingW,
@@ -718,12 +718,17 @@ function render_sankey(allNodes, allFlows, cfg) {
             // Which side of the node will the label be on?
             let leftLabel = true;
             switch (cfg.label_pos) {
-                case 'all_left': break;
-                case 'all_right': leftLabel = false; break;
-                // 'auto', a.k.a. 'inner': If the node's stage is in the FIRST
-                // half of all stages (excluding the middle stage if there is
-                // one), put the label AFTER the node.
-                case 'auto': leftLabel = n.stage >= stagesMidpoint();
+                case 'before': break;
+                case 'after': leftLabel = false; break;
+                // 'outside': Nodes in the FIRST half of all stages put their
+                // labels on the left:
+                case 'outside': leftLabel = n.stage <= stagesMidpoint(); break;
+                // 'inside': Nodes are positioned at the diagram's outer
+                // edge, with labels toward the center. (This results in
+                // label/node-matching confusion sometimes.)
+                // So Nodes in the LAST half of all stages put their labels
+                // on the left:
+                case 'inside': leftLabel = n.stage >= stagesMidpoint();
                 // no default
             }
 
@@ -1440,9 +1445,9 @@ glob.process_sankey = () => {
     // approvedCfg begins with all the default values defined.
     // Values the user enters will override these (if present & valid).
     const approvedCfg = {
-        include_values_in_node_labels: 0,
+        include_values_in_node_labels: 1,
         show_labels: 1,
-        label_pos: 'auto',
+        label_pos: 'inside',
         canvas_width: 600,
         canvas_height: 600,
         font_size: 15,
@@ -1695,7 +1700,7 @@ glob.process_sankey = () => {
     }
 
     const labelPosIn = radioRef('label_pos').value;
-    if (labelPosIn.match(/^(?:all_left|auto|all_right)$/)) {
+    if (labelPosIn.match(/^(?:before|after|inside|outside)$/)) {
         approvedCfg.label_pos = labelPosIn;
     }
 
