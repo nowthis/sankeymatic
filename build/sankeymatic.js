@@ -188,36 +188,23 @@ function initializeDiagram(cfg) {
 // render_png: Build a PNG file in the background
 function render_png(curDate) {
     const chartEl = el('chart'),
-        origW = chartEl.clientWidth,
-        origH = chartEl.clientHeight,
+        orig = { w: chartEl.clientWidth, h: chartEl.clientHeight },
         // What scale does the user want (1,2,4,6)?:
         scaleFactor = clamp(el('scale_x').value, 1, 6),
-        scaledW = origW * scaleFactor,
-        scaledH = origH * scaleFactor,
+        scaled = { w: orig.w * scaleFactor, h: orig.h * scaleFactor },
+        // Canvg 3 needs interesting offsets added when scaling up:
+        offset = {
+            x: (scaled.w - orig.w) / (2 * scaleFactor),
+            y: (scaled.h - orig.h) / (2 * scaleFactor),
+        },
         // Find the (hidden) canvas element in our page:
         canvasEl = el('png_preview'),
-        // Set up the values Canvg will need:
         canvasContext = canvasEl.getContext('2d'),
-        svgEl = el('sankey_svg'),
-        svgContent = (new XMLSerializer()).serializeToString(svgEl),
-        // More targets we'll be changing on the page:
-        pngLinkEl = el('download_png_link'),
-        // Generate yyyymmdd_hhmmss string:
-        fileTimestamp
-            = (curDate.toISOString().replace(/T.+$/, '_')
-            + curDate.toTimeString().replace(/ .+$/, ''))
-                .replace(/[:-]/g, ''),
-        // Canvg 3 needs interesting offsets added when scaling up:
-        offsetX = (scaledW - origW) / (2 * scaleFactor),
-        offsetY = (scaledH - origH) / (2 * scaleFactor);
+        svgContent = (new XMLSerializer()).serializeToString(el('sankey_svg'));
 
     // Set the canvas element to the final height/width the user wants:
-    canvasEl.width = scaledW;
-    canvasEl.height = scaledH;
-
-    // Update img tag hint with user's original dimensions:
-    el('img_tag_hint_w').textContent = origW;
-    el('img_tag_hint_h').textContent = origH;
+    canvasEl.width = scaled.w;
+    canvasEl.height = scaled.h;
 
     // Give Canvg what it needs to produce a rendered image:
     const canvgObj = canvg.Canvg.fromString(
@@ -227,21 +214,30 @@ function render_png(curDate) {
             ignoreMouse: true,
             ignoreAnimation: true,
             ignoreDimensions: true, // DON'T make the canvas size match the svg
-            scaleWidth: scaledW,
-            scaleHeight: scaledH,
-            offsetX: offsetX,
-            offsetY: offsetY,
+            scaleWidth: scaled.w,
+            scaleHeight: scaled.h,
+            offsetX: offset.x,
+            offsetY: offset.y,
         }
     );
     canvgObj.render();
 
+    // Turn canvg's output into a PNG:
+    const pngLinkEl = el('download_png_link'),
+        // Generate yyyymmdd_hhmmss string:
+        fileTimestamp
+            = (curDate.toISOString().replace(/T.+$/, '_')
+            + curDate.toTimeString().replace(/ .+$/, ''))
+                .replace(/[:-]/g, '');
     // Convert canvas image to a URL-encoded PNG and update the link:
     pngLinkEl.setAttribute('href', canvasEl.toDataURL('image/png'));
-    pngLinkEl.setAttribute('target', '_blank');
-
     // update download link & filename with dimensions:
-    pngLinkEl.textContent = `Export ${scaledW} x ${scaledH} PNG`;
-    pngLinkEl.setAttribute('download', `sankeymatic_${fileTimestamp}_${scaledW}x${scaledH}.png`);
+    pngLinkEl.textContent = `Export ${scaled.w} x ${scaled.h} PNG`;
+    pngLinkEl.setAttribute('download', `sankeymatic_${fileTimestamp}_${scaled.w}x${scaled.h}.png`);
+
+    // Update img tag hint with the user's original dimensions:
+    el('img_tag_hint_w').textContent = orig.w;
+    el('img_tag_hint_h').textContent = orig.h;
 }
 
 // produce_svg_code: take the current state of 'sankey_svg' and
@@ -310,9 +306,8 @@ function flatFlowPathMaker(f) {
 // Used after each draw & when the user chooses a new PNG resolution.
 glob.renderExportableOutputs = () => {
     // Reset the existing export output areas:
-    const pngLinkEl = el('download_png_link'),
-        curDate = new Date();
-
+    const curDate = new Date(),
+        pngLinkEl = el('download_png_link');
     // Clear out the old image link, cue user that the graphic isn't yet ready:
     pngLinkEl.textContent = '...creating downloadable graphic...';
     pngLinkEl.setAttribute('href', '#');
