@@ -1,5 +1,5 @@
 # SankeyMATIC
-## A Sankey diagram builder for everyone
+## A [Sankey diagram](https://en.wikipedia.org/wiki/Sankey_diagram) builder for everyone
 
 Hosted and available for use at: **http://sankeymatic.com/build/**
 
