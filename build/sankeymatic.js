@@ -263,42 +263,59 @@ function produce_svg_code(curDate) {
   el('svg_for_export').textContent = svgForCopying;
 }
 
-// Pure functions for generating SVG path specs:
-// CURVED path function generator:
-// Returns a /function/ specific to the user's curvature choice.
-// Used for the "d" attribute on a "path" element when curvature > 0
-function curvedFlowPathFunction(curvature) {
-    return (f) => {
-        const xS = f.source.x + f.source.dx,      // source's trailing edge
-            xT = f.target.x,                      // target's leading edge
-            ySc = f.source.y + f.sy + f.dy / 2,   // source flow vert. center
-            yTc = f.target.y + f.ty + f.dy / 2,   // target flow vert. center
-            // Set up a function for interpolating between the two x values:
-            xinterpolate = d3.interpolateNumber(xS, xT),
-            // Pick 2 curve control points given the curvature & its converse:
-            xC1 = xinterpolate(curvature),
-            xC2 = xinterpolate(1 - curvature);
-        // This SVG Path spec means:
-        // [M]ove to the center of the flow's start
-        // Draw a Bezier [C]urve using control points (xc1,ysc) + (xc2,ytc)
-        // End at the center of the flow's target
-        return `M${ep(xS)} ${ep(ySc)}C${ep(xC1)} ${ep(ySc)}`
-            + ` ${ep(xC2)} ${ep(yTc)} ${ep(xT)} ${ep(yTc)}`;
-    };
-}
+// Functions for generating SVG path specs:
 
-// FLAT path function:
-// Used for the "d" attribute on a "path" element when curvature = 0
+// flatFlowPathMaker(f):
+// Returns an SVG path drawing a parallelogram between 2 nodes.
+// Used for the "d" attribute on a "path" element when curvature = 0 OR
+// when there is no curve to usefully draw (i.e. the flow is ~horizontal).
 function flatFlowPathMaker(f) {
-    const xS = f.source.x + f.source.dx,  // source's trailing edge
-        xT = f.target.x,                  // target's leading edge
-        ySTop = f.source.y + f.sy,        // source flow top
-        yTBot = f.target.y + f.ty + f.dy; // target flow bottom
+    const sx = f.source.x + f.source.dx,  // source's trailing edge
+        tx = f.target.x,                  // target's leading edge
+        syTop = f.source.y + f.sy,        // source flow top
+        tyBot = f.target.y + f.ty + f.dy; // target flow bottom
+
+    f.renderAs = 'flat'; // Render this path as a filled parallelogram
+
     // This SVG Path spec means:
     // [M]ove to the flow source's top; draw a [v]ertical line down,
-    // a [L]ine to the opposite corner, a [v]ertical line up, then [z] close.
-    return `M${ep(xS)} ${ep(ySTop)}v${ep(f.dy)}`
-        + `L${ep(xT)} ${ep(yTBot)}v-${ep(f.dy)}z`;
+    // a [L]ine to the opposite corner, a [v]ertical line up,
+    // then [z] close.
+    return `M${ep(sx)} ${ep(syTop)}v${ep(f.dy)}`
+        + `L${ep(tx)} ${ep(tyBot)}v-${ep(f.dy)}z`;
+}
+
+// curvedFlowPathFunction(curvature):
+// Returns an SVG-path-producing /function/ based on the given curvature.
+// Used for the "d" attribute on a "path" element when curvature > 0.
+// Defers to flatFlowPathMaker() when the flow is basically horizontal.
+function curvedFlowPathFunction(curvature) {
+    return (f) => {
+        const syC = f.source.y + f.sy + f.dy / 2, // source flow's y center
+            tyC = f.target.y + f.ty + f.dy / 2;   // target flow's y center
+
+        // Watch out for a very straight path (total rise/fall < 1 pixel).
+        // If we have one, make this flow a simple 4-sided shape instead of
+        // a curve. (This avoids weird artifacts in some SVG renderers.)
+        if (Math.abs(syC - tyC) < 1) { return flatFlowPathMaker(f); }
+
+        f.renderAs = 'curved'; // Render this path as a curved stroke
+
+        // Make the curved path:
+        const sx = f.source.x + f.source.dx, // source's trailing edge
+            tx = f.target.x,                 // target's leading edge
+            // Set up a function for interpolating between the two x values:
+            xinterpolate = d3.interpolateNumber(sx, tx),
+            // Pick 2 curve control points given the curvature & its converse:
+            xcp1 = xinterpolate(curvature),
+            xcp2 = xinterpolate(1 - curvature);
+        // This SVG Path spec means:
+        // [M]ove to the center of the flow's start [sx,syC]
+        // Draw a Bezier [C]urve using control points [xcp1,syC] & [xcp2,tyC]
+        // End at the center of the flow's target [tx,tyC]
+        return `M${ep(sx)} ${ep(syC)}C${ep(xcp1)} ${ep(syC)}`
+            + ` ${ep(xcp2)} ${ep(tyC)} ${ep(tx)} ${ep(tyC)}`;
+    };
 }
 
 // renderExportableOutputs: Called directly from the page (and from below).
@@ -801,15 +818,17 @@ function render_sankey(allNodes, allFlows, cfg) {
                 }
             }
         }
-        // When flows are flat:
-        //  * They're really parallelograms and so they need a 'fill' value.
-        //  * We still use a thin stroke because the outermost flows can look
-        //    overly thin otherwise. (They still do, even with the stroke.)
-        // When flows are curved:
-        //  * No fill; only stroke-width! It is set to always be at least 1px
-        //    wide, to make sure tiny flows can be seen.
-        [f.fill, f.stroke_width]
-            = flowsAreFlat ? [f.color, 0.5] : ['none', Math.max(1, f.dy)];
+        // Set up alternative values to enable the current flow to be
+        // rendered as either flat or curved:
+        // When a flow is FLAT:
+        //  * It's really a parallelogram, so it needs a 'fill' value.
+        //  * We still add a stroke because very angled flows can look too
+        //    thin otherwise. (They still can, even with the stroke.)
+        // When a flow is CURVED:
+        //  * No fill; only stroke-width!
+        //  * stroke-width is set to at least 1px so tiny flows can be seen.
+        f.fill = { flat: f.color, curved: 'none' };
+        f.stroke_width = { flat: 0.5, curved: Math.max(1, f.dy) };
     });
 
     // At this point, allNodes and allFlows are ready to go. Draw!
@@ -877,9 +896,9 @@ function render_sankey(allNodes, allFlows, cfg) {
           .append('path')
             .attr('id', (f) => f.dom_id)
             .attr('d', flowPathFn) // set the SVG path for each flow
-            .attr('fill', (f) => f.fill)
+            .attr('fill', (f) => f.fill[f.renderAs])
+            .attr('stroke-width', (f) => ep(f.stroke_width[f.renderAs]))
             .attr('stroke', (f) => f.color)
-            .attr('stroke-width', (f) => ep(f.stroke_width))
             .attr('opacity', (f) => f.opacity)
           // add emphasis-on-hover behavior:
           .on('mouseover', turnOnFlowHoverEffects)
@@ -958,8 +977,12 @@ function render_sankey(allNodes, allFlows, cfg) {
         sankeyObj.relayout();
 
         // For every flow, update its 'd' path attribute with the new
-        // calculated path:
-        diagFlows.attr('d', flowPathFn);
+        // calculated path.
+        diagFlows.attr('d', flowPathFn)
+            // (This may *also* change how the flow must be rendered,
+            // so derive those attributes again:)
+            .attr('fill', (f) => f.fill[f.renderAs])
+            .attr('stroke-width', (f) => ep(f.stroke_width[f.renderAs]));
 
         // Regenerate the exportable versions:
         glob.renderExportableOutputs();
