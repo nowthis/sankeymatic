@@ -4,7 +4,7 @@ d3.sankey = () => {
   const sankey = {};
   let nodeWidth = 9,
       nodeSpacingFactor = 0.5,
-      size = [1, 1],
+      size = { w: 1, h: 1 },
       nodes = [],
       flows = [],
       stagesArr = [],
@@ -58,16 +58,21 @@ d3.sankey = () => {
   // valueSum: Add up all the 'value' keys from a list of objects:
   function valueSum(list) { return d3.sum(list, (d) => d.value); }
 
-  // verticalCenter: Y-position of the middle of a node.
-  function verticalCenter(n) { return n.y + n.dy / 2; }
+  // yCenter & yBottom: Y-position of the middle and end of a node.
+  function yCenter(n) { return n.y + n.dy / 2; }
+  function yBottom(n) { return n.y + n.dy; }
+
+  // sourceCenter/targetCenter: return the center of one end of a flow:
+  function sourceCenter(f) { return f.source.y + f.sy + (f.dy / 2); }
+  function targetCenter(f) { return f.target.y + f.ty + (f.dy / 2); }
 
   // connectFlowsToNodes: Populate flowsOut and flowsIn for each node.
   // When the source and target are not objects, assume they are indices.
   function connectFlowsToNodes() {
     // Initialize the flow buckets:
     nodes.forEach((n) => {
-      n.flowsOut = [];  // Flows which use this node as source.
-      n.flowsIn = [];   // Flows which use this node as target.
+      n.flowsOut = [];  // Flows which use this node as their source.
+      n.flowsIn = [];   // Flows which use this node as their target.
     });
 
     // Connect each flow to its two nodes:
@@ -191,7 +196,7 @@ d3.sankey = () => {
         // What if each node in that stage got 1 pixel?
         // Figure out how many pixels would be left over.
         // (If it's < 2, use 2; otherwise the slider has nothing to do.)
-        allAvailablePadding = Math.max(2, size[1] - greatestNodeCount);
+        allAvailablePadding = Math.max(2, size.h - greatestNodeCount);
 
       // A nodeSpacingFactor of 1 means 'pad as much as possible without making
       // these nodes less than a pixel tall'.
@@ -205,8 +210,8 @@ d3.sankey = () => {
       // derived spaceBetweenNodes value and the diagram's height:
       const ky = d3.min(
         stagesArr,
-        (s) => (size[1] - (s.length - 1) * spaceBetweenNodes) / valueSum(s)
-        );
+        (s) => (size.h - (s.length - 1) * spaceBetweenNodes) / valueSum(s)
+      );
 
       // Start with each node at the TOP of the graph, each starting 1 pixel
       // lower than the previous. (This will be changed someday soon.):
@@ -243,11 +248,11 @@ d3.sankey = () => {
           current_node = s[i];
           y_distance = current_y - current_node.y;
           if (y_distance > 0) { current_node.y += y_distance; }
-          current_y = current_node.y + current_node.dy + spaceBetweenNodes;
+          current_y = yBottom(current_node) + spaceBetweenNodes;
         }
 
         // If the last/bottom-most node goes outside the bounds, push it back up.
-        y_distance = current_y - spaceBetweenNodes - size[1];
+        y_distance = current_y - spaceBetweenNodes - size.h;
         if (y_distance > 0) {
           current_node.y -= y_distance;
           current_y = current_node.y;
@@ -255,7 +260,7 @@ d3.sankey = () => {
           // From there, push any now-overlapping nodes back up.
           for (i = nodes_in_group - 2; i >= 0; i -= 1) {
             current_node = s[i];
-            y_distance = current_node.y + current_node.dy + spaceBetweenNodes
+            y_distance = yBottom(current_node) + spaceBetweenNodes
               - current_y;
             if (y_distance > 0) { current_node.y -= y_distance; }
             current_y = current_node.y;
@@ -265,9 +270,7 @@ d3.sankey = () => {
     }
 
     function relaxLeftToRight(factor) {
-      function weightedSource(f) {
-        return (f.source.y + f.sy + f.dy / 2) * f.value;
-      }
+      function weightedSource(f) { return sourceCenter(f) * f.value; }
 
       stagesArr.forEach((s) => {
         s.filter((n) => n.flowsIn.length)
@@ -276,15 +279,13 @@ d3.sankey = () => {
             // linked to this node:
             const y_position
               = d3.sum(n.flowsIn, weightedSource) / valueSum(n.flowsIn);
-            n.y += (y_position - verticalCenter(n)) * factor;
+            n.y += (y_position - yCenter(n)) * factor;
         });
       });
     }
 
     function relaxRightToLeft(factor) {
-      function weightedTarget(f) {
-        return (f.target.y + f.ty + f.dy / 2) * f.value;
-      }
+      function weightedTarget(f) { return targetCenter(f) * f.value; }
 
       stagesArr.slice().reverse().forEach((s) => {
         s.filter((n) => n.flowsOut.length)
@@ -293,7 +294,7 @@ d3.sankey = () => {
             // linked to this node:
             const y_position
               = d3.sum(n.flowsOut, weightedTarget) / valueSum(n.flowsOut);
-            n.y += (y_position - verticalCenter(n)) * factor;
+            n.y += (y_position - yCenter(n)) * factor;
         });
       });
     }
@@ -302,7 +303,7 @@ d3.sankey = () => {
 
     // Apply a scaling factor to all stages to calculate the exact x value
     // for each node:
-    const widthPerStage = (size[0] - nodeWidth) / (furthestStage - 1);
+    const widthPerStage = (size.w - nodeWidth) / (furthestStage - 1);
     nodes.forEach((n) => { n.x = widthPerStage * n.stage; });
 
     initializeNodeDepth();
@@ -326,7 +327,7 @@ d3.sankey = () => {
     }
 
     // After the last layout step, store the original node coordinates
-    // (to support drag moves):
+    // (for reference when the user is dragging nodes):
     nodes.forEach((n) => {
         n.origPos = { x: n.x, y: n.y };
         n.lastPos = { x: n.x, y: n.y };

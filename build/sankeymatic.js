@@ -666,7 +666,7 @@ function render_sankey(allNodes, allFlows, cfg) {
     // We have the skeleton set up; add the remaining dimension values.
     // (Note: This call further alters allNodes & allFlows with their
     // specific coordinates.)
-    sankeyObj.size([graph.w, graph.h])
+    sankeyObj.size({ w: graph.w, h: graph.h })
         .nodeWidth(cfg.node_width)
         .nodeSpacingFactor(cfg.node_spacing / 100)
         .layout(50); // Note: The 'layout()' step must be LAST.
