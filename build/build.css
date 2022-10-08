@@ -423,10 +423,10 @@ th#title {
    Mnemonic: "ropt" = "radio option" */
 .ropt,
 .rnote {
-  color: #777;
+  color: darkslategray;
 }
 
 input:checked ~ label.ropt,
 .theme_container input:checked ~ * {
-   color: #0077b3;
+   color: #27b;
 }
