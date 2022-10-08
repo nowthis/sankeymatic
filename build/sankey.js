@@ -2,14 +2,17 @@ d3.sankey = () => {
   'use strict';
 
   const sankey = {};
+  // Set by inputs:
   let nodeWidth = 9,
       nodeSpacingFactor = 0.5,
       size = { w: 1, h: 1 },
       nodes = [],
       flows = [],
-      stagesArr = [],
       rightJustifyEndpoints = false,
       leftJustifyOrigins = false,
+      autoLayout = true,
+      // Calculated:
+      stagesArr = [],
       spaceBetweenNodes = 0,
       furthestStage = 0;
 
@@ -48,6 +51,11 @@ d3.sankey = () => {
   sankey.leftJustifyOrigins = function (x) {
     if (arguments.length) { leftJustifyOrigins = x; return sankey; }
     return leftJustifyOrigins;
+  };
+
+  sankey.autoLayout = function (x) {
+    if (arguments.length) { autoLayout = x; return sankey; }
+    return autoLayout;
   };
 
   // Getters:
@@ -240,10 +248,10 @@ d3.sankey = () => {
 
         // sort functions for determining what order items should be processed in:
         function ascendingDepth(a, b) { return a.y - b.y; }
-        // function orderInSource(a, b) { return a.sourceline - b.sourceline; }
+        function orderInSource(a, b) { return a.sourceRow - b.sourceRow; }
+        s.sort(autoLayout ? ascendingDepth : orderInSource);
 
         // Push any overlapping nodes down.
-        s.sort(ascendingDepth);
         for (i = 0; i < nodes_in_group; i += 1) {
           current_node = s[i];
           y_distance = current_y - current_node.y;

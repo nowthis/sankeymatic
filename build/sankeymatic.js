@@ -669,6 +669,7 @@ function render_sankey(allNodes, allFlows, cfg) {
     sankeyObj.size({ w: graph.w, h: graph.h })
         .nodeWidth(cfg.node_width)
         .nodeSpacingFactor(cfg.node_spacing / 100)
+        .autoLayout(cfg.auto_layout)
         .layout(50); // Note: The 'layout()' step must be LAST.
 
     // We *update* the final stages array here, because in theory it may
@@ -1342,24 +1343,34 @@ glob.process_sankey = () => {
 
     // Flows validation:
 
-    // addNodeName: Make sure a node's name is present in the 'unique' list:
-    function addNodeName(nodeName) {
-        // Have we seen this node before? Then there's nothing to do.
-        if (uniqueNodes.has(nodeName)) { return; }
-         // Set up the node's basic object, keyed to the name:
-        uniqueNodes.set(nodeName, {
-            name: nodeName,
-            index: uniqueNodes.size,
-        });
+    // addNodeName: Make sure a node's name is present in the 'unique' list
+    // with the lowest row number the node has appeared on:
+    function addNodeName(nodeName, row) {
+        // Have we seen this node before? Then all we need to do is check
+        // if the new row # should replace the stored row #:
+        if (uniqueNodes.has(nodeName)) {
+            const thisNode = uniqueNodes.get(nodeName);
+            if (thisNode.sourceRow > row) { thisNode.sourceRow = row; }
+        } else {
+            // Set up the node's raw object, keyed to the name:
+            uniqueNodes.set(nodeName, {
+                name: nodeName,
+                sourceRow: row,
+            });
+        }
     }
 
     // updateNodeAttrs: Update an existing node's attributes.
     // Note: If there are multiple lines specifying a value for the same
     // parameter for a node, the LAST declaration will win.
     function updateNodeAttrs(nodeParams) {
-        // Just in case this is the first appearance of the name, add it to
+        // Just in case this is the first appearance of the name (or we've
+        // encountered an earlier row than the node declaration), add it to
         // the big list:
-        addNodeName(nodeParams.name);
+        addNodeName(nodeParams.name, nodeParams.sourceRow);
+        // We've already used the 'sourceRow' value and don't want it to
+        // overwrite anything, so take it out of the params object:
+        delete nodeParams.sourceRow;
 
         // If there's a color and it's a color CODE, put back the #:
         // TODO: honor or translate color names?
@@ -1387,7 +1398,7 @@ glob.process_sankey = () => {
             .trim());
 
     // Loop through all the input lines, storing good ones vs bad ones:
-    sourceLines.forEach((lineIn) => {
+    sourceLines.forEach((lineIn, row) => {
         // Is it a blank line OR a comment? Skip it entirely.
         // Currently comments can start with ' or //:
         if (lineIn === '' || /^(?:'|\/\/)/.test(lineIn)) {
@@ -1406,6 +1417,7 @@ glob.process_sankey = () => {
                 opacity: matches[3],
                 paint1: matches[4],
                 paint2: matches[5],
+                sourceRow: row,
             });
             // No need to process this as a Data line, let's move on:
             return;
@@ -1439,6 +1451,7 @@ glob.process_sankey = () => {
                 source: matches[1].trim(),
                 target: matches[3].trim(),
                 amount: amountIn,
+                sourceRow: row,
             });
 
             // We need to know the maximum precision of the inputs (greatest
@@ -1475,6 +1488,7 @@ glob.process_sankey = () => {
     // approvedCfg begins with all the default values defined.
     // Values the user enters will override these (if present & valid).
     const approvedCfg = {
+        auto_layout: true,
         include_values_in_node_labels: 1,
         show_labels: 1,
         label_pos: 'inside',
@@ -1542,7 +1556,6 @@ glob.process_sankey = () => {
     function get_color_input(fldName) {
         const fieldEl = el(fldName);
         let fldVal = fieldEl.value;
-        // console.log(fldName, fldVal, typeof fldVal);
         if (fldVal.match(/^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i)) {
             approvedCfg[fldName] = fldVal;
         } else if (fldVal.match(/^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i)) {
@@ -1585,19 +1598,20 @@ glob.process_sankey = () => {
             }
             // Otherwise just treat it as part of the nodename, e.g. "Team #1"
         }
-        // Make sure the node names get saved; it may their only appearance:
-        addNodeName(flow.source);
-        addNodeName(flow.target);
+        // Make sure the node names get saved; it may be their only appearance:
+        addNodeName(flow.source, flow.sourceRow);
+        addNodeName(flow.target, flow.sourceRow + 0.5);
 
         // Add the updated flow to the list of approved flows:
         const f = {
             index: approvedFlows.length,
-            source: uniqueNodes.get(flow.source).index,
-            target: uniqueNodes.get(flow.target).index,
+            source: uniqueNodes.get(flow.source),
+            target: uniqueNodes.get(flow.target),
             value: flow.amount,
             color: flowColor,
             opacity: opacity,
             hovering: false,
+            sourceRow: flow.sourceRow,
         };
         if (graphIsReversed) {
             [f.source, f.target] = [f.target, f.source];
@@ -1605,24 +1619,26 @@ glob.process_sankey = () => {
         approvedFlows.push(f);
     });
 
-    // Construct the final list of approved_nodes:
-    // NOTE: We don't have to sort this for the indices to line up, since
-    // .values() already gives us the items in insertion order.
-    for (const n of uniqueNodes.values()) {
-        // Set up color inheritance signals.
-        // 'Right' & 'Left' here correspond to >> and <<.
-        const paintValues = [n.paint1, n.paint2],
-            paintL = paintValues.some((s) => s === '<<'),
-            paintR = paintValues.some((s) => s === '>>');
-        // If the graph is reversed, the directions are swapped:
-        [n.paint_left, n.paint_right]
-            = graphIsReversed ? [paintR, paintL] : [paintL, paintR];
-        // After establishing the above, the raw inputs aren't needed:
-        delete n.paint1;
-        delete n.paint2;
+    // Construct the final list of approved_nodes, sorted by their order of
+    // appearance in the source:
+    Array.from(uniqueNodes.values())
+        .sort((a, b) => a.sourceRow - b.sourceRow)
+        .forEach((n) => {
+            // Set up color inheritance signals.
+            // 'Right' & 'Left' here correspond to >> and <<.
+            const paintValues = [n.paint1, n.paint2],
+                paintL = paintValues.some((s) => s === '<<'),
+                paintR = paintValues.some((s) => s === '>>');
+            // If the graph is reversed, the directions are swapped:
+            [n.paint_left, n.paint_right]
+                = graphIsReversed ? [paintR, paintL] : [paintL, paintR];
+            // After establishing the above, the raw paint keys aren't needed:
+            delete n.paint1;
+            delete n.paint2;
+            n.index = approvedNodes.length;
 
-        approvedNodes.push(n);
-    }
+            approvedNodes.push(n);
+        });
 
     // Whole positive numbers:
     (['canvas_width', 'canvas_height', 'font_size',
@@ -1736,6 +1752,11 @@ glob.process_sankey = () => {
     const fontFaceIn = radioRef('font_face').value;
     if (['serif', 'sans-serif', 'monospace'].includes(fontFaceIn)) {
         approvedCfg.font_face = fontFaceIn;
+    }
+
+    const layoutStyle = radioRef('layout_style').value;
+    if (['auto', 'exact'].includes(layoutStyle)) {
+        approvedCfg.auto_layout = (layoutStyle === 'auto');
     }
 
     const colorsetIn = radioRef('default_node_colorset').value;

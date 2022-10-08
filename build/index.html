@@ -79,7 +79,11 @@ Budget [160] Other Necessities #0F0
 // your diagram's appearance...</textarea>
 
 <button id="preview_graph" type="submit">Show &gt;</button>
-<p class="center_basic"><em>Visit the <a href="../manual/" target="_blank">Manual</a> for a detailed guide</em></p>
+<p class="form_elements3">
+<strong>Arrange the diagram:</strong><br />
+<span><input name="layout_style" id="layout_style_auto" value="auto" type="radio" onchange="process_sankey();" checked="checked" /><label for="layout_style_auto" class="ropt">Automatically</label></span>
+<span><input name="layout_style" id="layout_style_exact" value="exact" type="radio" onchange="process_sankey();" class="spaced_checkbox" /><label for="layout_style_exact" class="ropt">Using the exact input order</label></span>
+</p>
 </div>
 
 <!-- NODES -->

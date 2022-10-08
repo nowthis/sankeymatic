@@ -178,6 +178,13 @@ dfn {
   padding: 2px 3px;
 }
 
+.form_elements3 {
+  background-color: #eef7ff;
+  border: 1px solid #9ac;
+  margin: 2px 3px 5px;
+  padding: 2px 3px;
+}
+
 /* for items which need leftward breathing room: */
 .spaced_label,
 .spaced_checkbox {

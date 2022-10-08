@@ -85,7 +85,7 @@ const fontMetrics
     // Ranked-choice election:
     ['election', {
       name: 'Ranked Election',
-      flows: '// Sample Ranked Election diagram\n\n// First set up Node orders & colors:\n:GH - Round 1 #F93\n:EF - Round 1 #39F\n:CD - Round 1 #96F\n:AB - Round 1 #3F9\n\n:GH - Round 2 #F93\n:EF - Round 2 #39F\n:CD - Round 2 #96F\n\n:GH - Round 3 #F93\n:EF - Round 3 #39F\n:No further votes #555 <<\n\n// Then list the Flow data:\nAB - Round 1 [20000] No further votes\nAB - Round 1 [10000] GH - Round 2\nAB - Round 1 [20000] CD - Round 2\nAB - Round 1 [25000] EF - Round 2\n\nCD - Round 1 [200000] CD - Round 2\nGH - Round 1 [300000] GH - Round 2\nEF - Round 1 [220000] EF - Round 2\n\nCD - Round 2 [50000] GH - Round 3\nCD - Round 2 [95000] EF - Round 3\nCD - Round 2 [75000] No further votes\n\nGH - Round 2 [310000] GH - Round 3\nEF - Round 2 [245000] EF - Round 3',
+      flows: '// Sample Ranked Election diagram\n\nGH - Round 1 [300000] GH - Round 2\nEF - Round 1 [220000] EF - Round 2\nCD - Round 1 [200000] CD - Round 2\nAB - Round 1 [10000] GH - Round 2\nAB - Round 1 [25000] EF - Round 2\nAB - Round 1 [20000] CD - Round 2\n\nGH - Round 2 [310000] GH - Round 3\nEF - Round 2 [245000] EF - Round 3\nCD - Round 2 [50000] GH - Round 3\nCD - Round 2 [95000] EF - Round 3\n\n// This line sets a custom gray color:\n:No further votes #555 <<\nAB - Round 1 [20000] No further votes\nCD - Round 2 [75000] No further votes',
       settings: {
         node_spacing: 24,
         flow_inherit_from_source: true,
