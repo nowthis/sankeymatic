@@ -70,9 +70,13 @@ d3.sankey = () => {
   function yCenter(n) { return n.y + n.dy / 2; }
   function yBottom(n) { return n.y + n.dy; }
 
-  // sourceCenter/targetCenter: return the center of one end of a flow:
+  // source___/target___: return the ___ of one end of a flow:
+  function sourceTop(f) { return f.source.y + f.sy; }
+  function targetTop(f) { return f.target.y + f.ty; }
   function sourceCenter(f) { return f.source.y + f.sy + (f.dy / 2); }
   function targetCenter(f) { return f.target.y + f.ty + (f.dy / 2); }
+  function sourceBottom(f) { return f.source.y + f.sy + f.dy; }
+  function targetBottom(f) { return f.target.y + f.ty + f.dy; }
 
   // connectFlowsToNodes: Populate flowsOut and flowsIn for each node.
   // When the source and target are not objects, assume they are indices.
@@ -107,160 +111,118 @@ d3.sankey = () => {
     });
   }
 
-  // placeFlowsInsideNodes: Compute the y-offset of the source endpoint (sy) and
-  // target endpoints (ty) of flows, relative to the source/target node's y-position.
+  // placeFlowsInsideNodes():
+  //   Compute the y-offset of every flow's source and target endpoints,
+  //   relative to the each node's y-position.
   function placeFlowsInsideNodes() {
-    const [ASC, DESC] = [1, -1];
+    // Set up some handy constants (basically enums)
+    // These numbers are relatively prime so each cross-product is unique.
+    const [SOURCES, TARGETS, TOP, BOTTOM] = [2, 3, 5, 7];
 
-    // sortFlows(node, placingTargets):
-    // Given a node & a side, order those flows as ideally as we can.
-    // The existing order is discarded; each time, an order is derived anew.
-    // - placingTargets is a boolean; for every call you are either
-    //   placing Targets (value = true) or placing Sources (value = false).
-    function sortFlows(n, placingTargets) {
-      const flowsToSort = placingTargets ? n.flowsIn : n.flowsOut,
+    // sortFlows(node, placing):
+    //   Given a node & a side, reorder that group of flows as best we can.
+    //   'placing' indicates which end of the flows we're working on here:
+    //      - TARGETS = we're placing the targets of n.flowsIn
+    //      - SOURCES = we're placing the sources of n.flowsOut
+    function sortFlows(n, placing) {
+      const flowsToSort = placing === TARGETS ? n.flowsIn : n.flowsOut,
         // Make a Set of flow IDs we can delete from as we go:
         flowsRemaining = new Set(flowsToSort.map((f) => f.index)),
-        // upper/lower bounds = the extreme ends of the available space.
-        // These get carved down from both ends as we go.
-        // Reminder: In SVG-land, the y-axis coordinates are reversed.
-        // "upper" & "lower" are meant visually here, not numerically.
+        // upper/lower bounds = the current limits of the available space.
         bounds = { upper: n.y, lower: n.y + d3.sum(flowsToSort, (f) => f.dy) };
+        // Reminder: In SVG-land, y-axis coordinates are inverted...
+        //   "upper" & "lower" are meant visually here, not numerically.
 
-      // placeFlow(f, y): write the new value & drop the flow from the queue.
+      // placeFlow(f, y): Update a flow's position
       function placeFlow(f, newTopY) {
-        // sy (source y) & ty (target y) are the vertical *offsets* at each
-        // end of a flow, determining where /inside/ each node this flow's
-        // top edge will meet, relative to the node's top edge.
-        if (placingTargets) {
+        // sy & ty (source/target y) are the vertical *offsets* at each end
+        // of a flow, determining where below the node's top edge the flow's
+        // top will meet.
+        if (placing === TARGETS) {
           f.ty = newTopY - f.target.y;
         } else {
           f.sy = newTopY - f.source.y;
         }
-        flowsRemaining.delete(f.index);
       }
 
-      function placeFlowAtTop(fIndex) {
-        const f = flows[fIndex]; // We want the real flow, not a copy
-        placeFlow(f, bounds.upper);
-        // Move the upper bound DOWN by the flow width (after using it):
-        bounds.upper += f.dy;
-      }
-
-      function placeFlowAtBottom(fIndex) {
+      // placeFlowAt(edge, fIndex):
+      //   Update the bound, set this flow's offset, update the queue.
+      function placeFlowAt(edge, fIndex) {
         const f = flows[fIndex];
-        // Move the lower bound UP by this flow width FIRST, to get both the
-        // flow's new top & the range's new bottom:
-        bounds.lower -= f.dy;
-        placeFlow(f, bounds.lower);
+        if (edge === TOP) {
+          placeFlow(f, bounds.upper);
+          // Move the upper bound DOWN by the flow width (after using it):
+          bounds.upper += f.dy;
+        } else { // edge === BOTTOM
+          // Move the lower bound UP by this flow width FIRST, to get both
+          // the flow's new top & the range's new bottom:
+          bounds.lower -= f.dy;
+          placeFlow(f, bounds.lower);
+        }
+        flowsRemaining.delete(fIndex); // Drop this flow from the queue
       }
 
-      // sourceSlope calculates FROM the flow source's center TO point y
-      // targetSlope calculates FROM point y TO the flow target's center
-      // BTW: "fc" = "flow copy": a local copy of a flow + additional keys
-      function sourceSlope(fc, y) { return (y - fc.sCenter) / fc.dx; }
-      function targetSlope(y, fc) { return (fc.tCenter - y) / fc.dx; }
+      // slopeData keys are the product of an 'edge' & a 'placing' value:
+      const slopeData = {
+        [TOP * TARGETS]: { f: (f) => (bounds.upper - sourceTop(f)) / f.dx, dir: -1 },
+        [TOP * SOURCES]: { f: (f) => (targetTop(f) - bounds.upper) / f.dx, dir: 1 },
+        [BOTTOM * TARGETS]: { f: (f) => (bounds.lower - sourceBottom(f)) / f.dx, dir: 1 },
+        [BOTTOM * SOURCES]: { f: (f) => (targetBottom(f) - bounds.lower) / f.dx, dir: -1 },
+      };
 
-      // bySourceSlopeUsing(y, dir): Sort flow queue items by:
-      //   the source flow's slope TO y (ascending or descending),
-      //   then by x-distance (always ascending):
-      function bySourceSlopeUsing(y, dir) {
-        return (a, b) => dir * (sourceSlope(a, y) - sourceSlope(b, y))
-          || (a.dx - b.dx);
+      // placeUnhappiestFlowAt(edge):
+      //   Figure out which flow is worst off (slope-wise) and place it.
+      //   edge = TOP or BOTTOM
+      function placeUnhappiestFlowAt(edge) {
+        const sKey = edge * placing,
+          slopeOf = slopeData[sKey].f,
+          // flowIndex = the ID of the unhappiest flow
+          flowIndex = Array.from(flowsRemaining)
+            // Sort flows by the right slopes in the correct order (asc/desc):
+            .sort((a, b) => (
+                slopeData[sKey].dir * (slopeOf(flows[a]) - slopeOf(flows[b])))
+                // If there's a tie, sort by x-distance (ascending):
+                || (flows[a].dx - flows[b].dx))[0];
+        placeFlowAt(edge, flowIndex); // Place the flow at the correct edge
       }
 
-      // byTargetSlopeUsing(y, dir): Same as above, but using
-      //   the target flow's slope FROM y (ascending or descending), etc.
-      function byTargetSlopeUsing(y, dir) {
-        return (a, b) => dir * (targetSlope(y, a) - targetSlope(y, b))
-          || (a.dx - b.dx);
-      }
-
-      // expectedFlowOffset: Given a list of flows, produce a guess
-      // as to how wide a representative flow from the set will be.
-      function expectedFlowOffset(fList) {
-        // We take the midpoint between their mean & their minimum as
-        // the 'expected' width, then divide that by 2 again to produce
-        // the offset for the center of that predicted width.
-        return (d3.mean(fList, (f) => f.dy) + d3.min(fList, (f) => f.dy)) / 4;
-      }
-
-      // After all that setup...
-      // Place flows from the outside in!
-      // If there are 2+ flows to be placed, we figure out which is best
-      //    to attach to the top and which to the bottom.
-      // After doing so, we re-calculate the remaining landscape.
-      // Repeat until we get down to < 2 flows.
+      // Loop through the flow set, placing them from the outside in.
+      // If there are at least 2 flows to be placed, we figure out which is
+      // best suited to occupy the top & bottom edge spots.
+      // After placing those, the remaining range is reduced & we repeat.
       while (flowsRemaining.size > 1) {
-        // Make a queue with local copies of the flows we're operating on:
-        const flowCopies
-          = flowsToSort
-              .filter((f) => flowsRemaining.has(f.index))
-              .map((f) => ({ ...f })),
-          // Estimate a good upper point to calculate slopes to (we won't
-          // use this slope for final placement, but we DO use it for
-          // dividing up the flowQueue into upper & lower halves.):
-          upperBoundAdjusted = bounds.upper + expectedFlowOffset(flowCopies);
-        if (placingTargets) {
-          flowCopies.forEach((fc) => { fc.sCenter = sourceCenter(fc); });
-          flowCopies.sort(bySourceSlopeUsing(upperBoundAdjusted, DESC));
-        } else {
-          flowCopies.forEach((fc) => { fc.tCenter = targetCenter(fc); });
-          flowCopies.sort(byTargetSlopeUsing(upperBoundAdjusted, ASC));
-        }
-
-        // With the flows sorted, now we split the queue in half:
-        const fqMidpoint = Math.floor(flowCopies.length / 2),
-          upperFlows = flowCopies.slice(0, fqMidpoint),
-          lowerFlows = flowCopies.slice(fqMidpoint).reverse(),
-          // Then figure out our actual target points at the top and bottom,
-          // base on the specific flow sizes in each section:
-          upperAttachPoint = bounds.upper + expectedFlowOffset(upperFlows),
-          lowerAttachPoint = bounds.lower - expectedFlowOffset(lowerFlows);
-
-        // Now, find the least fortunate flow touching each target point:
-        if (placingTargets) {
-          upperFlows.sort(bySourceSlopeUsing(upperAttachPoint, DESC));
-          lowerFlows.sort(bySourceSlopeUsing(lowerAttachPoint, ASC));
-        } else {
-          upperFlows.sort(byTargetSlopeUsing(upperAttachPoint, ASC));
-          lowerFlows.sort(byTargetSlopeUsing(lowerAttachPoint, DESC));
-        }
-        // Place the 2 flows we've found (and subtract their sizes from the
-        // available range):
-        placeFlowAtTop(upperFlows[0].index);
-        placeFlowAtBottom(lowerFlows[0].index);
-        // Now the loop continues, to derive new least-fortunate flows based on
-        // the new smaller range.
+        // Place the least fortunate flows, then subtract their size from
+        // the available range:
+        placeUnhappiestFlowAt(TOP);
+        placeUnhappiestFlowAt(BOTTOM);
       }
 
-      // Outside the loop, we have 0-1 flows; place that last flow if present:
-      flowsRemaining.forEach((i) => placeFlowAtTop(i));
+      // After that loop, we have 0-1 flows. If there is one, place it:
+      flowsRemaining.forEach((i) => placeFlowAt(TOP, i));
     }
 
     // We have the utility functions defined now; time to actually use them.
 
-    // First, update the dx (x-distance) values for all flows.
-    // (They may have changed since their initial placement due to drags.)
-    // Two notes:
-    // 1) we use the *absolute* value of the x-distance, so that even when
-    //    a node is dragged to the other side of its source/target, the
-    //    slope ordering will remain stable.
-    // 2) we have to avoid a dx of 0, so we substitute almost-0 if needed.
+    // First, update the x-distance (dx) values for all flows -- they may
+    // have moved since their initial placement, due to drags. Two notes:
+    // 1) We use the *absolute* value of the x-distance, so even when a node
+    //    is dragged to the opposite side of a connected node, the ordering
+    //    will remain stable.
+    // 2) Denominator dx can't be 0, so MIN_VALUE is substituted if needed.
     flows.forEach((f) => {
       f.dx = Math.abs(f.target.x - f.source.x) || Number.MIN_VALUE;
     });
 
     // Gather all the distinct batches of flows we'll need to process (each
-    // node may have 0, 1, or 2):
+    // node may have 0-2 batches):
     const flowBatches = [
       ...nodes.filter((n) => n.flowsIn.length)
         .map((n) => (
-          { i: n.index, len: n.flowsIn.length, placingTargets: true }
+          { i: n.index, len: n.flowsIn.length, placing: TARGETS }
           )),
       ...nodes.filter((n) => n.flowsOut.length)
         .map((n) => (
-          { i: n.index, len: n.flowsOut.length, placingTargets: false }
+          { i: n.index, len: n.flowsOut.length, placing: SOURCES }
           )),
     ];
 
@@ -270,10 +232,8 @@ d3.sankey = () => {
     // By settling easier cases first, the harder cases end up with fewer
     // wild possibilities for how they may be arranged.
     flowBatches.sort((a, b) => a.len - b.len)
-      .forEach((fBatch) => {
-        // Finally: Go through every batch & sort their flows anew:
-        sortFlows(nodes[fBatch.i], fBatch.placingTargets);
-      });
+      // Finally: Go through every batch & sort its flows anew:
+      .forEach((fBatch) => { sortFlows(nodes[fBatch.i], fBatch.placing); });
   }
 
   // assignNodesToStages: Iteratively assign the stage (x-group) for each node.
