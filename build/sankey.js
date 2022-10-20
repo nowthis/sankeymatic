@@ -111,10 +111,10 @@ d3.sankey = () => {
     });
   }
 
-  // placeFlowsInsideNodes():
+  // placeFlowsInsideNodes(nodeList):
   //   Compute the y-offset of every flow's source and target endpoints,
   //   relative to the each node's y-position.
-  function placeFlowsInsideNodes() {
+  function placeFlowsInsideNodes(nodeList) {
     // Set up some handy constants (basically enums)
     // These numbers are relatively prime so each cross-product is unique.
     const [SOURCES, TARGETS, TOP, BOTTOM] = [2, 3, 5, 7];
@@ -216,11 +216,11 @@ d3.sankey = () => {
     // Gather all the distinct batches of flows we'll need to process (each
     // node may have 0-2 batches):
     const flowBatches = [
-      ...nodes.filter((n) => n.flowsIn.length)
+      ...nodeList.filter((n) => n.flowsIn.length)
         .map((n) => (
           { i: n.index, len: n.flowsIn.length, placing: TARGETS }
           )),
-      ...nodes.filter((n) => n.flowsOut.length)
+      ...nodeList.filter((n) => n.flowsOut.length)
         .map((n) => (
           { i: n.index, len: n.flowsOut.length, placing: SOURCES }
           )),
@@ -344,42 +344,33 @@ d3.sankey = () => {
       flows.forEach((f) => { f.dy = f.value * ky; });
     }
 
-    function resolveCollisions() {
-      stagesArr.forEach((s) => {
-        let current_node,
-            y_distance,
-            current_y = 0,
-            i;
-        const nodes_in_group = s.length;
+    // resolveCollisions(stage):
+    //   Make sure this stage doesn't extend past either the top or
+    //   bottom, and preserve the minimum spacing between nodes.
+    function resolveCollisions(s) {
+      // Sorting functions for determining the order in which nodes
+      // should be considered:
+      function byTopEdges(a, b) { return a.y - b.y; }
+      function bySourceOrder(a, b) { return a.sourceRow - b.sourceRow; }
 
-        // sort functions for determining what order items should be processed in:
-        function ascendingDepth(a, b) { return a.y - b.y; }
-        function orderInSource(a, b) { return a.sourceRow - b.sourceRow; }
-        s.sort(autoLayout ? ascendingDepth : orderInSource);
+      s.sort(autoLayout ? byTopEdges : bySourceOrder);
 
-        // Push any overlapping nodes down.
-        for (i = 0; i < nodes_in_group; i += 1) {
-          current_node = s[i];
-          y_distance = current_y - current_node.y;
-          if (y_distance > 0) { current_node.y += y_distance; }
-          current_y = yBottom(current_node) + spaceBetweenNodes;
-        }
+      // Nudge down any nodes which are past the top:
+      let yPos = 0; // = the current available y closest to the top
+      s.forEach((n) => {
+        // If this node's top is above yPos, nudge the node down:
+        if (n.y < yPos) { n.y = yPos; }
+        // Set yPos to the next available y toward the bottom:
+        yPos = yBottom(n) + spaceBetweenNodes;
+      });
 
-        // If the last/bottom-most node goes outside the bounds, push it back up.
-        y_distance = current_y - spaceBetweenNodes - size.h;
-        if (y_distance > 0) {
-          current_node.y -= y_distance;
-          current_y = current_node.y;
-
-          // From there, push any now-overlapping nodes back up.
-          for (i = nodes_in_group - 2; i >= 0; i -= 1) {
-            current_node = s[i];
-            y_distance = yBottom(current_node) + spaceBetweenNodes
-              - current_y;
-            if (y_distance > 0) { current_node.y -= y_distance; }
-            current_y = current_node.y;
-          }
-        }
+      // ... if we've gone *past* the bottom, bump nodes back up.
+      yPos = size.h; // = the current available y closest to the bottom
+      s.slice().reverse().forEach((n) => {
+        // if this node's bottom is below yPos, nudge it up:
+        if (yBottom(n) > yPos) { n.y = yPos - n.dy; }
+        // Set yPos to the next available y toward the top:
+        yPos = n.y - spaceBetweenNodes;
       });
     }
 
@@ -395,6 +386,11 @@ d3.sankey = () => {
               = d3.sum(n.flowsIn, weightedSource) / valueSum(n.flowsIn);
             n.y += (y_position - yCenter(n)) * factor;
         });
+        // Make this stage's positions & flow sorting make sense again
+        // *now*, since they'll be used as the basis for weights in the
+        // next pass:
+        resolveCollisions(s);
+        placeFlowsInsideNodes(s);
       });
     }
 
@@ -410,6 +406,9 @@ d3.sankey = () => {
               = d3.sum(n.flowsOut, weightedTarget) / valueSum(n.flowsOut);
             n.y += (y_position - yCenter(n)) * factor;
         });
+        // Fix up this stage before moving on (same as above):
+        resolveCollisions(s);
+        placeFlowsInsideNodes(s);
       });
     }
 
@@ -421,8 +420,9 @@ d3.sankey = () => {
     nodes.forEach((n) => { n.x = widthPerStage * n.stage; });
 
     initializeNodeDepth();
-    resolveCollisions();
-    placeFlowsInsideNodes();
+    // Resolve all collisions/spacing & place all flows to start:
+    stagesArr.forEach((s) => { resolveCollisions(s); });
+    placeFlowsInsideNodes(nodes);
 
     let counter = 0,
       alpha = 1;
@@ -432,12 +432,14 @@ d3.sankey = () => {
       // Make each round of moves progressively weaker:
       alpha *= 0.99;
       relaxRightToLeft(alpha);
-      resolveCollisions();
-      placeFlowsInsideNodes();
+      // At the end of each round, do a proper final flow placement
+      // across the whole diagram. (Some locally-optimized flow choices
+      // don't work across the whole and need this resolution step
+      // before doing more balancing).
+      placeFlowsInsideNodes(nodes);
 
       relaxLeftToRight(alpha);
-      resolveCollisions();
-      placeFlowsInsideNodes();
+      placeFlowsInsideNodes(nodes);
     }
 
     // After the last layout step, store the original node coordinates
@@ -471,7 +473,7 @@ d3.sankey = () => {
   // relayout() = Given a complete diagram with some new node positions,
   // calculate where the flows must now start/end:
   sankey.relayout = () => {
-    placeFlowsInsideNodes();
+    placeFlowsInsideNodes(nodes);
     return sankey;
   };
 
