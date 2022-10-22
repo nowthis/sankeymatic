@@ -299,9 +299,26 @@ d3.sankey = () => {
       .map((d) => d[1]);
   }
 
-  // placeNodes: Compute the depth (y-position) for each node.
+  // placeNodes(iterations):
+  //   Set (and then adjust) the y-position for each node and flow, based
+  //   on their connections to other points in the diagram.
   function placeNodes(iterations) {
-    function initializeNodeDepth() {
+    // nodeSetStats(nodeList):
+    //   Get the total weight+value from an assortment of Nodes.
+    //   The Nodes are expected to all be in the same Stage.
+    function nodeSetStats(nodeList) {
+      const weight = d3.sum(nodeList, (n) => yCenter(n) * n.value),
+        value = valueSum(nodeList);
+      return {
+        stage: nodeList[0].stage,
+        weight: weight,
+        value: value,
+        center: weight / value,
+      };
+    }
+
+    // Set up the scaling factor and the initial x & y of all the Nodes:
+    function initializeNodePositions() {
       // How many nodes are in the 'busiest' stage?
       // Note: If every stage has only 1 node, this causes a divide-by-0
       // error..so make sure this is always at least 2:
@@ -327,27 +344,65 @@ d3.sankey = () => {
         (s) => (size.h - (s.length - 1) * spaceBetweenNodes) / valueSum(s)
       );
 
-      // Start with each node at the TOP of the graph, each starting 1 pixel
-      // lower than the previous. (This will be changed someday soon.):
-      stagesArr.forEach((s) => {
-        s.forEach((n, i) => {
-          n.y = i; // i = a counter (0 to the # of nodes in this stage)
-          // Compute every node's final height in the graph (dy).
-          // Also: make sure each node is at least 1 pixel, even if its true
-          // value is 0:
-          n.dy = Math.max(1, n.value * ky);
-          n.dx = nodeWidth;
+      // Compute all the dy values using the now-known scale of the graph:
+      flows.forEach((f) => { f.dy = f.value * ky; });
+      // Also: Ensure each node is at least 1 pixel tall:
+      nodes.forEach((n) => { n.dy = Math.max(1, n.value * ky); });
+
+      // Set the initial positions of all nodes.
+      // The initial stage will start with all nodes centered vertically,
+      // separated by the spaceBetweenNodes.
+      // Each stage afterwards will center on its combined source nodes.
+      let targetY = size.h / 2;
+      stagesArr.forEach((s, stageIndex) => {
+        const stageSize
+          = (valueSum(s) * ky) + (spaceBetweenNodes * (s.length - 1));
+        // If we're past the first stage, find the center of all the nodes
+        // feeding into this stage so we can use that as the new center:
+        if (stageIndex > 0) {
+          const allFlowsIn = s.map((n) => n.flowsIn).flat();
+          if (allFlowsIn.length === 0) {
+            targetY = size.h / 2;
+          } else {
+            // Chicken/egg problem: It would be more ideal here to use
+            // weighted centers based on flows, but at this point we
+            // have placed 0 flows, so that's not an option. Take the
+            // broader approach of using the weighted center of all the
+            // source nodes:
+            const uniqueSourceNodes = new Set(allFlowsIn.map((f) => f.source));
+            targetY = nodeSetStats(Array.from(uniqueSourceNodes)).center;
+          }
+        }
+        // Calculate the first-node-in-this-stage's y position (while not
+        // letting it be placed where the stage will exceed either boundary):
+        let nextNodePos
+          = Math.max(
+              0,
+              Math.min(targetY - (stageSize / 2), size.h - stageSize)
+              );
+        s.forEach((n) => {
+          n.y = nextNodePos;
+          // Find the y position of the next node:
+          nextNodePos = yBottom(n) + spaceBetweenNodes;
         });
       });
 
-      // Compute flows' dy value using the scale of the graph:
-      flows.forEach((f) => { f.dy = f.value * ky; });
+      // Set up x-values too.
+      // Apply a scaling factor based on width per stage:
+      const widthPerStage
+        = furthestStage > 1
+          ? (size.w - nodeWidth) / (furthestStage - 1)
+          : 0;
+      nodes.forEach((n) => {
+        n.x = widthPerStage * n.stage;
+        n.dx = nodeWidth;
+      });
     }
 
-    // resolveCollisions(stage):
+    // enforceValidNodePositions(stage):
     //   Make sure this stage doesn't extend past either the top or
     //   bottom, and preserve the minimum spacing between nodes.
-    function resolveCollisions(s) {
+    function enforceValidNodePositions(s) {
       // Sorting functions for determining the order in which nodes
       // should be considered:
       function byTopEdges(a, b) { return a.y - b.y; }
@@ -389,7 +444,7 @@ d3.sankey = () => {
         // Make this stage's positions & flow sorting make sense again
         // *now*, since they'll be used as the basis for weights in the
         // next pass:
-        resolveCollisions(s);
+        enforceValidNodePositions(s);
         placeFlowsInsideNodes(s);
       });
     }
@@ -407,21 +462,16 @@ d3.sankey = () => {
             n.y += (y_position - yCenter(n)) * factor;
         });
         // Fix up this stage before moving on (same as above):
-        resolveCollisions(s);
+        enforceValidNodePositions(s);
         placeFlowsInsideNodes(s);
       });
     }
 
     // Enough preamble. Lay out the nodes:
 
-    // Apply a scaling factor to all stages to calculate the exact x value
-    // for each node:
-    const widthPerStage = (size.w - nodeWidth) / (furthestStage - 1);
-    nodes.forEach((n) => { n.x = widthPerStage * n.stage; });
-
-    initializeNodeDepth();
+    initializeNodePositions();
     // Resolve all collisions/spacing & place all flows to start:
-    stagesArr.forEach((s) => { resolveCollisions(s); });
+    stagesArr.forEach((s) => { enforceValidNodePositions(s); });
     placeFlowsInsideNodes(nodes);
 
     let counter = 0,
@@ -442,7 +492,7 @@ d3.sankey = () => {
       placeFlowsInsideNodes(nodes);
     }
 
-    // After the last layout step, store the original node coordinates
+    // After the last layout adjustment, remember these node coordinates
     // (for reference when the user is dragging nodes):
     nodes.forEach((n) => {
         n.origPos = { x: n.x, y: n.y };
