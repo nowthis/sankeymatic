@@ -500,34 +500,95 @@ d3.sankey = () => {
       return goalY - nStats.center;
     }
 
-    // enforceValidNodePositions(stage):
-    //   Make sure this stage doesn't extend past either the top or
-    //   bottom, and preserve the minimum spacing between nodes.
-    function enforceValidNodePositions(s) {
-      // Sorting functions for determining the order in which nodes
-      // should be considered:
+    // updateStageCentering(stage):
+    //   Make sure nodes are spaced far enough apart from each other,
+    //   AND, after some have been nudged apart, put those
+    //   now-locked-together groups of nodes in the best available
+    //   position given their group's *overall* connections in & out.
+    function updateStageCentering(s) {
+      // enforceValidNodePositions():
+      //   Make sure this stage doesn't extend past either the top or
+      //   bottom, and preserve the minimum spacing between nodes.
+      function enforceValidNodePositions() {
+        // Nudge down any nodes which are past the top:
+        let yPos = 0; // = the current available y closest to the top
+        s.forEach((n) => {
+          // If this node's top is above yPos, nudge the node down:
+          if (n.y < yPos) { n.y = yPos; }
+          // Set yPos to the next available y toward the bottom:
+          yPos = yBottom(n) + spaceBetweenNodes;
+        });
+
+        // ... if we've gone *past* the bottom, bump nodes back up.
+        yPos = size.h; // = the current available y closest to the bottom
+        s.slice().reverse().forEach((n) => {
+          // if this node's bottom is below yPos, nudge it up:
+          if (yBottom(n) > yPos) { n.y = yPos - n.dy; }
+          // Set yPos to the next available y toward the top:
+          yPos = n.y - spaceBetweenNodes;
+        });
+      }
+
+      // nodesAreAdjacent: Given two nodes *in height order*, is the top of n2
+      // bumping up against n1's bottom edge?
+      function nodesAreAdjacent(n1, n2) {
+        // Is the bottom of the 1st node + the minimum spacing essentially
+        // the same as the 2nd node's top? (i.e. within a tenth of a 'pixel')
+        return (n2.y - spaceBetweenNodes - yBottom(n1)) < 0.1;
+      }
+
+      function centerNeighborGroups() {
+        // First, Gather groups of neighbors. This loop produces arrays
+        // of 1 or more nodes which need to be nudged together.
+        const neighborGroups = [];
+        s.forEach((n, i) => {
+          // Can we include this node as a neighbor of its predecessor?
+          if (i > 0 && nodesAreAdjacent(s[i - 1], n)) {
+            // Yes? Then append it to the 'current' group:
+            const lastGroup = neighborGroups.length - 1;
+            neighborGroups[lastGroup].push(n);
+          } else {
+            // No? Start a new group:
+            neighborGroups.push([n]);
+          }
+        });
+
+        // At this point we *may* have node groups which need nudges.
+        // For each multi-node group, find the weighted center of its
+        // sources/targets, and place that group's center along that
+        // line:
+        neighborGroups.filter((g) => g.length > 1)
+          .forEach((nodeGroup) => {
+          // Apply the offset to the entire node group:
+          const yOffset = findNodeGroupOffset(nodeGroup);
+          nodeGroup.forEach((n) => { n.y += yOffset; });
+        });
+      }
+
+      // First, sort this stage's nodes based on either their current
+      // positions or on the order they appeared in the data:
       function byTopEdges(a, b) { return a.y - b.y; }
       function bySourceOrder(a, b) { return a.sourceRow - b.sourceRow; }
 
       s.sort(autoLayout ? byTopEdges : bySourceOrder);
 
-      // Nudge down any nodes which are past the top:
-      let yPos = 0; // = the current available y closest to the top
-      s.forEach((n) => {
-        // If this node's top is above yPos, nudge the node down:
-        if (n.y < yPos) { n.y = yPos; }
-        // Set yPos to the next available y toward the bottom:
-        yPos = yBottom(n) + spaceBetweenNodes;
-      });
+      // Make sure any overlapping nodes preserve the minimum space.
+      // Run the first nudge of all to see what bumps against each other:
+      enforceValidNodePositions();
 
-      // ... if we've gone *past* the bottom, bump nodes back up.
-      yPos = size.h; // = the current available y closest to the bottom
-      s.slice().reverse().forEach((n) => {
-        // if this node's bottom is below yPos, nudge it up:
-        if (yBottom(n) > yPos) { n.y = yPos - n.dy; }
-        // Set yPos to the next available y toward the top:
-        yPos = n.y - spaceBetweenNodes;
-      });
+      // Look for sets of neighbors and center them as best we can:
+      centerNeighborGroups();
+      // Make sure we're still on the canvas:
+      enforceValidNodePositions();
+
+      // Since we may have just created more neighbors, iterate 1 more time:
+      centerNeighborGroups();
+      enforceValidNodePositions();
+      // We could keep doing more rounds! But have to stop somewhere.
+      // Someday I hope to update this to notice when we've either:
+      // 1) stopped bumping into more nodes, or else
+      // 2) reached the maximum group (all nodes in 1 neighbor group)
+      // For now, this will do.
     }
 
     // processStages(stageList, factor):
@@ -538,10 +599,10 @@ d3.sankey = () => {
       stageList.forEach((s) => {
         // Move each node to its ideal vertical position:
         s.forEach((n) => { n.y += findNodeGroupOffset([n]) * factor; });
-        // Update this stage's node positions to be valid again *now*,
-        // since they'll be used as the basis for weights in the very
-        // next stage:
-        enforceValidNodePositions(s);
+        // Update this stage's node positions to incorporate their proximity
+        // & minimum spacing *now*, since they'll be used as the basis for
+        // weights in the very next stage:
+        updateStageCentering(s);
         // Update the flow sorting too; same reason:
         placeFlowsInsideNodes(s);
       });
@@ -556,7 +617,7 @@ d3.sankey = () => {
 
     initializeNodePositions();
     // Resolve all collisions/spacing & place all flows to start:
-    stagesArr.forEach((s) => { enforceValidNodePositions(s); });
+    stagesArr.forEach((s) => { updateStageCentering(s); });
     placeFlowsInsideNodes(nodes);
 
     let [alpha, counter] = [1, 0];
