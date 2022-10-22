@@ -365,10 +365,10 @@ d3.sankey = () => {
             targetY = size.h / 2;
           } else {
             // Chicken/egg problem: It would be more ideal here to use
-            // weighted centers based on flows, but at this point we
-            // have placed 0 flows, so that's not an option. Take the
-            // broader approach of using the weighted center of all the
-            // source nodes:
+            // weighted centers based on flows (i.e. flowSetStats), but
+            // at this point we have placed 0 flows, so that's not an
+            // option. Take the broader approach of using the weighted
+            // center of all the source nodes:
             const uniqueSourceNodes = new Set(allFlowsIn.map((f) => f.source));
             targetY = nodeSetStats(Array.from(uniqueSourceNodes)).center;
           }
@@ -397,6 +397,107 @@ d3.sankey = () => {
         n.x = widthPerStage * n.stage;
         n.dx = nodeWidth;
       });
+
+      // With nodes placed, we *also* have to provide an initial
+      // placement for all flows, so that their weights can be measured
+      // realistically in the placeNodes() routine.
+      nodes.forEach((n) => {
+        // Each flow is placed naively, just using the input order.
+        // Surprisingly, this leads to better results than trying to be
+        // smart at this stage. Smarter flow sorting will happen right
+        // after this, in placeFlowsInsideNodes().
+        let [sy, ty] = [0, 0];
+        n.flowsOut.forEach((f) => { f.sy = sy; sy += f.dy; });
+        n.flowsIn.forEach((f) => { f.ty = ty; ty += f.dy; });
+      });
+    }
+
+    // allFlowStats(nodeList): provides all components necessary to make
+    // weighted-center calculations. These are used to decide where a
+    // group of nodes would ideally 'want' to be.
+    function allFlowStats(nodeList) {
+      // flowSetStats: get the total weight+value from an assortment of flows
+      function flowSetStats(whichFlows) {
+        // Get every flow touching one side & treat them as one list:
+        const flowList = nodeList.map((n) => n[whichFlows]).flat();
+        // If 0 flows, return enough structure to satisfy the caller:
+        if (flowList.length === 0) {
+          return { value: 0, sources: {}, targets: {} };
+        }
+
+        return {
+          value: valueSum(flowList),
+          sources: {
+            weight: d3.sum(flowList, (f) => sourceCenter(f) * f.value),
+            maxSourceStage: d3.max(flowList, (f) => f.source.stage),
+          },
+          targets: {
+            weight: d3.sum(flowList, (f) => targetCenter(f) * f.value),
+            minTargetStage: d3.min(flowList, (f) => f.target.stage),
+          },
+        };
+      }
+
+      // Return the stats for the set of all flows touching these nodes:
+      return { in: flowSetStats('flowsIn'), out: flowSetStats('flowsOut') };
+    }
+
+    // findNodeGroupOffset(nodeList):
+    //   Figure out where these Nodes want to be, and return the
+    //   appropriate y-offset value.
+    function findNodeGroupOffset(nodeList) {
+      // The population of flows to test = the combination of every
+      // last flow touching this group of Nodes:
+      const fStats = allFlowStats(nodeList),
+        totalIn = fStats.in.value,
+        totalOut = fStats.out.value;
+      // If there are no flows touching *either* side here, there's nothing
+      // to offset ourselves relative to, so we can exit early:
+      if (totalIn === 0 && totalOut === 0) { return 0; }
+
+      const nStats = nodeSetStats(nodeList),
+        // projectedSourceCenter =
+        //   the current Node group's weighted center
+        //     MINUS the weighted center of incoming Flows' targets
+        //     PLUS the weighted center of incoming Flows' sources.
+        // Thought exercise:
+        // If 100% of the value of the Node group is flowing in, then this is
+        // exactly equivalent to: *the weighted center of all sources*.
+        projectedSourceCenter
+          = (nStats.weight - fStats.in.targets.weight + fStats.in.sources.weight)
+            / nStats.value,
+        // projectedTargetCenter = the same idea in the other direction:
+        //   current Node group's weighted center
+        //     - outgoing weights' center
+        //     + final center of those weights
+        projectedTargetCenter
+          = (nStats.weight - fStats.out.sources.weight + fStats.out.targets.weight)
+            / nStats.value;
+
+      // Time to do the positioning calculations.
+      let goalY = 0;
+      if (totalOut === 0) {
+        // If we have only in-flows, it's simple:
+        // Center the current group relative only to its sources.
+        goalY = projectedSourceCenter;
+      } else if (totalIn === 0) {
+        // Only out-flows? Center this group on its targets:
+        goalY = projectedTargetCenter;
+      } else {
+        // There are flows both in & out. Find the slope between the centers:
+        const startStage = fStats.in.sources.maxSourceStage,
+          endStage = fStats.out.targets.minTargetStage,
+          slopeBetweenCenters
+            = (projectedTargetCenter - projectedSourceCenter)
+              / (endStage - startStage);
+        // Where along that line should this current group be centered?
+        goalY
+          = projectedSourceCenter
+            + (nStats.stage - startStage) * slopeBetweenCenters;
+      }
+
+      // We have a goal Y value! Return the offset from the current center:
+      return goalY - nStats.center;
     }
 
     // enforceValidNodePositions(stage):
@@ -429,42 +530,26 @@ d3.sankey = () => {
       });
     }
 
-    function relaxLeftToRight(factor) {
-      function weightedSource(f) { return sourceCenter(f) * f.value; }
-
-      stagesArr.forEach((s) => {
-        s.filter((n) => n.flowsIn.length)
-          .forEach((n) => {
-            // Value-weighted average of the y-position of source node centers
-            // linked to this node:
-            const y_position
-              = d3.sum(n.flowsIn, weightedSource) / valueSum(n.flowsIn);
-            n.y += (y_position - yCenter(n)) * factor;
-        });
-        // Make this stage's positions & flow sorting make sense again
-        // *now*, since they'll be used as the basis for weights in the
-        // next pass:
+    // processStages(stageList, factor):
+    //   Iterate over a list of stages in the given order, moving Nodes
+    //   and Flows around according to the given factor (which proceeds
+    //   from 0.99 downwards as the iterations continue).
+    function processStages(stageList, factor) {
+      stageList.forEach((s) => {
+        // Move each node to its ideal vertical position:
+        s.forEach((n) => { n.y += findNodeGroupOffset([n]) * factor; });
+        // Update this stage's node positions to be valid again *now*,
+        // since they'll be used as the basis for weights in the very
+        // next stage:
         enforceValidNodePositions(s);
+        // Update the flow sorting too; same reason:
         placeFlowsInsideNodes(s);
       });
-    }
-
-    function relaxRightToLeft(factor) {
-      function weightedTarget(f) { return targetCenter(f) * f.value; }
-
-      stagesArr.slice().reverse().forEach((s) => {
-        s.filter((n) => n.flowsOut.length)
-          .forEach((n) => {
-            // Value-weighted average of the y-positions of target node centers
-            // linked to this node:
-            const y_position
-              = d3.sum(n.flowsOut, weightedTarget) / valueSum(n.flowsOut);
-            n.y += (y_position - yCenter(n)) * factor;
-        });
-        // Fix up this stage before moving on (same as above):
-        enforceValidNodePositions(s);
-        placeFlowsInsideNodes(s);
-      });
+      // At the end of each round, do a proper final flow placement
+      // across the whole diagram. (Some locally-optimized flow choices
+      // don't work across the whole and need this resolution step
+      // before doing more balancing).
+      placeFlowsInsideNodes(nodes);
     }
 
     // Enough preamble. Lay out the nodes:
@@ -474,22 +559,14 @@ d3.sankey = () => {
     stagesArr.forEach((s) => { enforceValidNodePositions(s); });
     placeFlowsInsideNodes(nodes);
 
-    let counter = 0,
-      alpha = 1;
+    let [alpha, counter] = [1, 0];
     while (counter < iterations) {
       counter += 1;
-
       // Make each round of moves progressively weaker:
       alpha *= 0.99;
-      relaxRightToLeft(alpha);
-      // At the end of each round, do a proper final flow placement
-      // across the whole diagram. (Some locally-optimized flow choices
-      // don't work across the whole and need this resolution step
-      // before doing more balancing).
-      placeFlowsInsideNodes(nodes);
-
-      relaxLeftToRight(alpha);
-      placeFlowsInsideNodes(nodes);
+      // Run through stages left-to-right, then right-to-left:
+      processStages(stagesArr, alpha);
+      processStages(stagesArr.slice().reverse(), alpha);
     }
 
     // After the last layout adjustment, remember these node coordinates
@@ -529,5 +606,6 @@ d3.sankey = () => {
 
   return sankey;
 };
+
 // Make the linter happy about imported objects:
 /* global d3 */
