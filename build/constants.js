@@ -77,7 +77,7 @@ const fontMetrics
       name: 'Basic Budget',
       flows: "// Enter Flows between Nodes, like this:\n//         Source [AMOUNT] Target\n\nWages [1500] Budget\nOther [250] Budget\n\nBudget [450] Taxes\nBudget [420] Housing\nBudget [400] Food\nBudget [295] Transportation\nBudget [25] Savings\n\n// You can set a Node's color, like this:\n:Budget #708090\n//            ...or a color for a single Flow:\nBudget [160] Other Necessities #0F0\n\n// Use the controls below to customize\n// your diagram's appearance...",
       settings: {
-        node_spacing: 50,
+        node_height: 50,
         layout_style_auto: true,
         flow_outside_in: true,
         },
@@ -88,7 +88,7 @@ const fontMetrics
       name: 'Ranked Election',
       flows: '// Sample Ranked Election diagram\n\nGH - Round 1 [300000] GH - Round 2\nEF - Round 1 [220000] EF - Round 2\nCD - Round 1 [200000] CD - Round 2\nAB - Round 1 [10000] GH - Round 2\nAB - Round 1 [25000] EF - Round 2\nAB - Round 1 [20000] CD - Round 2\n\nGH - Round 2 [310000] GH - Round 3\nEF - Round 2 [245000] EF - Round 3\nCD - Round 2 [50000] GH - Round 3\nCD - Round 2 [95000] EF - Round 3\n\n// This line sets a custom gray color:\n:No further votes #555 <<\nAB - Round 1 [20000] No further votes\nCD - Round 2 [75000] No further votes',
       settings: {
-        node_spacing: 24,
+        node_height: 76,
         layout_style_exact: true,
         flow_inherit_from_source: true,
         },
@@ -99,7 +99,7 @@ const fontMetrics
       name: 'Job Search',
       flows: '// Sample Job Search diagram:\n\n// Flows:\nApplications [4] Interview\nApplications [9] Rejected\nApplications [4] No Answer\n\nInterview [2] No Offer\n\nInterview [2] 2nd Interview\n\n2nd Interview [2] Offer\n\nOffer [1] Declined\nOffer [1] Accepted',
       settings: {
-        node_spacing: 2,
+        node_height: 80,
         layout_style_auto: true,
         flow_inherit_from_target: true,
         },

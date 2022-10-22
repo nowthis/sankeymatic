@@ -4,7 +4,8 @@ d3.sankey = () => {
   const sankey = {};
   // Set by inputs:
   let nodeWidth = 9,
-      nodeSpacingFactor = 0.5,
+      nodeHeightFactor = 0.5,
+      nodeSpacingFactor = 0.85,
       size = { w: 1, h: 1 },
       nodes = [],
       flows = [],
@@ -13,7 +14,8 @@ d3.sankey = () => {
       autoLayout = true,
       // Calculated:
       stagesArr = [],
-      spaceBetweenNodes = 0,
+      initialNodeSpacing = 0,
+      minimumNodeSpacing = 0,
       furthestStage = 0;
 
   // ACCESSORS //
@@ -21,6 +23,11 @@ d3.sankey = () => {
   sankey.nodeWidth = function (x) {
     if (arguments.length) { nodeWidth = +x; return sankey; }
     return nodeWidth;
+  };
+
+  sankey.nodeHeightFactor = function (x) {
+    if (arguments.length) { nodeHeightFactor = +x; return sankey; }
+    return nodeHeightFactor;
   };
 
   sankey.nodeSpacingFactor = function (x) {
@@ -77,6 +84,10 @@ d3.sankey = () => {
   function targetCenter(f) { return f.target.y + f.ty + (f.dy / 2); }
   function sourceBottom(f) { return f.source.y + f.sy + f.dy; }
   function targetBottom(f) { return f.target.y + f.ty + f.dy; }
+
+  // Get the extreme bounds across a list of Nodes:
+  function leastY(nodeList) { return d3.min(nodeList, (n) => n.y); }
+  function greatestY(nodeList) { return d3.max(nodeList, (n) => yBottom(n)); }
 
   // connectFlowsToNodes: Populate flowsOut and flowsIn for each node.
   // When the source and target are not objects, assume they are indices.
@@ -329,19 +340,21 @@ d3.sankey = () => {
         // (If it's < 2, use 2; otherwise the slider has nothing to do.)
         allAvailablePadding = Math.max(2, size.h - greatestNodeCount);
 
-      // A nodeSpacingFactor of 1 means 'pad as much as possible without making
-      // these nodes less than a pixel tall'.
-      //   padding value for nSF of 1 =
-      //      allAvailablePadding / (# of spaces in the busiest stage)
-      // Calculate the actual spaceBetweenNodes value:
-      spaceBetweenNodes
-        = (nodeSpacingFactor * allAvailablePadding) / (greatestNodeCount - 1);
+      // Calculate spacing values.
 
+      // A nodeHeightFactor of 0 means: 'pad as much as possible without
+      // making any node less than 1 pixel tall'.
+      // Formula for the initial spacing value when nHF = 0:
+      //   allAvailablePadding / (# of spaces in the busiest stage)
+      initialNodeSpacing
+        = ((1 - nodeHeightFactor) * allAvailablePadding)
+          / (greatestNodeCount - 1);
+      minimumNodeSpacing = initialNodeSpacing * nodeSpacingFactor;
       // Finally, calculate the vertical scaling factor for all nodes, given the
-      // derived spaceBetweenNodes value and the diagram's height:
+      // derived initialNodeSpacing value and the diagram's height:
       const ky = d3.min(
         stagesArr,
-        (s) => (size.h - (s.length - 1) * spaceBetweenNodes) / valueSum(s)
+        (s) => (size.h - (s.length - 1) * initialNodeSpacing) / valueSum(s)
       );
 
       // Compute all the dy values using the now-known scale of the graph:
@@ -351,12 +364,12 @@ d3.sankey = () => {
 
       // Set the initial positions of all nodes.
       // The initial stage will start with all nodes centered vertically,
-      // separated by the spaceBetweenNodes.
+      // separated by the initialNodeSpacing.
       // Each stage afterwards will center on its combined source nodes.
       let targetY = size.h / 2;
       stagesArr.forEach((s, stageIndex) => {
         const stageSize
-          = (valueSum(s) * ky) + (spaceBetweenNodes * (s.length - 1));
+          = (valueSum(s) * ky) + (initialNodeSpacing * (s.length - 1));
         // If we're past the first stage, find the center of all the nodes
         // feeding into this stage so we can use that as the new center:
         if (stageIndex > 0) {
@@ -383,7 +396,7 @@ d3.sankey = () => {
         s.forEach((n) => {
           n.y = nextNodePos;
           // Find the y position of the next node:
-          nextNodePos = yBottom(n) + spaceBetweenNodes;
+          nextNodePos = yBottom(n) + initialNodeSpacing;
         });
       });
 
@@ -516,7 +529,7 @@ d3.sankey = () => {
           // If this node's top is above yPos, nudge the node down:
           if (n.y < yPos) { n.y = yPos; }
           // Set yPos to the next available y toward the bottom:
-          yPos = yBottom(n) + spaceBetweenNodes;
+          yPos = yBottom(n) + minimumNodeSpacing;
         });
 
         // ... if we've gone *past* the bottom, bump nodes back up.
@@ -525,7 +538,7 @@ d3.sankey = () => {
           // if this node's bottom is below yPos, nudge it up:
           if (yBottom(n) > yPos) { n.y = yPos - n.dy; }
           // Set yPos to the next available y toward the top:
-          yPos = n.y - spaceBetweenNodes;
+          yPos = n.y - minimumNodeSpacing;
         });
       }
 
@@ -534,7 +547,7 @@ d3.sankey = () => {
       function nodesAreAdjacent(n1, n2) {
         // Is the bottom of the 1st node + the minimum spacing essentially
         // the same as the 2nd node's top? (i.e. within a tenth of a 'pixel')
-        return (n2.y - spaceBetweenNodes - yBottom(n1)) < 0.1;
+        return (n2.y - minimumNodeSpacing - yBottom(n1)) < 0.1;
       }
 
       function centerNeighborGroups() {
@@ -613,6 +626,19 @@ d3.sankey = () => {
       placeFlowsInsideNodes(nodes);
     }
 
+    // reCenterDiagram:
+    // If (the vertical size of the space occupied by the nodes)
+    //  < (the total diagram's Height),
+    // then offset ALL Nodes' y positions to center the diagram:
+    function reCenterDiagram() {
+      const minY = leastY(nodes),
+          yH =  greatestY(nodes) - minY;
+      if (yH < size.h) {
+        const yOffset = (size.h / 2) - (minY + (yH / 2));
+        nodes.forEach((n) => { n.y += yOffset; });
+      }
+    }
+
     // Enough preamble. Lay out the nodes:
 
     initializeNodePositions();
@@ -628,6 +654,7 @@ d3.sankey = () => {
       // Run through stages left-to-right, then right-to-left:
       processStages(stagesArr, alpha);
       processStages(stagesArr.slice().reverse(), alpha);
+      reCenterDiagram();
     }
 
     // After the last layout adjustment, remember these node coordinates
@@ -654,6 +681,7 @@ d3.sankey = () => {
   sankey.layout = (iterations) => {
     // In case anything's changed since setup, re-generate our map:
     updateStagesArray();
+    // Iterate over the structure several times to make the layout nice:
     placeNodes(iterations);
     return sankey;
   };

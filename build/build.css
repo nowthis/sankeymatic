@@ -3,10 +3,12 @@ body { font-size: 13px; }
 .smalllabel { font-size: 11px; }
 
 /* Sizes for various controls: */
-.slider_tiny { width: 3em; }
-.slider_narrow { width: 6em; }
+.slider_xxsmall { width: 3em; }
+.slider_xsmall { width: 4.5em; }
+.slider_small { width: 6em; }
 .slider_medium { width: 9.5em; }
 
+.number_10s { width: 2.5em; }
 .number_100s { width: 3em; }
 .number_10000s { width: 4.25em; }
 
@@ -188,7 +190,7 @@ dfn {
 /* for items which need leftward breathing room: */
 .spaced_label,
 .spaced_checkbox {
-  margin-left: 1em;
+  margin-left: 0.8em;
 }
 
 .ui_head {

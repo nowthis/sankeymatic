@@ -94,22 +94,27 @@ Nodes<span id="node_options_hint">:</span></h2>
 <!-- tabindex="0" -->
 <div id="node_options" class="form_chunk">
 <p class="form_elements1">
-<span class="no_wrap"><label for="node_width"><strong>Width:</strong></label>
-<input id="node_width" type="number" class="wholenumber number_100s" min="0" value="9" step="1" onchange="process_sankey();"></span>
+<span class="no_wrap output_container" onmouseover="revealVal('node_height');" onmouseout="fadeVal('node_height');">
+<label for="node_height"><strong>Height:</strong></label>
+.<input id="node_height" class="slider_small" type="range" min="0" max="100" step="1" value="50" onfocus="revealVal('node_height');" onblur="fadeVal('node_height');" oninput="updateOutput('node_height'); process_sankey();" onchange="process_sankey();">|
+<output id="node_height_val" for="node_height" class="fade-init output_wide"></output></span>
 
 <span class="no_wrap output_container" onmouseover="revealVal('node_spacing');" onmouseout="fadeVal('node_spacing');">
 <label for="node_spacing" class="spaced_label"><strong>Spacing:</strong></label>
-<span class="smalllabel">0</span><input id="node_spacing" class="slider_medium" type="range" min="0" max="100" step="1" value="50" onfocus="revealVal('node_spacing');" onblur="fadeVal('node_spacing');" oninput="updateOutput('node_spacing'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">Max</span>
+<span class="smalllabel">0</span><input id="node_spacing" class="slider_small" type="range" min="0" max="100" step="1" value="85" onfocus="revealVal('node_spacing');" onblur="fadeVal('node_spacing');" oninput="updateOutput('node_spacing'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">Max</span>
 <output id="node_spacing_val" for="node_spacing" class="fade-init output_wide"></output></span>
 </p>
 
 <p class="form_elements2">
-<span class="no_wrap"><label for="node_border"><strong>Border:</strong></label>
-<input id="node_border" type="number" class="wholenumber number_100s" min="0" value="0" step="1" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="node_width"><strong>Width:</strong></label>
+<input id="node_width" type="number" class="wholenumber number_100s" min="0" value="9" step="1" onchange="process_sankey();"></span>
+
+<span class="no_wrap"><label for="node_border" class="spaced_label"><strong>Border:</strong></label>
+<input id="node_border" type="number" class="wholenumber number_10s" min="0" value="0" step="1" onchange="process_sankey();"></span>
 
 <span class="no_wrap output_container" onmouseover="revealVal('default_node_opacity');" onmouseout="fadeVal('default_node_opacity');">
 <label for="default_node_opacity" class="spaced_label"><strong>Opacity:</strong></label>
-<span class="smalllabel">0</span><input id="default_node_opacity" class="slider_narrow" type="range" min="0" max="1" step="0.05" value="1.0" onfocus="revealVal('default_node_opacity');" onblur="fadeVal('default_node_opacity');" oninput="updateOutput('default_node_opacity'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">1</span>
+<span class="smalllabel">0</span><input id="default_node_opacity" class="slider_xxsmall" type="range" min="0" max="1" step="0.05" value="1.0" onfocus="revealVal('default_node_opacity');" onblur="fadeVal('default_node_opacity');" oninput="updateOutput('default_node_opacity'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">1</span>
 <output id="default_node_opacity_val" for="default_node_opacity" class="fade-init output_medium"></output></span>
 </p>
 
@@ -189,12 +194,12 @@ Flows<span id="flow_options_hint">:</span></h2>
 <p class="form_elements1">
 <span class="no_wrap output_container" onmouseover="revealVal('default_flow_opacity');" onmouseout="fadeVal('default_flow_opacity');">
 <label for="default_flow_opacity"><strong>Opacity:</strong></label>
-<span class="smalllabel">0</span><input id="default_flow_opacity" class="slider_narrow" type="range" min="0" max="1" step="0.05" value="0.45" onfocus="revealVal('default_flow_opacity');" onblur="fadeVal('default_flow_opacity');" oninput="updateOutput('default_flow_opacity'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">1</span>
+<span class="smalllabel">0</span><input id="default_flow_opacity" class="slider_xsmall" type="range" min="0" max="1" step="0.05" value="0.45" onfocus="revealVal('default_flow_opacity');" onblur="fadeVal('default_flow_opacity');" oninput="updateOutput('default_flow_opacity'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">1</span>
 <output id="default_flow_opacity_val" for="default_flow_opacity" class="fade-init output_medium"></output></span>
 
 <span class="no_wrap output_container" onmouseover="revealVal('curvature');" onmouseout="fadeVal('curvature');">
 <label for="curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
-|<input id="curvature" class="slider_narrow" type="range" min="0.1" max="0.9" step="0.04" value="0.5" onfocus="revealVal('curvature');" onblur="fadeVal('curvature');" oninput="updateOutput('curvature'); process_sankey();" onchange="process_sankey();">(
+|<input id="curvature" class="slider_small" type="range" min="0.1" max="0.9" step="0.04" value="0.5" onfocus="revealVal('curvature');" onblur="fadeVal('curvature');" oninput="updateOutput('curvature'); process_sankey();" onchange="process_sankey();">(
 <output id="curvature_val" for="curvature" class="fade-init output_medium_long"></output></span>
 </p>
 
@@ -244,7 +249,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 
 <span class="no_wrap output_container spaced_label" onmouseover="revealVal('label_highlight');" onmouseout="fadeVal('label_highlight');">
 <label for="label_highlight" id="highlight_fld_label"><strong>Highlight:</strong></label>
-<span class="smalllabel">0</span><input id="label_highlight" class="slider_narrow" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('label_highlight');" onblur="fadeVal('label_highlight');" oninput="updateOutput('label_highlight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">Max</span>
+<span class="smalllabel">0</span><input id="label_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('label_highlight');" onblur="fadeVal('label_highlight');" oninput="updateOutput('label_highlight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">Max</span>
 <output id="label_highlight_val" for="label_highlight" class="fade-init output_medium"></output></span>
 </p>
 
@@ -266,7 +271,7 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 
 <span class="no_wrap output_container" onmouseover="revealVal('font_weight');" onmouseout="fadeVal('font_weight');">
 <label for="font_weight"><strong>Style:</strong></label>
-<span class="smalllabel font_light">Light</span><input id="font_weight" class="slider_tiny" type="range" min="100" max="700" step="300" value="400" onfocus="revealVal('font_weight');" onblur="fadeVal('font_weight');" oninput="updateOutput('font_weight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel font_bolder">Bold</span>
+<span class="smalllabel font_light">Light</span><input id="font_weight" class="slider_xxsmall" type="range" min="100" max="700" step="300" value="400" onfocus="revealVal('font_weight');" onblur="fadeVal('font_weight');" oninput="updateOutput('font_weight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel font_bolder">Bold</span>
 <output id="font_weight_val" for="font_weight" class="fade-init output_medium"></output></span>
 </p>
 

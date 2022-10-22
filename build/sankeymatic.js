@@ -45,6 +45,7 @@ glob.updateOutput = (fld) => {
             default_node_opacity: '.2',
             default_flow_opacity: '.2',
             label_highlight: '.2',
+            node_height: '%',
             node_spacing: '%',
         };
     switch (formats[fld]) {
@@ -668,9 +669,10 @@ function render_sankey(allNodes, allFlows, cfg) {
     // specific coordinates.)
     sankeyObj.size({ w: graph.w, h: graph.h })
         .nodeWidth(cfg.node_width)
+        .nodeHeightFactor(cfg.node_height / 100)
         .nodeSpacingFactor(cfg.node_spacing / 100)
         .autoLayout(cfg.auto_layout)
-        .layout(50); // Note: The 'layout()' step must be LAST.
+        .layout(25); // Note: The 'layout()' step must be LAST.
 
     // We *update* the final stages array here, because in theory it may
     // have been changed. The final array will be used for some layout
@@ -1501,7 +1503,8 @@ glob.process_sankey = () => {
         default_node_opacity: 1.0,
         mention_sankeymatic: 1,
         node_width: 9,
-        node_spacing: 50,
+        node_height: 50,
+        node_spacing: 85,
         node_border: 0,
         reverse_graph: 0,
         justify_origins: 0,
@@ -1643,8 +1646,9 @@ glob.process_sankey = () => {
     // Whole positive numbers:
     (['canvas_width', 'canvas_height', 'font_size',
         'top_margin', 'right_margin', 'bottom_margin',
-        'left_margin', 'font_weight', 'node_spacing',
-        'node_width', 'node_border']).forEach((fldName) => {
+        'left_margin', 'font_weight', 'node_height',
+        'node_width', 'node_spacing',
+        'node_border']).forEach((fldName) => {
         const fldVal = el(fldName).value;
         if (fldVal.length < 10 && fldVal.match(/^\d+$/)) {
             approvedCfg[fldName] = Number(fldVal);
