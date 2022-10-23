@@ -330,32 +330,40 @@ d3.sankey = () => {
 
     // Set up the scaling factor and the initial x & y of all the Nodes:
     function initializeNodePositions() {
+      // First, calculate the spacing values.
       // How many nodes are in the 'busiest' stage?
-      // Note: If every stage has only 1 node, this causes a divide-by-0
-      // error..so make sure this is always at least 2:
-      const greatestNodeCount
-        = Math.max(2, d3.max(stagesArr, (s) => s.length)),
-        // What if each node in that stage got 1 pixel?
+      const greatestNodeCount = d3.max(stagesArr, (s) => s.length);
+
+      let ky = 0;
+      // Special case: What if there's only one node in every stage?
+      // That calculation is very different:
+      if (greatestNodeCount === 1) {
+        [initialNodeSpacing, minimumNodeSpacing] = [0, 0];
+        ky
+          = d3.min(stagesArr, (s) => size.h / valueSum(s)) * nodeHeightFactor;
+      } else {
+        // What if each node in the busiest stage got 1 pixel?
         // Figure out how many pixels would be left over.
-        // (If it's < 2, use 2; otherwise the slider has nothing to do.)
-        allAvailablePadding = Math.max(2, size.h - greatestNodeCount);
+        // (If pixels < 2, use 2; otherwise the slider has nothing to do.)
+        const allAvailablePadding = Math.max(2, size.h - greatestNodeCount);
 
-      // Calculate spacing values.
-
-      // A nodeHeightFactor of 0 means: 'pad as much as possible without
-      // making any node less than 1 pixel tall'.
-      // Formula for the initial spacing value when nHF = 0:
-      //   allAvailablePadding / (# of spaces in the busiest stage)
-      initialNodeSpacing
-        = ((1 - nodeHeightFactor) * allAvailablePadding)
-          / (greatestNodeCount - 1);
-      minimumNodeSpacing = initialNodeSpacing * nodeSpacingFactor;
-      // Finally, calculate the vertical scaling factor for all nodes, given the
-      // derived initialNodeSpacing value and the diagram's height:
-      const ky = d3.min(
-        stagesArr,
-        (s) => (size.h - (s.length - 1) * initialNodeSpacing) / valueSum(s)
-      );
+        // A nodeHeightFactor of 0 means: 'pad as much as possible
+        // without making any node less than 1 pixel tall'.
+        // Formula for the initial spacing value when nHF = 0:
+        //   allAvailablePadding / (# of spaces in the busiest stage)
+        initialNodeSpacing
+          = ((1 - nodeHeightFactor) * allAvailablePadding)
+            / (greatestNodeCount - 1);
+        minimumNodeSpacing = initialNodeSpacing * nodeSpacingFactor;
+        // Finally, calculate the vertical scaling factor for all
+        // nodes, given initialNodeSpacing & the diagram's height:
+        ky
+          = d3.min(
+            stagesArr,
+            (s) => (size.h - (s.length - 1) * initialNodeSpacing)
+              / valueSum(s)
+          );
+      }
 
       // Compute all the dy values using the now-known scale of the graph:
       flows.forEach((f) => { f.dy = f.value * ky; });
