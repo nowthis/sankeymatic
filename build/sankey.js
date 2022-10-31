@@ -14,8 +14,8 @@ d3.sankey = () => {
       autoLayout = true,
       // Calculated:
       stagesArr = [],
-      initialNodeSpacing = 0,
-      minimumNodeSpacing = 0,
+      maximumNodeSpacing = 0,
+      actualNodeSpacing = 0,
       furthestStage = 0;
 
   // ACCESSORS //
@@ -338,7 +338,7 @@ d3.sankey = () => {
       // Special case: What if there's only one node in every stage?
       // That calculation is very different:
       if (greatestNodeCount === 1) {
-        [initialNodeSpacing, minimumNodeSpacing] = [0, 0];
+        [maximumNodeSpacing, actualNodeSpacing] = [0, 0];
         ky
           = d3.min(stagesArr, (s) => size.h / valueSum(s)) * nodeHeightFactor;
       } else {
@@ -351,16 +351,16 @@ d3.sankey = () => {
         // without making any node less than 1 pixel tall'.
         // Formula for the initial spacing value when nHF = 0:
         //   allAvailablePadding / (# of spaces in the busiest stage)
-        initialNodeSpacing
+        maximumNodeSpacing
           = ((1 - nodeHeightFactor) * allAvailablePadding)
             / (greatestNodeCount - 1);
-        minimumNodeSpacing = initialNodeSpacing * nodeSpacingFactor;
+        actualNodeSpacing = maximumNodeSpacing * nodeSpacingFactor;
         // Finally, calculate the vertical scaling factor for all
-        // nodes, given initialNodeSpacing & the diagram's height:
+        // nodes, given maximumNodeSpacing & the diagram's height:
         ky
           = d3.min(
             stagesArr,
-            (s) => (size.h - (s.length - 1) * initialNodeSpacing)
+            (s) => (size.h - (s.length - 1) * maximumNodeSpacing)
               / valueSum(s)
           );
       }
@@ -372,12 +372,12 @@ d3.sankey = () => {
 
       // Set the initial positions of all nodes.
       // The initial stage will start with all nodes centered vertically,
-      // separated by the initialNodeSpacing.
+      // separated by the actualNodeSpacing.
       // Each stage afterwards will center on its combined source nodes.
       let targetY = size.h / 2;
       stagesArr.forEach((s, stageIndex) => {
         const stageSize
-          = (valueSum(s) * ky) + (initialNodeSpacing * (s.length - 1));
+          = (valueSum(s) * ky) + (actualNodeSpacing * (s.length - 1));
         // If we're past the first stage, find the center of all the nodes
         // feeding into this stage so we can use that as the new center:
         if (stageIndex > 0) {
@@ -404,7 +404,7 @@ d3.sankey = () => {
         s.forEach((n) => {
           n.y = nextNodePos;
           // Find the y position of the next node:
-          nextNodePos = yBottom(n) + initialNodeSpacing;
+          nextNodePos = yBottom(n) + actualNodeSpacing;
         });
       });
 
@@ -529,7 +529,7 @@ d3.sankey = () => {
     function updateStageCentering(s) {
       // enforceValidNodePositions():
       //   Make sure this stage doesn't extend past either the top or
-      //   bottom, and preserve the minimum spacing between nodes.
+      //   bottom, and preserve the required spacing between nodes.
       function enforceValidNodePositions() {
         // Nudge down any nodes which are past the top:
         let yPos = 0; // = the current available y closest to the top
@@ -537,7 +537,7 @@ d3.sankey = () => {
           // If this node's top is above yPos, nudge the node down:
           if (n.y < yPos) { n.y = yPos; }
           // Set yPos to the next available y toward the bottom:
-          yPos = yBottom(n) + minimumNodeSpacing;
+          yPos = yBottom(n) + actualNodeSpacing;
         });
 
         // ... if we've gone *past* the bottom, bump nodes back up.
@@ -546,16 +546,16 @@ d3.sankey = () => {
           // if this node's bottom is below yPos, nudge it up:
           if (yBottom(n) > yPos) { n.y = yPos - n.dy; }
           // Set yPos to the next available y toward the top:
-          yPos = n.y - minimumNodeSpacing;
+          yPos = n.y - actualNodeSpacing;
         });
       }
 
       // nodesAreAdjacent: Given two nodes *in height order*, is the top of n2
       // bumping up against n1's bottom edge?
       function nodesAreAdjacent(n1, n2) {
-        // Is the bottom of the 1st node + the minimum spacing essentially
+        // Is the bottom of the 1st node + the node spacing essentially
         // the same as the 2nd node's top? (i.e. within a tenth of a 'pixel')
-        return (n2.y - minimumNodeSpacing - yBottom(n1)) < 0.1;
+        return (n2.y - actualNodeSpacing - yBottom(n1)) < 0.1;
       }
 
       function centerNeighborGroups() {
@@ -593,7 +593,7 @@ d3.sankey = () => {
 
       s.sort(autoLayout ? byTopEdges : bySourceOrder);
 
-      // Make sure any overlapping nodes preserve the minimum space.
+      // Make sure any overlapping nodes preserve the required spacing.
       // Run the first nudge of all to see what bumps against each other:
       enforceValidNodePositions();
 
@@ -621,7 +621,7 @@ d3.sankey = () => {
         // Move each node to its ideal vertical position:
         s.forEach((n) => { n.y += findNodeGroupOffset([n]) * factor; });
         // Update this stage's node positions to incorporate their proximity
-        // & minimum spacing *now*, since they'll be used as the basis for
+        // & required spacing *now*, since they'll be used as the basis for
         // weights in the very next stage:
         updateStageCentering(s);
         // Update the flow sorting too; same reason:
