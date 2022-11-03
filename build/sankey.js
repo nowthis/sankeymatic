@@ -122,6 +122,36 @@ d3.sankey = () => {
     });
   }
 
+  // allFlowStats(nodeList): provides all components necessary to make
+  // weighted-center calculations. These are used to decide where a
+  // group of nodes would ideally 'want' to be.
+  function allFlowStats(nodeList) {
+    // flowSetStats: get the total weight+value from a group of flows
+    function flowSetStats(whichFlows) {
+      // Get every flow touching one side & treat them as one list:
+      const flowList = nodeList.map((n) => n[whichFlows]).flat();
+      // If 0 flows, return enough structure to satisfy the caller:
+      if (flowList.length === 0) {
+        return { value: 0, sources: {}, targets: {} };
+      }
+
+      return {
+        value: valueSum(flowList),
+        sources: {
+          weight: d3.sum(flowList, (f) => sourceCenter(f) * f.value),
+          maxSourceStage: d3.max(flowList, (f) => f.source.stage),
+        },
+        targets: {
+          weight: d3.sum(flowList, (f) => targetCenter(f) * f.value),
+          minTargetStage: d3.min(flowList, (f) => f.target.stage),
+        },
+      };
+    }
+
+    // Return the stats for the set of all flows touching these nodes:
+    return { in: flowSetStats('flowsIn'), out: flowSetStats('flowsOut') };
+  }
+
   // placeFlowsInsideNodes(nodeList):
   //   Compute the y-offset of every flow's source and target endpoints,
   //   relative to the each node's y-position.
@@ -136,11 +166,29 @@ d3.sankey = () => {
     //      - TARGETS = we're placing the targets of n.flowsIn
     //      - SOURCES = we're placing the sources of n.flowsOut
     function sortFlows(n, placing) {
-      const flowsToSort = placing === TARGETS ? n.flowsIn : n.flowsOut,
+      const fStats = allFlowStats([n]),
+        [flowsToSort, totalFlowValue, totalFlowWeight]
+          = (placing === TARGETS)
+            ? [n.flowsIn, n.totalIn, fStats.in.sources.weight]
+            : [n.flowsOut, n.totalOut, fStats.out.targets.weight],
         // Make a Set of flow IDs we can delete from as we go:
         flowsRemaining = new Set(flowsToSort.map((f) => f.index)),
-        // upper/lower bounds = the current limits of the available space.
-        bounds = { upper: n.y, lower: n.y + d3.sum(flowsToSort, (f) => f.dy) };
+        // Calculate how tall the flow group is (may be less than
+        // n.dy):
+        totalFlowSpan = d3.sum(flowsToSort, (f) => f.dy),
+        // Attach flows to the *top* of the range, *except* when:
+        // 1) the entire node's value is not all flowing somewhere, AND
+        // 2) the center of the flows which *are* attached is below the
+        //    node's own center.
+        flowPosition
+          = (totalFlowValue < n.value)
+              && ((totalFlowWeight / totalFlowValue) > yCenter(n))
+            ? BOTTOM : TOP,
+        // upper/lower bounds = the range where flows may attach
+        bounds
+          = flowPosition === TOP
+            ? { upper: n.y, lower: n.y + totalFlowSpan }
+            : { upper: yBottom(n) - totalFlowSpan, lower: yBottom(n) };
         // Reminder: In SVG-land, y-axis coordinates are inverted...
         //   "upper" & "lower" are meant visually here, not numerically.
 
@@ -431,36 +479,6 @@ d3.sankey = () => {
         n.flowsOut.forEach((f) => { f.sy = sy; sy += f.dy; });
         n.flowsIn.forEach((f) => { f.ty = ty; ty += f.dy; });
       });
-    }
-
-    // allFlowStats(nodeList): provides all components necessary to make
-    // weighted-center calculations. These are used to decide where a
-    // group of nodes would ideally 'want' to be.
-    function allFlowStats(nodeList) {
-      // flowSetStats: get the total weight+value from an assortment of flows
-      function flowSetStats(whichFlows) {
-        // Get every flow touching one side & treat them as one list:
-        const flowList = nodeList.map((n) => n[whichFlows]).flat();
-        // If 0 flows, return enough structure to satisfy the caller:
-        if (flowList.length === 0) {
-          return { value: 0, sources: {}, targets: {} };
-        }
-
-        return {
-          value: valueSum(flowList),
-          sources: {
-            weight: d3.sum(flowList, (f) => sourceCenter(f) * f.value),
-            maxSourceStage: d3.max(flowList, (f) => f.source.stage),
-          },
-          targets: {
-            weight: d3.sum(flowList, (f) => targetCenter(f) * f.value),
-            minTargetStage: d3.min(flowList, (f) => f.target.stage),
-          },
-        };
-      }
-
-      // Return the stats for the set of all flows touching these nodes:
-      return { in: flowSetStats('flowsIn'), out: flowSetStats('flowsOut') };
     }
 
     // findNodeGroupOffset(nodeList):
