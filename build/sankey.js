@@ -526,9 +526,11 @@ d3.sankey = () => {
         // There are flows both in & out. Find the slope between the centers:
         const startStage = fStats.in.sources.maxSourceStage,
           endStage = fStats.out.targets.minTargetStage,
+          stageDistance = endStage - startStage,
           slopeBetweenCenters
-            = (projectedTargetCenter - projectedSourceCenter)
-              / (endStage - startStage);
+            = stageDistance !== 0 // Avoid divide-by-0 error
+              ? (projectedTargetCenter - projectedSourceCenter) / stageDistance
+              : 0;
         // Where along that line should this current group be centered?
         goalY
           = projectedSourceCenter
