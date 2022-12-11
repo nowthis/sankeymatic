@@ -327,6 +327,18 @@ For fair comparisons <em>between</em> diagrams:<br />
 Diagram Scales match as closely as possible.
 </p>
 
+<h3 class="ui_head" onclick="togglePanel('debug_options');"><span id="debug_options_indicator" class="indicator">+</span>Tools for Debugging<span id="debug_options_hint">...</span></h3>
+<div id="debug_options" class="form_chunk" style="display: none;">
+<div class="form_elements1">
+  <span class="no_wrap output_container" onmouseover="revealVal('iterations');" onmouseout="fadeVal('iterations');">
+    <label for="iterations" class="spaced_label"><strong># of Layout Iterations:</strong></label>
+    <span class="smalllabel">0</span>
+    <input id="iterations" class="slider_small" type="range" min="0" max="30" step="1" value="25" onfocus="revealVal('iterations');" onblur="fadeVal('iterations');" oninput="updateOutput('iterations'); process_sankey();" onchange="process_sankey();">
+    <span class="smalllabel">30</span>
+    <output id="iterations_val" for="iterations" class="fade-init output_medium_long"></output></span>
+  </div>
+</div>
+
 </div>
 
 <!-- EXPORT -->

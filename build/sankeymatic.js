@@ -672,7 +672,7 @@ function render_sankey(allNodes, allFlows, cfg) {
         .nodeHeightFactor(cfg.node_height / 100)
         .nodeSpacingFactor(cfg.node_spacing / 100)
         .autoLayout(cfg.auto_layout)
-        .layout(25); // Note: The 'layout()' step must be LAST.
+        .layout(cfg.iterations); // Note: The 'layout()' step must be LAST
 
     // We *update* the final stages array here, because in theory it may
     // have been changed. The final array will be used for some layout
@@ -1491,6 +1491,7 @@ glob.process_sankey = () => {
     // Values the user enters will override these (if present & valid).
     const approvedCfg = {
         auto_layout: true,
+        iterations: 25,
         include_values_in_node_labels: 1,
         show_labels: 1,
         label_pos: 'inside',
@@ -1648,7 +1649,7 @@ glob.process_sankey = () => {
         'top_margin', 'right_margin', 'bottom_margin',
         'left_margin', 'font_weight', 'node_height',
         'node_width', 'node_spacing',
-        'node_border']).forEach((fldName) => {
+        'node_border', 'iterations']).forEach((fldName) => {
         const fldVal = el(fldName).value;
         if (fldVal.length < 10 && fldVal.match(/^\d+$/)) {
             approvedCfg[fldName] = Number(fldVal);
