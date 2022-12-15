@@ -589,10 +589,16 @@ function render_sankey(allNodes, allFlows, cfg) {
   // sizes and calculate how much room has to be reserved for them (and
   // subtracted from the graph area):
 
+  // shadowFilter(i): true/false value indicating whether to display an item.
+  // Normally shadows are hidden, but the reveal_shadows flag can override.
+  // i can be either a node or a flow.
+  function shadowFilter(i) { return !i.isAShadow || cfg.reveal_shadows; }
+
   if (cfg.show_labels) {
     // Set up 'labelText' for all the Nodes. (This is done earlier than
     // it used to be, but we need to know now for the sake of layout):
-    allNodes.forEach((n) => {
+    allNodes.filter(shadowFilter)
+      .forEach((n) => {
       n.labelText
         = cfg.include_values_in_node_labels
           ? `${n.name}: ${withUnits(n.value)}` : n.name;
@@ -717,7 +723,8 @@ function render_sankey(allNodes, allFlows, cfg) {
 
   // Fill in presentation values for each Node (so the render routine
   // doesn't have to do any thinking):
-  allNodes.forEach((n) => {
+  allNodes.filter(shadowFilter)
+    .forEach((n) => {
     n.dom_id = `r${n.index}`; // r0, r1... ('r' = '<rect>')
     // Everything with this class value will move with the Node when it is
     // dragged:
@@ -734,7 +741,8 @@ function render_sankey(allNodes, allFlows, cfg) {
       // a word-ish value (rather than crash):
       const firstBlock
         = (/^\s*(\S+)/.exec(n.name) || ['', 'name-is-blank'])[1];
-      n.color = colorScaleFn(firstBlock);
+      // Don't use up colors on shadow nodes:
+      n.color = n.isAShadow ? '#999' : colorScaleFn(firstBlock);
     }
     // Now that we're guaranteed a color, we can calculate the border shade:
     n.border_color
@@ -785,7 +793,8 @@ function render_sankey(allNodes, allFlows, cfg) {
   });
 
   // ...and fill in more Flow details as well:
-  allFlows.forEach((f) => {
+  allFlows.filter(shadowFilter)
+    .forEach((f) => {
     f.dom_id = `flow${f.index}`; // flow0, flow1...
     f.tooltip
       = `${f.source.name} → ${f.target.name}: ${withUnits(f.value)}`;
@@ -797,10 +806,13 @@ function render_sankey(allNodes, allFlows, cfg) {
     // Derive any missing Flow colors.
     if (f.color === '') {
       // Stroke Color priority order:
+      // 0. If it's a shadow, just color it gray.
       // 1. color given directly to the flow (filtered out above)
       // 2. inheritance-from-node-with-specific-paint-direction
       // 3. default-inheritance-direction OR default flow color
-      if (f.source.paint_right) {
+      if (f.isAShadow) {
+        f.color = '#999';
+      } else if (f.source.paint_right) {
         f.color = f.source.color;
       } else if (f.target.paint_left) {
         f.color = f.target.color;
@@ -894,7 +906,7 @@ function render_sankey(allNodes, allFlows, cfg) {
   const diagFlows = diagMain.append('g')
       .attr('id', 'sankey_flows')
       .selectAll()
-      .data(allFlows)
+      .data(allFlows.filter(shadowFilter))
       .enter()
       .append('path')
       .attr('id', (f) => f.dom_id)
@@ -906,9 +918,11 @@ function render_sankey(allNodes, allFlows, cfg) {
       // add emphasis-on-hover behavior:
       .on('mouseover', turnOnFlowHoverEffects)
       .on('mouseout', turnOffFlowHoverEffects)
-      // Sort flows to be rendered from largest to smallest
-      // (so if flows cross, the smaller ones are drawn on top):
-      .sort((a, b) => b.dy - a.dy);
+      // Sort flows to be rendered:
+      // first from non-Shadows to Shadows,
+      // then from largest to smallest (so if flows cross, the
+      // smaller ones are drawn on top):
+      .sort((a, b) => a.isAShadow - b.isAShadow || b.dy - a.dy);
 
   // Add a tooltip for each flow:
   diagFlows.append('title').text((f) => f.tooltip);
@@ -1132,7 +1146,7 @@ function render_sankey(allNodes, allFlows, cfg) {
   const diagNodes = diagMain.append('g')
     .attr('id', 'sankey_nodes')
     .selectAll('.node')
-    .data(allNodes)
+    .data(allNodes.filter(shadowFilter))
     .enter()
     .append('g')
     .attr('class', 'node')
@@ -1198,7 +1212,7 @@ function render_sankey(allNodes, allFlows, cfg) {
   if (cfg.show_labels) {
     // Add labels in a distinct layer on the top (so nodes can't block them)
     diagLabels.selectAll()
-      .data(allNodes)
+      .data(allNodes.filter(shadowFilter))
       .enter()
       .append('text')
       .attr('id', (n) => n.label.dom_id)
@@ -1212,7 +1226,8 @@ function render_sankey(allNodes, allFlows, cfg) {
       .text((n) => n.labelText);
 
     // For any nodes with a label highlight defined, render it:
-    allNodes.filter((n) => n.label.bg)
+    allNodes.filter(shadowFilter)
+      .filter((n) => n.label.bg)
       .forEach((n) => {
       // Use each label's size to make custom round-rects underneath:
       const labelTextSelector = `#${n.label.dom_id}`,
@@ -1244,7 +1259,8 @@ function render_sankey(allNodes, allFlows, cfg) {
     const movedNodes = new Set(glob.rememberedMoves.keys());
 
     // Look for all node objects matching a name in the list:
-    allNodes.filter((n) => movedNodes.has(n.name))
+    allNodes.filter(shadowFilter)
+      .filter((n) => movedNodes.has(n.name))
       .forEach((n) => {
         n.move = glob.rememberedMoves.get(n.name);
         // Make this move visible in the diagram:
@@ -1497,6 +1513,7 @@ glob.process_sankey = () => {
     label_pos: 'inside',
     canvas_width: 600,
     canvas_height: 600,
+    reveal_shadows: 0,
     font_size: 15,
     font_weight: 400,
     top_margin: 18, right_margin: 12, bottom_margin: 20, left_margin: 12,
@@ -1777,7 +1794,7 @@ glob.process_sankey = () => {
   // Checkboxes:
   (['include_values_in_node_labels', 'show_labels',
     'background_transparent', 'justify_origins', 'justify_ends',
-    'mention_sankeymatic']).forEach((fldName) => {
+    'mention_sankeymatic', 'reveal_shadows']).forEach((fldName) => {
     approvedCfg[fldName] = el(fldName).checked;
   });
 

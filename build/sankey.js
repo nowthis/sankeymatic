@@ -89,6 +89,10 @@ d3.sankey = () => {
   function leastY(nodeList) { return d3.min(nodeList, (n) => n.y); }
   function greatestY(nodeList) { return d3.max(nodeList, (n) => yBottom(n)); }
 
+  // Sorting functions:
+  function bySourceOrder(a, b) { return a.sourceRow - b.sourceRow; }
+  function byTopEdges(a, b) { return a.y - b.y; }
+
   // connectFlowsToNodes: Populate flowsOut and flowsIn for each node.
   // When the source and target are not objects, assume they are indices.
   function connectFlowsToNodes() {
@@ -96,6 +100,8 @@ d3.sankey = () => {
     nodes.forEach((n) => {
       n.flowsOut = [];  // Flows which use this node as their source.
       n.flowsIn = [];   // Flows which use this node as their target.
+      // Mark these as real nodes we want to see:
+      n.isAShadow = false;
     });
 
     // Connect each flow to its two nodes:
@@ -107,6 +113,11 @@ d3.sankey = () => {
       // Add this flow to the affected source & target:
       f.source.flowsOut.push(f);
       f.target.flowsIn.push(f);
+      // By default, real flows are used when sorting/placing within a node.
+      f.useForVisiblePlacing = true;
+      // Mark these as real flows we want to see:
+      f.isAShadow = false;
+      f.hasAShadow = false;
     });
   }
 
@@ -129,20 +140,25 @@ d3.sankey = () => {
     // flowSetStats: get the total weight+value from a group of flows
     function flowSetStats(whichFlows) {
       // Get every flow touching one side & treat them as one list:
-      const flowList = nodeList.map((n) => n[whichFlows]).flat();
+      const flowList
+        = nodeList
+            .map((n) => n[whichFlows])
+            .flat()
+            // Use the weighted value of a flow (this handles shadows):
+            .filter((f) => f.weightedValue > 0);
       // If 0 flows, return enough structure to satisfy the caller:
       if (flowList.length === 0) {
-        return { value: 0, sources: {}, targets: {} };
+        return { value: 0, sources: { weight: 0 }, targets: { weight: 0 } };
       }
 
       return {
-        value: valueSum(flowList),
+        value: d3.sum(flowList, (f) => f.weightedValue),
         sources: {
-          weight: d3.sum(flowList, (f) => sourceCenter(f) * f.value),
+          weight: d3.sum(flowList, (f) => sourceCenter(f) * f.weightedValue),
           maxSourceStage: d3.max(flowList, (f) => f.source.stage),
         },
         targets: {
-          weight: d3.sum(flowList, (f) => targetCenter(f) * f.value),
+          weight: d3.sum(flowList, (f) => targetCenter(f) * f.weightedValue),
           minTargetStage: d3.min(flowList, (f) => f.target.stage),
         },
       };
@@ -173,9 +189,14 @@ d3.sankey = () => {
             : [n.flowsOut, n.totalOut, fStats.out.targets.weight],
         // Make a Set of flow IDs we can delete from as we go:
         flowsRemaining = new Set(flowsToSort.map((f) => f.index)),
-        // Calculate how tall the flow group is (may be less than
-        // n.dy):
-        totalFlowSpan = d3.sum(flowsToSort, (f) => f.dy),
+        // Calculate how tall the flow group is which will attach to this
+        // node (may be less than n.dy):
+        totalFlowSpan = d3.sum(
+          // Only count the space which is needed for visible flows (when
+          // the node is real) OR for flows meeting a shadow node:
+          flowsToSort.filter((f) => !f.isAShadow || n.isAShadow),
+          (f) => f.dy
+        ),
         // Attach flows to the *top* of the range, *except* when:
         // 1) the entire node's value is not all flowing somewhere, AND
         // 2) the center of the flows which *are* attached is below the
@@ -194,6 +215,10 @@ d3.sankey = () => {
 
       // placeFlow(f, y): Update a flow's position
       function placeFlow(f, newTopY) {
+        // Is the flow actually in the queue? Exit if not. (This can happen
+        // when we're placing a shadow flow and offer to update the original
+        // flow's Y, but it's in some other stage.)
+        if (!flowsRemaining.has(f.index)) { return; }
         // sy & ty (source/target y) are the vertical *offsets* at each end
         // of a flow, determining where below the node's top edge the flow's
         // top will meet.
@@ -202,23 +227,35 @@ d3.sankey = () => {
         } else {
           f.sy = newTopY - f.source.y;
         }
+        // Drop the flow we just placed from the queue:
+        flowsRemaining.delete(f.index);
       }
 
       // placeFlowAt(edge, fIndex):
       //   Update the bound, set this flow's offset, update the queue.
       function placeFlowAt(edge, fIndex) {
         const f = flows[fIndex];
+        let newY = 0;
         if (edge === TOP) {
-          placeFlow(f, bounds.upper);
-          // Move the upper bound DOWN by the flow width (after using it):
-          bounds.upper += f.dy;
+          newY = bounds.upper;
+          // If this is real, move the upper bound DOWN.
+          if (f.useForVisiblePlacing || n.isAShadow) { bounds.upper += f.dy; }
         } else { // edge === BOTTOM
-          // Move the lower bound UP by this flow width FIRST, to get both
-          // the flow's new top & the range's new bottom:
-          bounds.lower -= f.dy;
-          placeFlow(f, bounds.lower);
+          // Make room at the bottom of the range for this flow:
+          newY = bounds.lower - f.dy;
+          // If this is real, move the lower bound UP to match:
+          if (f.useForVisiblePlacing || n.isAShadow) { bounds.lower = newY; }
         }
-        flowsRemaining.delete(fIndex); // Drop this flow from the queue
+
+        // Put the flow where we just decided & drop it from the queue:
+        placeFlow(f, newY);
+
+        if (f.useForVisiblePlacing && f.isAShadow) {
+          // If this flow should be used for placing a real one AND is a
+          // shadow flow, then copy its new position to the true flow & drop
+          // that other flow from the queue too:
+          placeFlow(flows[f.shadowOf], newY);
+        }
       }
 
       // slopeData keys are the product of an 'edge' & a 'placing' value:
@@ -233,16 +270,26 @@ d3.sankey = () => {
       //   Figure out which flow is worst off (slope-wise) and place it.
       //   edge = TOP or BOTTOM
       function placeUnhappiestFlowAt(edge) {
+        // The queue may have been drained early. Guard against that:
+        if (!flowsRemaining.size) { return; }
         const sKey = edge * placing,
           slopeOf = slopeData[sKey].f,
           // flowIndex = the ID of the unhappiest flow
           flowIndex = Array.from(flowsRemaining)
+            // Exclude flows with shadows; they'll get their position
+            // assigned when their shadow gets placed:
+            .filter((i) => !flows[i].hasAShadow)
             // Sort flows by the right slopes in the correct order (asc/desc):
-            .sort((a, b) => (
-                slopeData[sKey].dir * (slopeOf(flows[a]) - slopeOf(flows[b])))
+            .sort(
+              (a, b) => slopeData[sKey].dir * (slopeOf(flows[a]) - slopeOf(flows[b]))
                 // If there's a tie, sort by x-distance (ascending):
-                || (flows[a].dx - flows[b].dx))[0];
-        placeFlowAt(edge, flowIndex); // Place the flow at the correct edge
+                || flows[a].dx - flows[b].dx
+                // If there is still a tie, sort by sourceRow (which has been
+                // artificially set for shadow flows):
+                || flows[a].sourceRow - flows[b].sourceRow
+            )[0];
+        // If we found a flow, place it at the correct edge:
+        if (flowIndex !== undefined) { placeFlowAt(edge, flowIndex); }
       }
 
       // Loop through the flow set, placing them from the outside in.
@@ -346,16 +393,104 @@ d3.sankey = () => {
     // Force endpoint nodes all the way to the right?
     // Note: furthestStage at this point is 1 beyond the last actual stage:
     if (rightJustifyEndpoints) { moveSinksRight(); }
+
+    // Now that the main nodes and flows are in place, we also fill in
+    // SHADOW nodes & flows to occupy space whenever stages are skipped.
+    // To get started, fill in the 'ds' (stage distance) for all flows:
+    flows.forEach((f) => { f.ds = f.target.stage - f.source.stage; });
+
+    // Next, operate on flows which cross more than one stage:
+    const shadowNodeNames = new Map();
+    flows
+      .filter((f) => Math.abs(f.ds) > 1)
+      .forEach((f) => {
+        const nodesForThisFlow = [f.source];
+        // Duplicate the source node as many times as needed (though only
+        // as large as this individual flow)
+        for (let i = 1; i < f.ds; i += 1) {
+          const shadowStage = f.source.stage + i,
+            // Create a custom name for the shadow which will still group
+            // multiple flows between the same 2 places.
+            newNodeName
+              = `sh_${f.source.index}_${f.target.index}_s${shadowStage}`,
+            fVal = Number(f.value);
+          let shadowNode;
+          // Have we already made a shadow node for this source/target?
+          if (shadowNodeNames.has(newNodeName)) {
+            // If so, let's add value to the node we've already made:
+            shadowNode = nodes[shadowNodeNames.get(newNodeName)];
+            shadowNode.value += fVal;
+            shadowNode.totalIn += fVal;
+            shadowNode.totalOut += fVal;
+          } else {
+            // A shadow node doesn't exist, so we make a fresh one with the
+            // same sourceRow as the original flow:
+            shadowNode = {
+              index: nodes.length,
+              stage: shadowStage,
+              name: newNodeName,
+              sourceRow: f.sourceRow,
+              isAShadow: true,
+              flowsIn: [],
+              flowsOut: [],
+              value: fVal,
+              totalIn: fVal,
+              totalOut: fVal,
+            };
+            // Add this to the big list and to our shadow-tracking list:
+            nodes.push(shadowNode);
+            shadowNodeNames.set(newNodeName, shadowNode.index);
+          }
+          nodesForThisFlow.push(shadowNode);
+        }
+        nodesForThisFlow.push(f.target);
+
+        // Now that we have a list of all nodes along the way, add shadow
+        // flows between each pair (starting from the 2nd item in the list).
+        for (let i = 1; i < nodesForThisFlow.length; i += 1) {
+          const sourceNode = nodesForThisFlow[i - 1],
+            targetNode = nodesForThisFlow[i],
+            origSourceRow = Number(f.sourceRow),
+            // Take values from the original flow, then override some:
+            newFlow = {
+              ...f,
+              source: sourceNode,
+              target: targetNode,
+              index: flows.length,
+              shadowOf: f.index,
+              isAShadow: true,
+              hasAShadow: false,
+              // Make artificial sourceRow numbers so these get prioritized
+              // *with* the original flow:
+              sourceRow: origSourceRow + i / (f.ds + 1),
+              // Should we propagate this shadow's y position to the original
+              // flow? Only at the ends of the shadow path.
+              useForVisiblePlacing:
+                sourceNode.stage === f.source.stage
+                  || targetNode.stage === f.target.stage,
+            };
+          flows.push(newFlow);
+          newFlow.source.flowsOut.push(newFlow);
+          newFlow.target.flowsIn.push(newFlow);
+        }
+
+        // Now that we're done adopting various values from original flow f,
+        // tell f itself that Things have Changed:
+        f.useForVisiblePlacing = false;
+        f.hasAShadow = true;
+    });
   }
 
   // Set up stagesArr: one array element for each stage, containing that
   // stage's nodes, in stage order.
-  // This can also be called when nodes' info may have been updated elsewhere &
-  // we need a fresh map generated.
+  // This can also be called when nodes' info may have been updated elsewhere
+  // & we need a fresh map generated.
   function updateStagesArray() {
-    stagesArr = Array.from(d3.group(nodes, (d) => d.stage))
+    stagesArr = d3.groups(nodes, (d) => d.stage) // [stage, [nodes]]
       .sort((a, b) => a[0] - b[0])
-      .map((d) => d[1]);
+      // Extract each stage and sort its nodes by sourceRow.
+      // (This raises shadow nodes to the same rank the original flow is at)
+      .map((d) => d[1].sort(bySourceOrder)); // [[nodes]]
   }
 
   // placeNodes(iterations):
@@ -413,8 +548,12 @@ d3.sankey = () => {
           );
       }
 
-      // Compute all the dy values using the now-known scale of the graph:
-      flows.forEach((f) => { f.dy = f.value * ky; });
+      // Compute all the dy & weighted values using the now-known scale
+      // of the graph:
+      flows.forEach((f) => {
+        f.dy = f.value * ky;
+        f.weightedValue = f.hasAShadow ? 0 : f.value;
+      });
       // Also: Ensure each node is at least 1 pixel tall:
       nodes.forEach((n) => { n.dy = Math.max(1, n.value * ky); });
 
@@ -422,26 +561,27 @@ d3.sankey = () => {
       // The initial stage will start with all nodes centered vertically,
       // separated by the actualNodeSpacing.
       // Each stage afterwards will center on its combined source nodes.
-      let targetY = size.h / 2;
+      let targetY;
       stagesArr.forEach((s, stageIndex) => {
         const stageSize
           = (valueSum(s) * ky) + (actualNodeSpacing * (s.length - 1));
-        // If we're past the first stage, find the center of all the nodes
-        // feeding into this stage so we can use that as the new center:
-        if (stageIndex > 0) {
-          const allFlowsIn = s.map((n) => n.flowsIn).flat();
-          if (allFlowsIn.length === 0) {
-            targetY = size.h / 2;
-          } else {
-            // Chicken/egg problem: It would be more ideal here to use
-            // weighted centers based on flows (i.e. flowSetStats), but
-            // at this point we have placed 0 flows, so that's not an
-            // option. Take the broader approach of using the weighted
-            // center of all the source nodes:
-            const uniqueSourceNodes = new Set(allFlowsIn.map((f) => f.source));
-            targetY = nodeSetStats(Array.from(uniqueSourceNodes)).center;
-          }
+        targetY = size.h / 2; // default case = center this batch of nodes
+        // If we have any flows into the current set of nodes, we have a
+        // chicken/egg problem: We want to use weighted centers based on
+        // flows (i.e. flowSetStats), but at this point 0 flows are placed.
+        // Simpler approach: use the weighted center of nodes flowing in.
+        const allFlowsIn = s.map((n) => n.flowsIn).flat();
+        if (allFlowsIn.length > 0) {
+          const uniqueSourceNodes = new Set(
+            allFlowsIn.map((f) => f.source)
+              // Since shadows are in every stage, don't look back more than
+              // 1 stage. (And self-loops may mean there are flows from the
+              // *same* stage, currently.)
+              .filter((n) => n.stage >= stageIndex - 1)
+          );
+          targetY = nodeSetStats(Array.from(uniqueSourceNodes)).center;
         }
+
         // Calculate the first-node-in-this-stage's y position (while not
         // letting it be placed where the stage will exceed either boundary):
         let nextNodePos
@@ -471,13 +611,26 @@ d3.sankey = () => {
       // placement for all flows, so that their weights can be measured
       // realistically in the placeNodes() routine.
       nodes.forEach((n) => {
-        // Each flow is placed naively, just using the input order.
-        // Surprisingly, this leads to better results than trying to be
-        // smart at this stage. Smarter flow sorting will happen right
-        // after this, in placeFlowsInsideNodes().
+        // Each flow is initially placed naively, just using the input order.
+        // Any misfires will be corrected soon by placeFlowsInsideNodes()
         let [sy, ty] = [0, 0];
-        n.flowsOut.forEach((f) => { f.sy = sy; sy += f.dy; });
-        n.flowsIn.forEach((f) => { f.ty = ty; ty += f.dy; });
+        // Shadows touching a real node adopt the same position as their
+        // 'true' flow. (NOTE: This works because all shadows initially
+        // *follow* all real flows.):
+        n.flowsOut.forEach((f) => {
+          if (f.isAShadow && !n.isAShadow) {
+            f.sy = flows[f.shadowOf].sy;
+          } else {
+            f.sy = sy; sy += f.dy;
+          }
+        });
+        n.flowsIn.forEach((f) => {
+          if (f.isAShadow && !n.isAShadow) {
+            f.ty = flows[f.shadowOf].ty;
+          } else {
+            f.ty = ty; ty += f.dy;
+          }
+        });
       });
     }
 
@@ -608,9 +761,6 @@ d3.sankey = () => {
 
       // First, sort this stage's nodes based on either their current
       // positions or on the order they appeared in the data:
-      function byTopEdges(a, b) { return a.y - b.y; }
-      function bySourceOrder(a, b) { return a.sourceRow - b.sourceRow; }
-
       s.sort(autoLayout ? byTopEdges : bySourceOrder);
 
       // Make sure any overlapping nodes preserve the required spacing.

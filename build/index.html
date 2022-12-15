@@ -336,7 +336,11 @@ Diagram Scales match as closely as possible.
     <input id="iterations" class="slider_small" type="range" min="0" max="30" step="1" value="25" onfocus="revealVal('iterations');" onblur="fadeVal('iterations');" oninput="updateOutput('iterations'); process_sankey();" onchange="process_sankey();">
     <span class="smalllabel">30</span>
     <output id="iterations_val" for="iterations" class="fade-init output_medium_long"></output></span>
-  </div>
+</div>
+<div class="form_elements2">
+<input type="checkbox" id="reveal_shadows" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="reveal_shadows" class="ropt">Reveal Shadow Nodes</label>
+</div>
+
 </div>
 
 </div>
