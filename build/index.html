@@ -57,6 +57,23 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 <div class="center_basic">
 
 <form id="skm_form" onsubmit="process_sankey(); return false;">
+<div id="example_diagrams" class="text_center">
+<h4>Sample Diagrams &amp; Starting Points:
+<button type="button" id="load_example_simple" onclick="replaceGraph('simple_start'); return false;">Start Simple</button>
+<button type="button" id="load_example_financial_results" onclick="replaceGraph('financial_results'); return false;">Financial Results</button>
+<button type="button" id="load_example_job_search" onclick="replaceGraph('job_search'); return false;">Job Search</button>
+<button type="button" id="load_example_election" onclick="replaceGraph('election'); return false;">Ranked Election</button>
+<!-- <button type="button" id="load_example_energy_all" onclick="replaceGraph('energy_flows_all'); return false;">Energy Flows</button> &nbsp; -->
+<button type="button" id="load_example_basic_budget" onclick="replaceGraph('default_budget'); return false;">Budget (Default)</button>
+</h4>
+
+<p id="replace_graph_warning" style="display: none;">
+<em>This will <strong>erase</strong> your changes. Are you sure?</em><br />
+<input type="hidden" id="demo_graph_chosen" value="" />
+<button type="button" id="replace_graph_yes" onclick="replaceGraphConfirmed(); return false;">Yes, replace the diagram</button>
+<button type="button" id="replace_graph_no" onclick="hideReplaceGraphWarning(); return false;">Cancel</button>
+</p>
+</div>
 
 <table><tr><td>
 
@@ -405,22 +422,6 @@ Export Diagram<span id="export_options_hint">:</span></h2>
 </table>
 
 </td><td id="grapharea">
-<div id="example_diagrams" class="text_center">
-<h4>Sample Diagrams:
-<button type="button" id="load_example_job_search" onclick="replaceGraph('job_search'); return false;">Job Search</button>
-<button type="button" id="load_example_election" onclick="replaceGraph('election'); return false;">Ranked Election</button>
-<!-- <button type="button" id="load_example_energy_all" onclick="replaceGraph('energy_flows_all'); return false;">Energy Flows</button> &nbsp; -->
-<button type="button" id="load_example_basic_budget" onclick="replaceGraph('default_budget'); return false;">Basic Budget (Default)</button>
-</h4>
-
-<p id="replace_graph_warning" style="display: none;">
-<em>This will <strong>erase</strong> your changes. Are you sure?</em><br />
-<input type="hidden" id="demo_graph_chosen" value="" />
-<button type="button" id="replace_graph_yes" onclick="replaceGraphConfirmed(); return false;">Yes, replace the diagram</button>
-<button type="button" id="replace_graph_no" onclick="hideReplaceGraphWarning(); return false;">Cancel</button>
-</p>
-</div>
-
 <!-- SIZE & SPACING & BACKGROUND -->
 
 <div class="expandable_box">

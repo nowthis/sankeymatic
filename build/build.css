@@ -373,9 +373,9 @@ th#title {
   border: var(--border-base);
   border-style: dotted;
   border-radius: 0.7em;
-  margin: 0.4em auto 1em;
-  padding: 0.5em;
-  box-shadow: 0.1em 0.1em 0.3em gray;
+  margin: 0 auto 0.5em;
+  padding: 0.2em;
+  box-shadow: 0.1em 0.1em 0.2em gray;
 }
 
 #example_diagrams h4 {
