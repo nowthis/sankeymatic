@@ -1,3 +1,13 @@
+:root {
+  --border-base: 1px #069 solid;
+  --border-dark: 1px #036 solid;
+  --border-light: 1px #9ac solid;
+  --bg-light: #def;
+  --bg-pale: #eef7ff;
+  --selected-option: #27b;
+  --warning: darkred;
+}
+
 body { font-size: 13px; }
 
 .smalllabel { font-size: 11px; }
@@ -21,7 +31,7 @@ body { font-size: 13px; }
 .fade-in {
   visibility: visible;
   opacity: 1;
-  transition: opacity .2s;
+  transition: opacity 0.2s;
 }
 
 .fade-out {
@@ -36,12 +46,12 @@ body { font-size: 13px; }
 output {
   position: absolute;
   top: -1.5em;
-  padding: .15em .1em;
-  border-radius: .6em;
+  padding: 0.15em 0.1em;
+  border-radius: 0.6em;
   text-align: center;
-  background-color: #eef7ff;
-  color: #0077b3; /* same as a selected radio button */
-  border: 1px solid #036;
+  background-color: var(--bg-pale);
+  color: var(--selected-option);
+  border: var(--border-dark);
 }
 
 .output_narrow { width: 1.5em; left: 63%; }
@@ -73,7 +83,7 @@ output {
 input[type="range"]::-webkit-slider-runnable-track {
   -webkit-appearance: none;
   height: 4px;
-  background-color: #AAA;
+  background-color: #aaa;
 }
 
 /* 2. Align the 'thumb' with the revised slider track: */
@@ -85,7 +95,7 @@ input[type="range"]::-webkit-slider-thumb {
       background with an accent color: */
 input[type="range"]:focus::-webkit-slider-runnable-track,
 input[type="range"]:active::-webkit-slider-runnable-track {
-  background-color: #06C;
+  background-color: #06c;
 }
 
 /* END WEBKIT TWEAKS */
@@ -103,16 +113,16 @@ input[type="range"]:active::-webkit-slider-runnable-track {
 }
 
 .okmessage {
-    text-align: center;
-    background-color: #def;
-    color: #003366;
-    border: 1px solid #069;
-    padding: 4px;
-    margin: 2px;
+  text-align: center;
+  background-color: var(--bg-light);
+  color: #036;
+  border: var(--border-base);
+  padding: 4px;
+  margin: 2px;
 }
 
 .importanttext {
-  color: darkred;
+  color: var(--warning);
   background-color: inherit;
   text-decoration: underline;
 }
@@ -152,7 +162,7 @@ dfn {
 
 /* The textarea where the user is typing: */
 #flows_in {
-  border: 1px solid #069;
+  border: var(--border-base);
   padding: 0.25em;
   margin: 0.25em;
   font-size: small;
@@ -175,14 +185,14 @@ dfn {
 }
 
 .form_elements2 {
-  background-color: #DDF0FF;
+  background-color: #ddf0ff;
   margin: 2px 3px 5px;
   padding: 2px 3px;
 }
 
 .form_elements3 {
-  background-color: #eef7ff;
-  border: 1px solid #9ac;
+  background-color: var(--bg-pale);
+  border: var(--border-light);
   margin: 2px 3px 5px;
   padding: 2px 3px;
 }
@@ -211,26 +221,26 @@ h2.ui_head:hover {
 
 h3.ui_head {
   font-size: 13px;
-  background-color: #37B;
+  background-color: #37b;
 }
 
 h3.ui_head:hover {
-  background-color: #39D;
+  background-color: #39d;
 }
 
 #imbalance_control {
   padding: 0.4em 0.5em;
-  background-color: #DEF;
+  background-color: var(--bg-light);
   color: #036;
-  border: 1px solid #069;
+  border: var(--border-base);
   margin-top: 0.3em;
 }
 
 #imbalance_msg {
-  background-color: #FFA;
-  color: darkred;
+  background-color: #ffa;
+  color: var(--warning);
   text-align: center;
-  border: 1px solid #069;
+  border: var(--border-base);
   padding: 0.4em;
   margin-top: -1px;
 }
@@ -243,7 +253,7 @@ h3.ui_head:hover {
 #imbalance_msg table th {
   padding: 0.1em 0.2em;
   text-align: right;
-  border-bottom: 1px solid darkred;
+  border-bottom: 1px solid var(--warning);
 }
 
 #imbalance_msg table td {
@@ -259,9 +269,9 @@ h3.ui_head:hover {
 #messages_area {
   padding: 0.4em;
   text-align: center;
-  background-color: #DEF;
+  background-color: var(--bg-light);
   color: #036;
-  border: 1px solid #069;
+  border: var(--border-base);
 }
 
 #messages h4 {
@@ -276,12 +286,11 @@ h3.ui_head:hover {
 
 .form_chunk {
   color: #024;
-  background-color: #FBFEFF;
+  background-color: #fbfeff;
   margin: 0 3px 6px;
   padding: 2px;
+  border: var(--border-light);
   border-width: 0 1px 1px;
-  border-color: #9AC;
-  border-style: solid;
 }
 
 p#chart {
@@ -298,14 +307,10 @@ p#chart {
 
 .svg_background_transparent {
   background-color: transparent;
-  background-image: url(transparent_bg.png);
+  background-image: url("transparent_bg.png");
 }
 
-.node rect {
-  cursor: move;
-  /* shape-rendering: crispEdges; */
-  /* fill-opacity: .9; */
-}
+.node rect { cursor: move; }
 
 output,
 svg g#sankey_labels text,
@@ -320,7 +325,7 @@ svg g#sankey_labels rect {
 
 td#other_entry {
   padding: 0 2px;
-  background-color: #CCE8FF;
+  background-color: #cce8ff;
   vertical-align: middle;
 }
 
@@ -331,7 +336,7 @@ td#grapharea {
 
 th#title {
   padding: 5px 10px;
-  background-color: #8BC;
+  background-color: #8bc;
   font-size: large;
 }
 
@@ -340,8 +345,8 @@ th#title {
 }
 
 .download_link a {
-  background-color: #ACF;
-  border: 1px solid #069;
+  background-color: #acf;
+  border: var(--border-base);
   padding: 5px 8px;
 }
 
@@ -353,8 +358,8 @@ th#title {
 }
 
 #svg_for_export {
-  border: 1px solid #CCC;
-  background: #F2F2F2;
+  border: 1px solid #ccc;
+  background: #f2f2f2;
   color: #666;
   overflow: auto;
   text-align: left;
@@ -363,9 +368,10 @@ th#title {
 }
 
 #example_diagrams {
-  background-color: #F3F4FF;
-  border: 1px dotted #069;
   width: 90%;
+  background-color: #f3f4ff;
+  border: var(--border-base);
+  border-style: dotted;
   border-radius: 0.7em;
   margin: 0.4em auto 1em;
   padding: 0.5em;
@@ -383,15 +389,15 @@ th#title {
 }
 
 #replace_graph_warning {
-  background-color: #FFA;
-  color: darkred;
+  background-color: #ffa;
+  color: var(--warning);
   margin: 0.2em 3em 0;
   padding: 0.3em;
   border-radius: 0.5em;
 }
 
 #replace_graph_yes {
-  color: darkred;
+  color: var(--warning);
 }
 
 #reset_moves_area {
@@ -405,11 +411,11 @@ th#title {
 }
 
 .callout {
-  background-color: #E3FF9F;
+  background-color: #e3ff9f;
   padding: 0.3em 1.5em;
   font-size: 90%;
   border-style: dotted;
-  border-color: #6AE58B;
+  border-color: #6ae58b;
   border-width: 1px;
 }
 
@@ -424,8 +430,8 @@ th#title {
 
 #highlight_fld_label {
   background-color: #fffc;
-  padding: .25em .3em;
-  border-radius: .5em;
+  padding: 0.25em 0.3em;
+  border-radius: 0.5em;
 }
 
 /* Customize checkable things (radio & checkbox labels):
@@ -437,5 +443,5 @@ th#title {
 
 input:checked ~ label.ropt,
 .theme_container input:checked ~ * {
-   color: #27b;
+  color: var(--selected-option);
 }
