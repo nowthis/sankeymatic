@@ -54,7 +54,13 @@ output {
   border: var(--border-dark);
 }
 
-.output_narrow { width: 1.5em; left: 63%; }
+/*
+The output 'width' here refers to the size of the value which might be
+shown, not the size of the slider.
+The 'left' value approximates a good place to place the tooltip.
+- Typically the label is included in the container width.
+*/
+.output_10s { width: 2em; left: 45%; }
 .output_medium { width: 2.5em; left: 56%; }
 .output_medium_long { width: 2.5em; left: 66%; }
 .output_wide { width: 3.3em; left: 52%; }

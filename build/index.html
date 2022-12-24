@@ -281,13 +281,25 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <output id="label_highlight_val" for="label_highlight" class="fade-init output_medium"></output></span>
 </p>
 
-<div class="form_elements1">
-<strong>Placement:</strong>&nbsp;
-<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_outside" value="outside" onchange="process_sankey();" /><label for="label_pos_outside" class="ropt">Outside</label></span>&nbsp;
-<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_before" value="before" onchange="process_sankey();" /><label for="label_pos_before" class="ropt">Before</label></span>&nbsp;
-<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_after" value="after" onchange="process_sankey();" /><label for="label_pos_after" class="ropt">After</label></span>&nbsp;
-<span class="no_wrap"><input name="label_pos" type="radio" id="label_pos_inside" value="inside" onchange="process_sankey();" checked="checked" /><label for="label_pos_inside" class="ropt">Inside</label></span>
+<fieldset class="form_elements1">
+<legend>Position:</legend>
+<div class="fieldset_contents">
+
+<p class="form_elements">
+Place the <strong>first</strong> labels:
+<span class="no_wrap"><input name="label_first_pos" type="radio" id="label_first_before" value="before" onchange="process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the node</label></span>
+<span class="no_wrap"><input name="label_first_pos" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the node</label></span>
+</p>
+
+<p class="form_elements">
+<label for="label_breakpoint">Place labels on the <strong>other side</strong> starting at:</label>
+<span class="no_wrap output_container" onmouseover="revealVal('label_breakpoint');" onmouseout="fadeVal('label_breakpoint');">
+<input type="hidden" id="stages_plus_1" value="4" />
+<span class="smalllabel">Stage 2</span><input id="label_breakpoint" class="slider_xxsmall" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('label_breakpoint');" onblur="fadeVal('label_breakpoint');" oninput="updateOutput('label_breakpoint'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">(never)</span>
+<output id="label_breakpoint_val" for="label_breakpoint" class="fade-init output_10s"></output></span>
+</p>
 </div>
+</fieldset>
 
 <p class="form_elements2">
 <strong>Face:</strong>

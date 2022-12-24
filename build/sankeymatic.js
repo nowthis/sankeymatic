@@ -49,6 +49,7 @@ glob.updateOutput = (fld) => {
       label_highlight: '.2',
       node_height: '%',
       node_spacing: '%',
+      label_breakpoint: 'never',
     };
   switch (formats[fld]) {
     case '|':
@@ -57,6 +58,10 @@ glob.updateOutput = (fld) => {
       // FALLS THROUGH to '.2' format when fldVal > 0.1:
     case '.2': oEl.textContent = d3.format('.2f')(fldVal); break;
     case '%': oEl.textContent = `${fldVal}%`; break;
+    case 'never':
+      oEl.textContent
+        = (fldVal === elV('stages_plus_1') ? '∅' : fldVal);
+      break;
     default: oEl.textContent = fldVal;
   }
   return null;
@@ -563,13 +568,12 @@ function render_sankey(allNodes, allFlows, cfg) {
         outer: metrics.outer * emW,
         };
     // Compute the remaining values (which depend on values above).
-    // lblMarginRight = total margin to give a label when it is to the right
-    //   of a node. (Note: this value basically includes m.inner)
-    // lblMarginLeft = total margin when label is to the left
-    m.lblMarginRight
-      = (cfg.node_border / 2)
-        + metrics.marginRight * m.inner;
-    m.lblMarginLeft
+    // lblMarginAfter = total margin to give a label when it is after a node
+    //   (Note: this value basically includes m.inner)
+    // lblMarginBefore = total margin when label is before a node
+    m.lblMarginAfter
+      = (cfg.node_border / 2) + metrics.marginRight * m.inner;
+    m.lblMarginBefore
       = (cfg.node_border / 2)
         + (metrics.marginRight + metrics.marginAdjLeft) * m.inner;
     return m;
@@ -590,6 +594,24 @@ function render_sankey(allNodes, allFlows, cfg) {
   // After the .setup() step, Nodes are divided up into Stages.
   // stagesArr = each Stage in the diagram (and the Nodes inside them)
   let stagesArr = sankeyObj.stages();
+  const eLbp = el('label_breakpoint'),
+    eMaxOnPage = el('stages_plus_1'),
+    // We need a breakpoint value meaning 'never'; that's 1 past the
+    // (1-based) end of the array, so: length + 1
+    newMax = stagesArr.length + 1,
+    oldMax = eMaxOnPage.value;
+  // Has the number of stages changed?
+  if (oldMax !== newMax) {
+    eLbp.setAttribute('max', newMax);
+    eMaxOnPage.value = newMax;
+    // If the diagram has shrunk, OR if it's expanded but the 'never'
+    // option was chosen before, we need to adjust the breakpoint value
+    // to behave consistently:
+    if (eLbp.value > newMax || eLbp.value === oldMax) {
+      eLbp.value = newMax;
+      cfg.label_breakpoint = newMax;
+    }
+  }
 
   // MARK Label-measuring time
   // Depending on where labels are meant to be placed, we measure their
@@ -609,20 +631,27 @@ function render_sankey(allNodes, allFlows, cfg) {
       n.labelText
         = cfg.include_values_in_node_labels
           ? `${n.name}: ${withUnits(n.value)}` : n.name;
+      // Which side of the node will the label be on?
+      const labelBefore
+        = cfg.label_first_pos === 'before'
+          ? n.stage < cfg.label_breakpoint - 1
+          : n.stage >= cfg.label_breakpoint - 1;
+      n.label = {
+        dom_id: `label${n.index}`, // label0, label1..
+        anchor: labelBefore ? 'end' : 'start',
+      };
     });
   }
 
-  // maxLabelWidth(stageArr, labelsOnLeft):
+  // maxLabelWidth(stageArr, labelsBefore):
   //   Compute the total space required by the widest label in a stage
-  function maxLabelWidth(stageArr, labelsOnLeft) {
+  function maxLabelWidth(stageArr, labelsBefore) {
     let maxWidth = 0;
     stageArr.filter((n) => n.labelText)
       .forEach((n) => {
         const labelW
           = measureText(n.labelText, n.dom_id).w
-            + (labelsOnLeft
-            ? pad.lblMarginLeft
-            : pad.lblMarginRight)
+            + (labelsBefore ? pad.lblMarginBefore : pad.lblMarginAfter)
             + pad.outer;
         maxWidth = Math.max(maxWidth, labelW);
       });
@@ -635,15 +664,20 @@ function render_sankey(allNodes, allFlows, cfg) {
     // Start from the user's declared canvas size + margins:
     const graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
       graphH = cfg.canvas_height - cfg.top_margin - cfg.bottom_margin,
-      // If any labels are on the LEFT, get stage[0]'s maxLabelWidth:
+      lastStage = stagesArr.length - 1,
+      labelsBeforeFirst = stagesArr[0]
+        .filter((n) => (n.label !== undefined) && n.label.anchor === 'end'),
+      labelsAfterLast = stagesArr[lastStage]
+        .filter((n) => (n.label !== undefined) && (n.label.anchor === 'start')),
+      // If any labels are BEFORE stage 0, get stage[0]'s maxLabelWidth:
       leadingW
-        = ['before', 'outside'].includes(cfg.label_pos)
+        = labelsBeforeFirst.length > 0
           ? maxLabelWidth(stagesArr[0], true)
           : cfg.node_border / 2,
-      // If any are on the RIGHT, get stage[-1]'s maxLabelWidth:
+      // If any labels are AFTER the last stage, get stage[-1]'s maxLabelWidth:
       trailingW
-        = ['after', 'outside'].includes(cfg.label_pos)
-          ? maxLabelWidth(stagesArr[stagesArr.length - 1], false)
+        = labelsAfterLast.length > 0
+          ? maxLabelWidth(stagesArr[lastStage], false)
           : cfg.node_border / 2,
       // Compute the ideal width to fit everything successfully:
       idealW = graphW - leadingW - trailingW,
@@ -651,7 +685,7 @@ function render_sankey(allNodes, allFlows, cfg) {
       // plus (5px + node_border) for every Flow region:
       minimumW
         = (stagesArr.length * cfg.node_width)
-          + ((stagesArr.length - 1) * (cfg.node_border + 5)),
+          + (lastStage * (cfg.node_border + 5)),
       // Pick which width we will actually use:
       finalW = Math.max(idealW, minimumW),
       // Is any part of the diagram going to be cut off?
@@ -758,37 +792,18 @@ function render_sankey(allNodes, allFlows, cfg) {
     // Set up label presentation values:
     if (cfg.show_labels) {
       // Which side of the node will the label be on?
-      let leftLabel = true;
-      switch (cfg.label_pos) {
-        case 'before': break;
-        case 'after': leftLabel = false; break;
-        // 'outside': Nodes in the FIRST half of all stages put their
-        // labels on the left:
-        case 'outside': leftLabel = n.stage <= stagesMidpoint(); break;
-        // 'inside': Nodes are positioned at the diagram's outer
-        // edge, with labels toward the center. (This results in
-        // label/node-matching confusion sometimes.)
-        // So Nodes in the LAST half of all stages put their labels
-        // on the left:
-        case 'inside': leftLabel = n.stage >= stagesMidpoint();
-        // no default
-      }
+      const labelBefore = n.label.anchor === 'end';
+      n.label.x
+        = n.x + (labelBefore ? -pad.lblMarginBefore : n.dx + pad.lblMarginAfter);
+      n.label.y = n.y + n.dy / 2;
+      n.label.dy = pad.dy;
 
-      n.label = {
-        dom_id: `label${n.index}`, // label0, label1..
-        anchor: leftLabel ? 'end' : 'start',
-        x: leftLabel
-          ? n.x - pad.lblMarginLeft
-          : n.x + n.dx + pad.lblMarginRight,
-        y: n.y + n.dy / 2,
-        dy: pad.dy,
-      };
       // Will there be any highlights? If not, n.label.bg will be null:
       if (hlStyle.orig.fill_opacity > 0) {
         n.label.bg = {
           dom_id: `${n.label.dom_id}_bg`, // label0_bg, label1_bg..
           offset: {
-            x: leftLabel ? -pad.outer : -pad.inner,
+            x: labelBefore ? -pad.outer : -pad.inner,
             y: -pad.top,
             w: pad.inner + pad.outer,
             h: pad.top + pad.bot,
@@ -1517,7 +1532,7 @@ glob.process_sankey = () => {
     iterations: 25,
     include_values_in_node_labels: 1,
     show_labels: 1,
-    label_pos: 'inside',
+    label_first_pos: 'before',
     canvas_width: 600,
     canvas_height: 600,
     reveal_shadows: 0,
@@ -1527,6 +1542,7 @@ glob.process_sankey = () => {
     default_flow_opacity: 0.45,
     default_node_opacity: 1.0,
     mention_sankeymatic: 1,
+    label_breakpoint: 1,
     node_width: 9,
     node_height: 50,
     node_spacing: 85,
@@ -1672,8 +1688,8 @@ glob.process_sankey = () => {
   (['canvas_width', 'canvas_height', 'font_size',
     'top_margin', 'right_margin', 'bottom_margin',
     'left_margin', 'font_weight', 'node_height',
-    'node_width', 'node_spacing',
-    'node_border', 'iterations']).forEach((fldName) => {
+    'node_width', 'node_spacing', 'node_border',
+    'iterations', 'label_breakpoint']).forEach((fldName) => {
     const fldVal = elV(fldName);
     if (fldVal.length < 10 && fldVal.match(/^\d+$/)) {
       approvedCfg[fldName] = Number(fldVal);
@@ -1773,9 +1789,9 @@ glob.process_sankey = () => {
     approvedCfg.default_flow_inherit = flowInherit;
   }
 
-  const labelPosIn = radioRef('label_pos').value;
-  if (['before', 'after', 'inside', 'outside'].includes(labelPosIn)) {
-    approvedCfg.label_pos = labelPosIn;
+  const labelFirstPos = radioRef('label_first_pos').value;
+  if (['before', 'after'].includes(labelFirstPos)) {
+    approvedCfg.label_first_pos = labelFirstPos;
   }
 
   const fontFaceIn = radioRef('font_face').value;
