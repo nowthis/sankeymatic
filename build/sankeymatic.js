@@ -295,20 +295,23 @@ function flatFlowPathMaker(f) {
 function curvedFlowPathFunction(curvature) {
   return (f) => {
     const syC = f.source.y + f.sy + f.dy / 2, // source flow's y center
-      tyC = f.target.y + f.ty + f.dy / 2;     // target flow's y center
+      tyC = f.target.y + f.ty + f.dy / 2,     // target flow's y center
+      sEnd = f.source.x + f.source.dx,  // source's trailing edge
+      tStart = f.target.x;              // target's leading edge
 
-    // Watch out for a very straight path (total rise/fall < 1 pixel).
+    // Watch out for a nearly-straight path (total rise/fall < 2 pixels OR
+    // very little horizontal space to work with).
     // If we have one, make this flow a simple 4-sided shape instead of
     // a curve. (This avoids weird artifacts in some SVG renderers.)
-    if (Math.abs(syC - tyC) < 1) { return flatFlowPathMaker(f); }
+    if (Math.abs(syC - tyC) < 2 || Math.abs(tStart - sEnd) < 12) {
+      return flatFlowPathMaker(f);
+    }
 
     f.renderAs = 'curved'; // Render this path as a curved stroke
 
     // Make the curved path:
-    const sx = f.source.x + f.source.dx, // source's trailing edge
-      tx = f.target.x,                   // target's leading edge
-      // Set up a function for interpolating between the two x values:
-      xinterpolate = d3.interpolateNumber(sx, tx),
+    // Set up a function for interpolating between the two x values:
+    const xinterpolate = d3.interpolateNumber(sEnd, tStart),
       // Pick 2 curve control points given the curvature & its converse:
       xcp1 = xinterpolate(curvature),
       xcp2 = xinterpolate(1 - curvature);
@@ -316,8 +319,10 @@ function curvedFlowPathFunction(curvature) {
     // [M]ove to the center of the flow's start [sx,syC]
     // Draw a Bezier [C]urve using control points [xcp1,syC] & [xcp2,tyC]
     // End at the center of the flow's target [tx,tyC]
-    return `M${ep(sx)} ${ep(syC)}C${ep(xcp1)} ${ep(syC)}`
-      + ` ${ep(xcp2)} ${ep(tyC)} ${ep(tx)} ${ep(tyC)}`;
+    return (
+      `M${ep(sEnd)} ${ep(syC)}C${ep(xcp1)} ${ep(syC)} `
+        + `${ep(xcp2)} ${ep(tyC)} ${ep(tStart)} ${ep(tyC)}`
+    );
   };
 }
 
