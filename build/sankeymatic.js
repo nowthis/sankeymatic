@@ -16,8 +16,10 @@ Requires:
 // 'glob' points to the global object, either 'window' (browser) or 'global' (node.js)
 // This lets us contain everything in an IIFE (Immediately-Invoked Function Expression)
 
-// el: shorthand for grabbing a DOM element:
+// el: shorthand for grabbing a DOM element, often to modify it
+// elV: used if all we want is to READ the .value
 function el(domId) { return document.getElementById(domId); }
+function elV(domId) { return document.getElementById(domId).value; }
 
 // togglePanel: Called directly from the page.
 // Given a panel's name, hide or show that control panel.
@@ -38,7 +40,7 @@ function outputFieldEl(fld) { return el(`${fld}_val`); }
 // updateOutput: Called directly from the page.
 // Given a field's name, update the visible value shown to the user.
 glob.updateOutput = (fld) => {
-  const fldVal = el(fld).value,
+  const fldVal = elV(fld),
     oEl = outputFieldEl(fld),
     formats = {
       curvature: '|',
@@ -191,7 +193,7 @@ function render_png(curDate) {
   const chartEl = el('chart'),
     orig = { w: chartEl.clientWidth, h: chartEl.clientHeight },
     // What scale does the user want (1,2,4,6)?:
-    scaleFactor = clamp(el('scale_x').value, 1, 6),
+    scaleFactor = clamp(elV('scale_x'), 1, 6),
     scaled = { w: orig.w * scaleFactor, h: orig.h * scaleFactor },
     // Canvg 3 needs interesting offsets added when scaling up:
     offset = {
@@ -354,7 +356,7 @@ glob.hideReplaceGraphWarning = () => {
 // (Note: In order to reach this code, we have to have already verified the
 // presence of the named recipe, so we don't re-verify.)
 glob.replaceGraphConfirmed = () => {
-  const graphName = el('demo_graph_chosen').value,
+  const graphName = elV('demo_graph_chosen'),
     savedRecipe = sampleDiagramRecipes.get(graphName);
 
   // Update any settings which accompany the stored diagram:
@@ -413,7 +415,7 @@ glob.replaceGraph = (graphName) => {
   // 1) the inputs are empty, or
   // 2) the user is looking at inputs which exactly match any of the sample
   // diagrams.
-  const userInputs = el('flows_in').value,
+  const userInputs = elV('flows_in'),
     inputsMatchAnySample = Array.from(sampleDiagramRecipes.values())
       .some((r) => r.flows === userInputs);
 
@@ -1334,7 +1336,7 @@ glob.process_sankey = () => {
     );
     for (const t of colorThemes.keys()) {
       const theme = approvedColorTheme(t),
-        themeOffset = el(`theme_${t}_offset`).value,
+        themeOffset = elV(`theme_${t}_offset`),
         colorset = rotateColors(theme.colorset, themeOffset),
         // Show the array rotated properly given the offset:
         renderedGuide = colorset
@@ -1409,7 +1411,7 @@ glob.process_sankey = () => {
   // As part of this step, we drop any zero-width spaces which may have
   // been appended or prepended to lines (e.g. when pasted from
   // PowerPoint), then trim again.
-  const sourceLines = el('flows_in').value
+  const sourceLines = elV('flows_in')
     .split('\n')
     .map((l) => l.trim()
       .replace(/^\u200B+/, '')
@@ -1667,7 +1669,7 @@ glob.process_sankey = () => {
     'left_margin', 'font_weight', 'node_height',
     'node_width', 'node_spacing',
     'node_border', 'iterations']).forEach((fldName) => {
-    const fldVal = el(fldName).value;
+    const fldVal = elV(fldName);
     if (fldVal.length < 10 && fldVal.match(/^\d+$/)) {
       approvedCfg[fldName] = Number(fldVal);
     } else {
@@ -1678,7 +1680,7 @@ glob.process_sankey = () => {
   // Vet the color theme offset fields:
   colorThemes.forEach((theme, themeKey) => {
     const fldName = `theme_${themeKey}_offset`,
-        fldVal = el(fldName).value;
+        fldVal = elV(fldName);
     // Verify that the number matches up with the possible offset
     // range for each theme.
     // It has to be either 1 or 2 digits (some ranges have > 9 options):
@@ -1725,7 +1727,7 @@ glob.process_sankey = () => {
 
   // Verify valid plain strings:
   (['unit_prefix', 'unit_suffix']).forEach((fldName) => {
-    const fldVal = el(fldName).value;
+    const fldVal = elV(fldName);
     approvedCfg.numberStyle[fldName.slice(-6)]
       = (typeof fldVal !== 'undefined'
         && fldVal !== null
@@ -1736,7 +1738,7 @@ glob.process_sankey = () => {
 
   // Interpret user's number format settings:
   (['number_format']).forEach((fldName) => {
-    const fldVal = el(fldName).value;
+    const fldVal = elV(fldName);
     if (fldVal.length === 2 && (/^[,. X][,.]$/.exec(fldVal))) {
       // Grab the 1st character if it's a valid 'group' value:
       const groupMark = (/^[,. X]/.exec(fldVal))[0];
@@ -1801,7 +1803,7 @@ glob.process_sankey = () => {
   // Decimal:
   (['default_node_opacity', 'default_flow_opacity', 'label_highlight',
     'curvature']).forEach((fldName) => {
-    const fldVal = el(fldName).value;
+    const fldVal = elV(fldName);
     if (fldVal.match(/^\d(?:.\d+)?$/)) {
       approvedCfg[fldName] = fldVal;
     } else {
