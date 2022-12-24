@@ -812,9 +812,9 @@ function render_sankey(allNodes, allFlows, cfg) {
       // 3. default-inheritance-direction OR default flow color
       if (f.isAShadow) {
         f.color = '#999';
-      } else if (f.source.paint_right) {
+      } else if (f.source.paint[AFTER]) {
         f.color = f.source.color;
-      } else if (f.target.paint_left) {
+      } else if (f.target.paint[BEFORE]) {
         f.color = f.target.color;
       } else {
         const flowMidpoint = (f.source.stage + f.target.stage) / 2;
@@ -1374,6 +1374,7 @@ glob.process_sankey = () => {
       uniqueNodes.set(nodeName, {
         name: nodeName,
         sourceRow: row,
+        paintInputs: [],
       });
     }
   }
@@ -1433,8 +1434,7 @@ glob.process_sankey = () => {
         name: matches[1].trim(),
         color: matches[2],
         opacity: matches[3],
-        paint1: matches[4],
-        paint2: matches[5],
+        paintInputs: [matches[4], matches[5]],
         sourceRow: row,
       });
       // No need to process this as a Data line, let's move on:
@@ -1554,17 +1554,18 @@ glob.process_sankey = () => {
 
   // explainSum: Returns an html string showing the flow amounts which
   // add up to a node's total value in or out.
-  function explainSum(amount, flowList) {
-    const formattedSum = withUnits(amount);
-    if (flowList.length === 1) { return formattedSum; }
+  function explainSum(n, dir) {
+    const formattedSum = withUnits(n.total[dir]),
+      flowCt = n.flows[dir].length;
+    if (flowCt === 1) { return formattedSum; }
 
     // When there are multiple amounts, the amount appears as a hover
     // target with a tooltip showing the breakdown in descending order.
-    const breakdown = flowList.map((f) => f.value)
+    const breakdown = n.flows[dir].map((f) => f.value)
         .sort((a, b) => b - a)
         .map((v) => withUnits(v))
         .join(' + ');
-    return `<dfn title="${formattedSum} from ${flowList.length} `
+    return `<dfn title="${formattedSum} from ${flowCt} `
       + `Flows: ${breakdown}">${formattedSum}</dfn>`;
   }
 
@@ -1645,17 +1646,16 @@ glob.process_sankey = () => {
   Array.from(uniqueNodes.values())
     .sort((a, b) => a.sourceRow - b.sourceRow)
     .forEach((n) => {
-      // Set up color inheritance signals.
-      // 'Right' & 'Left' here correspond to >> and <<.
-      const paintValues = [n.paint1, n.paint2],
-        paintL = paintValues.some((s) => s === '<<'),
-        paintR = paintValues.some((s) => s === '>>');
-      // If the graph is reversed, the directions are swapped:
-      [n.paint_left, n.paint_right]
-        = graphIsReversed ? [paintR, paintL] : [paintL, paintR];
-      // After establishing the above, the raw paint keys aren't needed:
-      delete n.paint1;
-      delete n.paint2;
+      // Set up color inheritance signals from '<<' and '>>' indicators:
+      const paintL = n.paintInputs.some((s) => s === '<<'),
+        paintR = n.paintInputs.some((s) => s === '>>');
+      // If the graph is reversed, swap the directions:
+      n.paint = {
+        [BEFORE]: graphIsReversed ? paintR : paintL,
+        [AFTER]: graphIsReversed ? paintL : paintR,
+      };
+      // After establishing the above, the raw paint inputs aren't needed:
+      delete n.paintInputs;
       n.index = approvedNodes.length;
 
       approvedNodes.push(n);
@@ -1828,27 +1828,27 @@ glob.process_sankey = () => {
   const epsilonDifference = 10 ** (-maxDecimalPlaces - 1);
 
   // After rendering, there are now more keys in the node records, including
-  // totalIn/Out and value.
+  // 'total' and 'value'.
   approvedNodes.forEach((n, i) => {
     // Skip checking any nodes with 0 as the From or To amount; those are
     // the origins & endpoints for the whole graph and don't qualify:
-    if (n.totalIn > 0 && n.totalOut > 0) {
-      const difference = n.totalIn - n.totalOut;
+    if (n.total[IN] > 0 && n.total[OUT] > 0) {
+      const difference = n.total[IN] - n.total[OUT];
       // Is there a difference big enough to matter? (i.e. > epsilon)
       // We'll always calculate this, even if not shown to the user.
       if (Math.abs(difference) > epsilonDifference) {
         differences.push({
           name: n.name,
-          total_in: explainSum(n.totalIn, n.flowsIn),
-          total_out: explainSum(n.totalOut, n.flowsOut),
+          total_in: explainSum(n, IN),
+          total_out: explainSum(n, OUT),
           difference: withUnits(difference),
         });
       }
     } else {
       // Accumulate totals in & out of the graph
       // (On this path, one of these values will be 0 every time.)
-      totalInflow += n.totalIn;
-      totalOutflow += n.totalOut;
+      totalInflow += n.total[IN];
+      totalOutflow += n.total[OUT];
     }
 
     // Btw, check if this is a new maximum node:
@@ -1941,4 +1941,5 @@ glob.process_sankey();
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
-/* global d3, canvg, sampleDiagramRecipes, global, fontMetrics, highlightStyles */
+/* global d3, canvg, sampleDiagramRecipes, global, fontMetrics, highlightStyles IN OUT
+  BEFORE AFTER */

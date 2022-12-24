@@ -93,26 +93,26 @@ d3.sankey = () => {
   function bySourceOrder(a, b) { return a.sourceRow - b.sourceRow; }
   function byTopEdges(a, b) { return a.y - b.y; }
 
-  // connectFlowsToNodes: Populate flowsOut and flowsIn for each node.
-  // When the source and target are not objects, assume they are indices.
+  // connectFlowsToNodes: Populate flows in & out for each node.
   function connectFlowsToNodes() {
     // Initialize the flow buckets:
     nodes.forEach((n) => {
-      n.flowsOut = [];  // Flows which use this node as their source.
-      n.flowsIn = [];   // Flows which use this node as their target.
+      // Lists of flows which use this node as their target or source:
+      n.flows = { [IN]: [], [OUT]: [] };
       // Mark these as real nodes we want to see:
       n.isAShadow = false;
     });
 
     // Connect each flow to its two nodes:
     flows.forEach((f) => {
-      // When a value is an index, convert it to the node object:
+      // When the source or target is a number, that's an index;
+      // convert it to the referenced object:
       if (typeof f.source === 'number') { f.source = nodes[f.source]; }
       if (typeof f.target === 'number') { f.target = nodes[f.target]; }
 
       // Add this flow to the affected source & target:
-      f.source.flowsOut.push(f);
-      f.target.flowsIn.push(f);
+      f.source.flows[OUT].push(f);
+      f.target.flows[IN].push(f);
       // By default, real flows are used when sorting/placing within a node.
       f.useForVisiblePlacing = true;
       // Mark these as real flows we want to see:
@@ -126,10 +126,9 @@ d3.sankey = () => {
   function computeNodeValues() {
     nodes.forEach((n) => {
       // Remember the totals in & out:
-      n.totalIn = valueSum(n.flowsIn);
-      n.totalOut = valueSum(n.flowsOut);
+      n.total = { [IN]: valueSum(n.flows[IN]), [OUT]: valueSum(n.flows[OUT]) };
       // Each node's value will be the greater of the two:
-      n.value = Math.max(n.totalIn, n.totalOut);
+      n.value = Math.max(n.total[IN], n.total[OUT]);
     });
   }
 
@@ -142,7 +141,7 @@ d3.sankey = () => {
       // Get every flow touching one side & treat them as one list:
       const flowList
         = nodeList
-            .map((n) => n[whichFlows])
+            .map((n) => n.flows[whichFlows])
             .flat()
             // Use the weighted value of a flow (this handles shadows):
             .filter((f) => f.weightedValue > 0);
@@ -165,7 +164,7 @@ d3.sankey = () => {
     }
 
     // Return the stats for the set of all flows touching these nodes:
-    return { in: flowSetStats('flowsIn'), out: flowSetStats('flowsOut') };
+    return { [IN]: flowSetStats(IN), [OUT]: flowSetStats(OUT) };
   }
 
   // placeFlowsInsideNodes(nodeList):
@@ -179,14 +178,14 @@ d3.sankey = () => {
     // sortFlows(node, placing):
     //   Given a node & a side, reorder that group of flows as best we can.
     //   'placing' indicates which end of the flows we're working on here:
-    //      - TARGETS = we're placing the targets of n.flowsIn
-    //      - SOURCES = we're placing the sources of n.flowsOut
+    //      - TARGETS = we're placing the targets of n.flows[IN]
+    //      - SOURCES = we're placing the sources of n.flows[OUT]
     function sortFlows(n, placing) {
-      const fStats = allFlowStats([n]),
-        [flowsToSort, totalFlowValue, totalFlowWeight]
-          = (placing === TARGETS)
-            ? [n.flowsIn, n.totalIn, fStats.in.sources.weight]
-            : [n.flowsOut, n.totalOut, fStats.out.targets.weight],
+      const dir = placing === TARGETS ? IN : OUT,
+        fStats = allFlowStats([n]),
+        [flowsToSort, totalFlowValue] = [n.flows[dir], n.total[dir]],
+        totalFlowWeight
+          = (dir === IN ? fStats[IN].sources : fStats[OUT].targets).weight,
         // Make a Set of flow IDs we can delete from as we go:
         flowsRemaining = new Set(flowsToSort.map((f) => f.index)),
         // Calculate how tall the flow group is which will attach to this
@@ -322,13 +321,13 @@ d3.sankey = () => {
     // Gather all the distinct batches of flows we'll need to process (each
     // node may have 0-2 batches):
     const flowBatches = [
-      ...nodeList.filter((n) => n.flowsIn.length)
+      ...nodeList.filter((n) => n.flows[IN].length)
         .map((n) => (
-          { i: n.index, len: n.flowsIn.length, placing: TARGETS }
+          { i: n.index, len: n.flows[IN].length, placing: TARGETS }
           )),
-      ...nodeList.filter((n) => n.flowsOut.length)
+      ...nodeList.filter((n) => n.flows[OUT].length)
         .map((n) => (
-          { i: n.index, len: n.flowsOut.length, placing: SOURCES }
+          { i: n.index, len: n.flows[OUT].length, placing: SOURCES }
           )),
     ];
 
@@ -355,7 +354,7 @@ d3.sankey = () => {
         n.stage = furthestStage;
         // Make sure its targets will be seen again:
         // (Only add it to the nextNodes list if it is not already present)
-        n.flowsOut.filter((f) => !nextNodes.includes(f.target))
+        n.flows[OUT].filter((f) => !nextNodes.includes(f.target))
           .forEach((f) => { nextNodes.push(f.target); });
     }
 
@@ -363,16 +362,16 @@ d3.sankey = () => {
       // If this node is not the target of any others, then it's an origin.
       // If it has at least 1 target (the common case), then move it as far
       // right as it can go without bumping into any of its targets:
-      nodes.filter((n) => !n.flowsIn.length && n.flowsOut.length)
+      nodes.filter((n) => !n.flows[IN].length && n.flows[OUT].length)
         .forEach((n) => {
-          n.stage = d3.min(n.flowsOut, (d) => d.target.stage) - 1;
+          n.stage = d3.min(n.flows[OUT], (d) => d.target.stage) - 1;
         });
     }
 
     function moveSinksRight() {
       // If any node is not the source for any others, then it's a dead-end;
       // move it all the way to the right of the diagram:
-      nodes.filter((n) => !n.flowsOut.length)
+      nodes.filter((n) => !n.flows[OUT].length)
         .forEach((n) => { n.stage = furthestStage - 1; });
     }
 
@@ -420,8 +419,8 @@ d3.sankey = () => {
             // If so, let's add value to the node we've already made:
             shadowNode = nodes[shadowNodeNames.get(newNodeName)];
             shadowNode.value += fVal;
-            shadowNode.totalIn += fVal;
-            shadowNode.totalOut += fVal;
+            shadowNode.total[IN] += fVal;
+            shadowNode.total[OUT] += fVal;
           } else {
             // A shadow node doesn't exist, so we make a fresh one with the
             // same sourceRow as the original flow:
@@ -431,11 +430,9 @@ d3.sankey = () => {
               name: newNodeName,
               sourceRow: f.sourceRow,
               isAShadow: true,
-              flowsIn: [],
-              flowsOut: [],
+              flows: { [IN]: [], [OUT]: [] },
+              total: { [IN]: fVal, [OUT]: fVal },
               value: fVal,
-              totalIn: fVal,
-              totalOut: fVal,
             };
             // Add this to the big list and to our shadow-tracking list:
             nodes.push(shadowNode);
@@ -470,8 +467,8 @@ d3.sankey = () => {
                   || targetNode.stage === f.target.stage,
             };
           flows.push(newFlow);
-          newFlow.source.flowsOut.push(newFlow);
-          newFlow.target.flowsIn.push(newFlow);
+          newFlow.source.flows[OUT].push(newFlow);
+          newFlow.target.flows[IN].push(newFlow);
         }
 
         // Now that we're done adopting various values from original flow f,
@@ -570,7 +567,7 @@ d3.sankey = () => {
         // chicken/egg problem: We want to use weighted centers based on
         // flows (i.e. flowSetStats), but at this point 0 flows are placed.
         // Simpler approach: use the weighted center of nodes flowing in.
-        const allFlowsIn = s.map((n) => n.flowsIn).flat();
+        const allFlowsIn = s.map((n) => n.flows[IN]).flat();
         if (allFlowsIn.length > 0) {
           const uniqueSourceNodes = new Set(
             allFlowsIn.map((f) => f.source)
@@ -617,14 +614,14 @@ d3.sankey = () => {
         // Shadows touching a real node adopt the same position as their
         // 'true' flow. (NOTE: This works because all shadows initially
         // *follow* all real flows.):
-        n.flowsOut.forEach((f) => {
+        n.flows[OUT].forEach((f) => {
           if (f.isAShadow && !n.isAShadow) {
             f.sy = flows[f.shadowOf].sy;
           } else {
             f.sy = sy; sy += f.dy;
           }
         });
-        n.flowsIn.forEach((f) => {
+        n.flows[IN].forEach((f) => {
           if (f.isAShadow && !n.isAShadow) {
             f.ty = flows[f.shadowOf].ty;
           } else {
@@ -641,8 +638,8 @@ d3.sankey = () => {
       // The population of flows to test = the combination of every
       // last flow touching this group of Nodes:
       const fStats = allFlowStats(nodeList),
-        totalIn = fStats.in.value,
-        totalOut = fStats.out.value;
+        totalIn = fStats[IN].value,
+        totalOut = fStats[OUT].value;
       // If there are no flows touching *either* side here, there's nothing
       // to offset ourselves relative to, so we can exit early:
       if (totalIn === 0 && totalOut === 0) { return 0; }
@@ -656,14 +653,14 @@ d3.sankey = () => {
         // If 100% of the value of the Node group is flowing in, then this is
         // exactly equivalent to: *the weighted center of all sources*.
         projectedSourceCenter
-          = (nStats.weight - fStats.in.targets.weight + fStats.in.sources.weight)
+          = (nStats.weight - fStats[IN].targets.weight + fStats[IN].sources.weight)
             / nStats.value,
         // projectedTargetCenter = the same idea in the other direction:
         //   current Node group's weighted center
         //     - outgoing weights' center
         //     + final center of those weights
         projectedTargetCenter
-          = (nStats.weight - fStats.out.sources.weight + fStats.out.targets.weight)
+          = (nStats.weight - fStats[OUT].sources.weight + fStats[OUT].targets.weight)
             / nStats.value;
 
       // Time to do the positioning calculations.
@@ -677,8 +674,8 @@ d3.sankey = () => {
         goalY = projectedTargetCenter;
       } else {
         // There are flows both in & out. Find the slope between the centers:
-        const startStage = fStats.in.sources.maxSourceStage,
-          endStage = fStats.out.targets.minTargetStage,
+        const startStage = fStats[IN].sources.maxSourceStage,
+          endStage = fStats[OUT].targets.minTargetStage,
           stageDistance = endStage - startStage,
           slopeBetweenCenters
             = stageDistance !== 0 // Avoid divide-by-0 error
@@ -875,4 +872,4 @@ d3.sankey = () => {
 };
 
 // Make the linter happy about imported objects:
-/* global d3 */
+/* global d3 IN OUT */
