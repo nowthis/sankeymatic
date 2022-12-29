@@ -479,11 +479,14 @@ function rotateColors(colors, offset) {
   return colors.slice(goodOffset).concat(colors.slice(0, goodOffset));
 }
 
+// We have to construct this fieldname in a few places:
+function offsetField(key) { return `theme_${key}_offset`; }
+
 // nudgeColorTheme: Called directly from the page.
 // User just clicked an arrow on a color theme.
 // Rotate the theme colors & re-display the diagram with the new set.
 glob.nudgeColorTheme = (themeKey, move) => {
-  const themeOffsetEl = el(`theme_${themeKey}_offset`),
+  const themeOffsetEl = el(offsetField(themeKey)),
     currentOffset = (themeOffsetEl === null) ? 0 : themeOffsetEl.value,
     colorsInTheme = approvedColorTheme(themeKey).colorset.length,
     newOffset = (colorsInTheme + +currentOffset + +move) % colorsInTheme;
@@ -730,12 +733,12 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Now that the stages & values are known, we can finish preparing the
   // Node & Flow objects for the SVG-rendering routine.
 
-  const userColorArray = cfg.default_node_colorset === 'none'
-      // User wants a color array with just the one value:
-      ? [cfg.default_node_color]
+  const userColorArray
+    = cfg.default_node_colorset === 'none'
+      ? [cfg.default_node_color] // (User wants just one color)
       : rotateColors(
-        approvedColorTheme(cfg.default_node_colorset).colorset,
-        cfg.selected_theme_offset
+          approvedColorTheme(cfg.default_node_colorset).colorset,
+          cfg[offsetField(cfg.default_node_colorset)]
         ),
     colorScaleFn = d3.scaleOrdinal(userColorArray),
     // Drawing curves with curvature of <= 0.1 looks bad and produces visual
@@ -1351,7 +1354,7 @@ glob.process_sankey = () => {
     );
     for (const t of colorThemes.keys()) {
       const theme = approvedColorTheme(t),
-        themeOffset = elV(`theme_${t}_offset`),
+        themeOffset = elV(offsetField(t)),
         colorset = rotateColors(theme.colorset, themeOffset),
         // Show the array rotated properly given the offset:
         renderedGuide = colorset
@@ -1555,7 +1558,6 @@ glob.process_sankey = () => {
     default_node_colorset: 'C',
     font_face: 'sans-serif',
     label_highlight: 0.55,
-    selected_theme_offset: 0,
     theme_a_offset: 7, theme_b_offset: 0,
     theme_c_offset: 0, theme_d_offset: 0,
     number_format: ',.',
@@ -1669,7 +1671,7 @@ glob.process_sankey = () => {
 
   // Vet the color theme offset fields:
   colorThemes.forEach((theme, themeKey) => {
-    const fldName = `theme_${themeKey}_offset`,
+    const fldName = offsetField(themeKey),
         fldVal = elV(fldName);
     // Verify that the number matches up with the possible offset
     // range for each theme.
@@ -1769,11 +1771,6 @@ glob.process_sankey = () => {
   const colorsetIn = radioRef('default_node_colorset').value;
   if (['a', 'b', 'c', 'd', 'none'].includes(colorsetIn)) {
     approvedCfg.default_node_colorset = colorsetIn;
-    // Given the selected theme, what's the specific offset for that theme?
-    approvedCfg.selected_theme_offset
-      = colorsetIn === 'none'
-      ? 0
-      : approvedCfg[`theme_${colorsetIn}_offset`];
   }
 
   // Checkboxes:
