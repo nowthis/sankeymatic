@@ -499,11 +499,11 @@ glob.nudgeColorTheme = (themeKey, move) => {
 };
 
 // render_sankey: given nodes, flows, and other config, MAKE THE SVG DIAGRAM:
-function render_sankey(allNodes, allFlows, cfg) {
+function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Set up functions and measurements we will need:
 
   // withUnits: Format a value with the current style.
-  function withUnits(n) { return formatUserData(n, cfg.numberStyle); }
+  function withUnits(n) { return formatUserData(n, numberStyle); }
 
   // To measure text sizes, first we make a dummy SVG area the user won't
   // see, with the same size and font details as the real diagram:
@@ -1558,34 +1558,8 @@ glob.process_sankey = () => {
     selected_theme_offset: 0,
     theme_a_offset: 7, theme_b_offset: 0,
     theme_c_offset: 0, theme_d_offset: 0,
-    numberStyle: {
-      marks: { group: ',', decimal: '.' },
-      decimalPlaces: maxDecimalPlaces,
-      trimString: '',
-      prefix: '',
-      suffix: '',
-    },
+    number_format: ',.',
   };
-
-  // withUnits: Format a value with the current style.
-  function withUnits(n) { return formatUserData(n, approvedCfg.numberStyle); }
-
-  // explainSum: Returns an html string showing the flow amounts which
-  // add up to a node's total value in or out.
-  function explainSum(n, dir) {
-    const formattedSum = withUnits(n.total[dir]),
-      flowCt = n.flows[dir].length;
-    if (flowCt === 1) { return formattedSum; }
-
-    // When there are multiple amounts, the amount appears as a hover
-    // target with a tooltip showing the breakdown in descending order.
-    const breakdown = n.flows[dir].map((f) => f.value)
-        .sort((a, b) => b - a)
-        .map((v) => withUnits(v))
-        .join(' + ');
-    return `<dfn title="${formattedSum} from ${flowCt} `
-      + `Flows: ${breakdown}">${formattedSum}</dfn>`;
-  }
 
   // reset_field: We got bad input, so reset the form field to the default value
   function reset_field(fldName) {
@@ -1744,7 +1718,7 @@ glob.process_sankey = () => {
   // Verify valid plain strings:
   (['unit_prefix', 'unit_suffix']).forEach((fldName) => {
     const fldVal = elV(fldName);
-    approvedCfg.numberStyle[fldName.slice(-6)]
+    approvedCfg[fldName]
       = (typeof fldVal !== 'undefined'
         && fldVal !== null
         && fldVal.length <= 10)
@@ -1756,14 +1730,7 @@ glob.process_sankey = () => {
   (['number_format']).forEach((fldName) => {
     const fldVal = elV(fldName);
     if (fldVal.length === 2 && (/^[,. X][,.]$/.exec(fldVal))) {
-      // Grab the 1st character if it's a valid 'group' value:
-      const groupMark = (/^[,. X]/.exec(fldVal))[0];
-      // No Separator (X) is a special case:
-      approvedCfg.numberStyle.marks.group
-        = groupMark === 'X' ? '' : groupMark;
-      // Grab the 2nd character if it's a valid 'decimal' value:
-      approvedCfg.numberStyle.marks.decimal
-        = (/^.([,.])/.exec(fldVal))[1];
+      approvedCfg.number_format = fldVal;
     } else {
       reset_field(fldName);
     }
@@ -1827,18 +1794,47 @@ glob.process_sankey = () => {
     }
   });
 
-  // Finish setting up the numberStyle object. (It's used in render_sankey.)
-  // 'trimString' = string to be used in the d3.format expression later:
-  approvedCfg.numberStyle.trimString
-    = el('display_full_precision').checked ? '' : '~';
+  // Set up the numberStyle object. (It's used in render_sankey.)
+  const [groupMark, decimalMark] = approvedCfg.number_format,
+    numberStyle = {
+      marks: {
+        group: groupMark === 'X' ? '' : groupMark,
+        decimal: decimalMark,
+      },
+      decimalPlaces: maxDecimalPlaces,
+      // 'trimString' = string to be used in the d3.format expression later:
+      trimString: el('display_full_precision').checked ? '' : '~',
+      prefix: approvedCfg.unit_prefix,
+      suffix: approvedCfg.unit_suffix,
+    };
 
   // All is ready. Do the actual rendering:
-  render_sankey(approvedNodes, approvedFlows, approvedCfg);
+  render_sankey(approvedNodes, approvedFlows, approvedCfg, numberStyle);
 
   // Re-make the PNG+SVG outputs in the background so they are ready to use:
   glob.renderExportableOutputs();
 
   // POST-RENDER ACTIVITY: various stats and UI updates.
+
+  // withUnits: Format a value with the current style.
+  function withUnits(n) { return formatUserData(n, numberStyle); }
+
+  // explainSum: Returns an html string showing the flow amounts which
+  // add up to a node's total value in or out.
+  function explainSum(n, dir) {
+    const formattedSum = withUnits(n.total[dir]),
+      flowCt = n.flows[dir].length;
+    if (flowCt === 1) { return formattedSum; }
+
+    // When there are multiple amounts, the amount appears as a hover
+    // target with a tooltip showing the breakdown in descending order.
+    const breakdown = n.flows[dir].map((f) => f.value)
+        .sort((a, b) => b - a)
+        .map((v) => withUnits(v))
+        .join(' + ');
+    return `<dfn title="${formattedSum} from ${flowCt} `
+      + `Flows: ${breakdown}">${formattedSum}</dfn>`;
+  }
 
   // Given maxDecimalPlaces, we can derive the smallest important
   // difference, defined as smallest-input-decimal/10; this lets us work
@@ -1936,13 +1932,13 @@ glob.process_sankey = () => {
     // Use <=2 decimal places to describe the tallest node's height:
     formattedPixelCount = updateMarks(
       d3.format(',.2~f')(tallestNodeHeight),
-      approvedCfg.numberStyle.marks
+      numberStyle.marks
     ),
     // Show this value using the user's units, but override the number of
     // decimal places to show 4 digits of precision:
     unitsPerPixel = formatUserData(
       maxNodeVal / tallestNodeHeight,
-      { ...approvedCfg.numberStyle, decimalPlaces: 4 }
+      { ...numberStyle, decimalPlaces: 4 }
     );
   el('scale_figures').innerHTML
     = `<strong>${unitsPerPixel}</strong> per pixel `
