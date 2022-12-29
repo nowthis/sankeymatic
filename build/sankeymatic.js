@@ -665,10 +665,10 @@ function render_sankey(allNodes, allFlows, cfg) {
     const graphW = cfg.canvas_width - cfg.left_margin - cfg.right_margin,
       graphH = cfg.canvas_height - cfg.top_margin - cfg.bottom_margin,
       lastStage = stagesArr.length - 1,
-      labelsBeforeFirst = stagesArr[0]
-        .filter((n) => (n.label !== undefined) && n.label.anchor === 'end'),
-      labelsAfterLast = stagesArr[lastStage]
-        .filter((n) => (n.label !== undefined) && (n.label.anchor === 'start')),
+      labelsBeforeFirst
+        = stagesArr[0].filter((n) => n.label?.anchor === 'end'),
+      labelsAfterLast
+        = stagesArr[lastStage].filter((n) => n.label?.anchor === 'start'),
       // If any labels are BEFORE stage 0, get stage[0]'s maxLabelWidth:
       leadingW
         = labelsBeforeFirst.length > 0
@@ -1310,12 +1310,7 @@ function render_sankey(allNodes, allFlows, cfg) {
 // process_sankey: Called directly from the page and within this script.
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = () => {
-  let maxDecimalPlaces = 0,
-    totalInflow = 0,
-    totalOutflow = 0,
-    statusMsg = '',
-    maxNodeIndex = 0,
-    maxNodeVal = 0;
+  let [maxDecimalPlaces, maxNodeIndex, maxNodeVal] = [0, 0, 0];
   const invalidLines = [],
     uniqueNodes = new Map(),
     approvedNodes = [],
@@ -1848,7 +1843,8 @@ glob.process_sankey = () => {
   // Given maxDecimalPlaces, we can derive the smallest important
   // difference, defined as smallest-input-decimal/10; this lets us work
   // around various binary/decimal math issues.
-  const epsilonDifference = 10 ** (-maxDecimalPlaces - 1);
+  const epsilonDifference = 10 ** (-maxDecimalPlaces - 1),
+    grandTotal = { [IN]: 0, [OUT]: 0 };
 
   // After rendering, there are now more keys in the node records, including
   // 'total' and 'value'.
@@ -1862,16 +1858,15 @@ glob.process_sankey = () => {
       if (Math.abs(difference) > epsilonDifference) {
         differences.push({
           name: n.name,
-          total_in: explainSum(n, IN),
-          total_out: explainSum(n, OUT),
+          total: { [IN]: explainSum(n, IN), [OUT]: explainSum(n, OUT) },
           difference: withUnits(difference),
         });
       }
     } else {
       // Accumulate totals in & out of the graph
       // (On this path, one of these values will be 0 every time.)
-      totalInflow += n.total[IN];
-      totalOutflow += n.total[OUT];
+      grandTotal[IN] += n.total[IN];
+      grandTotal[OUT] += n.total[OUT];
     }
 
     // Btw, check if this is a new maximum node:
@@ -1902,8 +1897,8 @@ glob.process_sankey = () => {
     differences.forEach((diffRec) => {
       differenceRows.push(
         `<tr><td class="nodename">${escapeHTML(diffRec.name)}</td>`
-        + `<td>${diffRec.total_in}</td>`
-        + `<td>${diffRec.total_out}</td>`
+        + `<td>${diffRec.total[IN]}</td>`
+        + `<td>${diffRec.total[OUT]}</td>`
         + `<td>${diffRec.difference}</td></tr>`
       );
     });
@@ -1916,21 +1911,21 @@ glob.process_sankey = () => {
   }
 
   // Reflect summary stats to the user:
-  statusMsg
+  let totalsMsg
     = `<strong>${approvedFlows.length} Flows</strong> between `
     + `<strong>${approvedNodes.length} Nodes</strong>. `;
 
   // Do the totals match? If not, mention the different totals:
-  if (Math.abs(totalInflow - totalOutflow) > epsilonDifference) {
-    const gtLt = totalInflow > totalOutflow ? '&gt;' : '&lt;';
-    statusMsg
-      += `Total Inputs: <strong>${withUnits(totalInflow)}</strong> ${gtLt}`
-      + ` Total Outputs: <strong>${withUnits(totalOutflow)}</strong>`;
+  if (Math.abs(grandTotal[IN] - grandTotal[OUT]) > epsilonDifference) {
+    const gtLt = grandTotal[IN] > grandTotal[OUT] ? '&gt;' : '&lt;';
+    totalsMsg
+      += `Total Inputs: <strong>${withUnits(grandTotal[IN])}</strong> ${gtLt}`
+      + ` Total Outputs: <strong>${withUnits(grandTotal[OUT])}</strong>`;
   } else {
-    statusMsg += 'Total Inputs = Total Outputs = '
-      + `<strong>${withUnits(totalInflow)}</strong> &#9989;`;
+    totalsMsg += 'Total Inputs = Total Outputs = '
+      + `<strong>${withUnits(grandTotal[IN])}</strong> &#9989;`;
   }
-  setTotalsMsg(statusMsg);
+  setTotalsMsg(totalsMsg);
 
   updateColorThemeDisplay();
 
