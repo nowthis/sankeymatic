@@ -290,7 +290,7 @@ function flatFlowPathMaker(f) {
   // a [L]ine to the opposite corner, a [v]ertical line up,
   // then [z] close.
   return `M${ep(sx)} ${ep(syTop)}v${ep(f.dy)}`
-    + `L${ep(tx)} ${ep(tyBot)}v-${ep(f.dy)}z`;
+    + `L${ep(tx)} ${ep(tyBot)}v${ep(-f.dy)}z`;
 }
 
 // curvedFlowPathFunction(curvature):
