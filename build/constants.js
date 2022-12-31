@@ -1,22 +1,91 @@
 // constants.js: Reference file with several values used in sankeymatic.js
 /* eslint-disable no-unused-vars */
 
-// fontMetrics = measurements relating to labels & their highlights
-//   Structure:
-//     browserKey ('firefox' or '*')
-//       -> font-face or '*'
-//         -> values
-//   Value list:
-//     - dy: what fraction of the BoundingBox to lower labels to make them
-//       vertically-centered relative to their Node
-//     - top, bot: how many x-heights to pad above/below the BoundingBox
-//     - inner: how many em-widths to pad between the label and the
-//       highlight's edge (could be on the left or right)
-//     - outer: how many em-widths to pad at the end furthest from the Node
-//     - marginRight: what multiple of 'inner' to move labels to the right
-//     - marginAdjLeft: offset to add to marginRight when moving labels
-//       to left
-const fontMetrics
+// skmSettings = Settings required to render a diagram.
+// Format =
+//   field_name:
+//     [data type on the page, initial value, allowed values,
+//     (possible additions: readable name, type in text input, has_shortcut)]
+// 'Allowed values' means different things per type:
+//   whole = [min, [max]]
+//   text = [min-length, max-length]
+//   radio = [literal list of radio option values]
+//   margin = [0, max value key (either size_h or size_w)]
+// These types' constraints are NOT specified here; they are enforced in code:
+//   decimal = (always 0.0 - 1.0)
+//   color = (always a hex color spec)
+//   yn = (always y or n)
+const skmSettings
+  = new Map([
+    ['size_h', ['whole', '600', [40]]],
+    ['size_w', ['whole', '600', [40]]],
+    ['margin_l', ['margin', '12', [0, 'size_w']]],
+    ['margin_r', ['margin', '12', [0, 'size_w']]],
+    ['margin_t', ['margin', '18', [0, 'size_h']]],
+    ['margin_b', ['margin', '20', [0, 'size_h']]],
+    ['bg_color', ['color', '#fff', []]],
+    ['bg_transparent', ['yn', 'n', []]],
+    ['node_border', ['whole', '0', [0]]],
+    ['node_color', ['color', '#888', []]],
+    ['node_height', ['whole', '50', [0, 100]]],
+    ['node_opacity', ['decimal', '1.0', []]],
+    ['node_spacing', ['whole', '85', [0, 100]]],
+    ['node_theme', ['radio', 'none', ['a', 'b', 'c', 'd', 'none']]],
+    ['node_width', ['whole', '9', [0]]],
+    ['flow_color', ['color', '#999', []]],
+    ['flow_curvature', ['decimal', '0.5', []]],
+    ['flow_inherit_color_from', ['radio', 'none', ['source', 'target', 'outside_in', 'none']]],
+    ['flow_opacity', ['decimal', '0.45', []]],
+    ['layout_justify_ends', ['yn', 'n', []]],
+    ['layout_justify_origins', ['yn', 'n', []]],
+    ['layout_order', ['radio', 'automatic', ['automatic', 'exact']]],
+    ['layout_reverse_graph', ['yn', 'n', []]],
+    ['label_color', ['color', '#000', []]],
+    ['label_font_face', ['radio', 'sans-serif', ['monospace', 'sans-serif', 'serif']]],
+    ['label_highlight', ['decimal', '0.55', []]],
+    ['label_name_size', ['whole', '16', [6]]],
+    ['label_name_weight', ['radio', '400', ['100', '400', '700']]],
+    ['label_position_breakpoint', ['whole', '999', [2]]],
+    ['label_position_first', ['radio', 'before', ['before', 'after']]],
+    ['label_shows_name', ['yn', 'y', []]],
+    ['label_shows_value', ['yn', 'y', []]],
+    ['value_format', ['list', ',.', [',.', '.,', ' .', ' ,', 'X.', 'X,']]],
+    ['value_prefix', ['text', '', [0, 99]]],
+    ['value_suffix', ['text', '', [0, 99]]],
+    ['value_show_full_precision', ['yn', 'y', []]],
+    ['theme_a_offset', ['whole', '7', [0, 9]]],
+    ['theme_b_offset', ['whole', '0', [0, 9]]],
+    ['theme_c_offset', ['whole', '0', [0, 7]]],
+    ['theme_d_offset', ['whole', '0', [0, 11]]],
+    ['meta_mention_sankeymatic', ['yn', 'y', []]],
+    ['meta_list_imbalances', ['yn', 'y', []]],
+    ['meta_iterations', ['whole', '25', [0, 50]]],
+    ['meta_reveal_shadows', ['yn', 'n', []]],
+  ]),
+
+  // Some reusable regular expressions to be precompiled (more coming):
+  reWholeNumber = /^\d+$/,
+  reDecimal = /^\d(?:.\d+)?$/,
+
+  // Some prime constants for enum values:
+  [IN, OUT, BEFORE, AFTER] = [11, 13, 17, 19],
+
+  // fontMetrics = measurements relating to labels & their highlights
+  //   Structure:
+  //     browserKey ('firefox' or '*')
+  //       -> font-face or '*'
+  //         -> values
+  //   Value list:
+  //     - dy: what fraction of the BoundingBox to lower labels to make them
+  //       vertically-centered relative to their Node
+  //     - top, bot: how many x-heights to pad above/below the BoundingBox
+  //     - inner: how many em-widths to pad between the label and the
+  //       highlight's edge (could be on the left or right)
+  //     - outer: how many em-widths to pad at the end furthest from the Node
+  //     - marginRight: what multiple of 'inner' to move labels to the right
+  //     - marginAdjLeft: offset to add to marginRight when moving labels
+  //       to left
+  fontMetrics
   = {
     firefox: {
       'sans-serif': {
@@ -81,10 +150,10 @@ const fontMetrics
         node_height: 50,
         node_spacing: 85,
         node_width: 9,
-        theme_a_radio: true,
-        flow_inherit_outside_in: true,
-        layout_justify_ends: false,
-        layout_order_automatic: true,
+        node_theme: 'a',
+        flow_inherit_color_from: 'outside_in',
+        layout_justify_ends: 'n',
+        layout_order: 'automatic',
         label_name_size: 16,
         value_prefix: '',
         },
@@ -99,10 +168,10 @@ const fontMetrics
         node_height: 76,
         node_spacing: 85,
         node_width: 9,
-        theme_a_radio: true,
-        flow_inherit_from_source: true,
-        layout_justify_ends: false,
-        layout_order_exact: true,
+        node_theme: 'a',
+        flow_inherit_color_from: 'source',
+        layout_justify_ends: 'n',
+        layout_order: 'exact',
         label_name_size: 14,
         value_prefix: '',
         },
@@ -117,10 +186,10 @@ const fontMetrics
         node_height: 50,
         node_spacing: 50,
         node_width: 5,
-        theme_a_radio: true,
-        flow_inherit_from_target: true,
-        layout_justify_ends: false,
-        layout_order_automatic: true,
+        node_theme: 'a',
+        flow_inherit_color_from: 'target',
+        layout_justify_ends: 'n',
+        layout_order: 'automatic',
         label_name_size: 14,
         value_prefix: '',
         },
@@ -135,10 +204,10 @@ const fontMetrics
         node_height: 70,
         node_spacing: 70,
         node_width: 5,
-        node_theme_none: true,
-        flow_inherit_none: true,
-        layout_justify_ends: true,
-        layout_order_automatic: true,
+        node_theme: 'none',
+        flow_inherit_color_from: 'none',
+        layout_justify_ends: 'y',
+        layout_order: 'automatic',
         label_name_size: 13,
         value_prefix: '$',
         },
@@ -153,10 +222,10 @@ const fontMetrics
         node_height: 50,
         node_spacing: 80,
         node_width: 12,
-        node_theme_none: true,
-        flow_inherit_none: true,
-        layout_justify_ends: false,
-        layout_order_automatic: true,
+        node_theme: 'none',
+        flow_inherit_color_from: 'none',
+        layout_justify_ends: 'n',
+        layout_order: 'automatic',
         label_name_size: 15,
         value_prefix: '',
         },
@@ -171,6 +240,4 @@ const fontMetrics
     //   flows: ":Losses #900 <<\n:Coal #444 <<\nAgricultural 'waste' [124.729] Bio-conversion\nBio-conversion [0.597] Liquid\nBio-conversion [26.862] Losses\nBio-conversion [280.322] Solid\nBio-conversion [81.144] Gas\nBiofuel imports [35] Liquid\nBiomass imports [35] Solid\nCoal imports [11.606] Coal\nCoal reserves [63.965] Coal\nCoal [75.571] Solid\nDistrict heating [10.639] Industry\nDistrict heating [22.505] Heating and cooling - commercial\nDistrict heating [46.184] Heating and cooling - homes\nElectricity grid [104.453] Over generation / exports\nElectricity grid [113.726] Heating and cooling - homes\nElectricity grid [27.14] H2 conversion\nElectricity grid [342.165] Industry\nElectricity grid [37.797] Road transport\nElectricity grid [4.412] Agriculture\nElectricity grid [40.858] Heating and cooling - commercial\nElectricity grid [56.691] Losses\nElectricity grid [7.863] Rail transport\nElectricity grid [90.008] Lighting & appliances - commercial\nElectricity grid [93.494] Lighting & appliances - homes\nGas imports [40.719] Ngas\nGas reserves [82.233] Ngas\nGas [0.129] Heating and cooling - commercial\nGas [1.401] Losses\nGas [151.891] Thermal generation\nGas [2.096] Agriculture\nGas [48.58] Industry\nGeothermal [7.013] Electricity grid\nH2 conversion [20.897] H2\nH2 conversion [6.242] Losses\nH2 [20.897] Road transport\nHydro [6.995] Electricity grid\nLiquid [121.066] Industry\nLiquid [128.69] International shipping\nLiquid [135.835] Road transport\nLiquid [14.458] Domestic aviation\nLiquid [206.267] International aviation\nLiquid [3.64] Agriculture\nLiquid [33.218] National navigation\nLiquid [4.413] Rail transport\nMarine algae [4.375] Bio-conversion\nNgas [122.952] Gas\nNuclear [839.978] Thermal generation\nOil imports [504.287] Oil\nOil reserves [107.703] Oil\nOil [611.99] Liquid\nOther waste [56.587] Solid\nOther waste [77.81] Bio-conversion\nPumped heat [193.026] Heating and cooling - homes\nPumped heat [70.672] Heating and cooling - commercial\nSolar PV [59.901] Electricity grid\nSolar Thermal [19.263] Heating and cooling - homes\nSolar [19.263] Solar Thermal\nSolar [59.901] Solar PV\nSolid [0.882] Agriculture\nSolid [400.12] Thermal generation\nSolid [46.477] Industry\nThermal generation [525.531] Electricity grid\nThermal generation [787.129] Losses\nThermal generation [79.329] District heating\nTidal [9.452] Electricity grid\nUK land based bioenergy [182.01] Bio-conversion\nWave [19.013] Electricity grid\nWind [289.366] Electricity grid",
     //   settings: {},
     // }],
-  ]),
-  // Some prime constants for enum values:
-  [IN, OUT, BEFORE, AFTER] = [11, 13, 17, 19];
+  ]);

@@ -369,9 +369,12 @@ glob.replaceGraphConfirmed = () => {
 
   // Update any settings which accompany the stored diagram:
   Object.entries(savedRecipe.settings).forEach(([fld, newVal]) => {
-    if (typeof newVal === 'boolean') { // boolean => radio or checkbox
-      el(fld).checked = newVal;
-    } else { // non-boolean => an ordinary value to set
+    const dataType = skmSettings.get(fld)[0];
+    if (dataType === 'yn') { // checkbox
+      el(fld).checked = newVal === 'y';
+    } else if (dataType === 'radio') {
+      radioRef(fld).value = newVal;
+    } else { // non-boolean, non-radio? It's an ordinary value to set:
       el(fld).value = newVal;
     }
   });
@@ -595,20 +598,24 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // After the .setup() step, Nodes are divided up into Stages.
   // stagesArr = each Stage in the diagram (and the Nodes inside them)
   let stagesArr = sankeyObj.stages();
-  const eLbp = el('label_position_breakpoint'),
+  // Update the label breakpoint controls based on the # of stages.
+  // We need a value meaning 'never'; that's 1 past the (1-based) end of the
+  // array, so: length + 1
+  const newMax = stagesArr.length + 1,
+    // We compare to the previous cached 'never' value on the page:
     eMaxOnPage = el('stages_plus_1'),
-    // We need a breakpoint value meaning 'never'; that's 1 past the
-    // (1-based) end of the array, so: length + 1
-    newMax = stagesArr.length + 1,
-    oldMax = eMaxOnPage.value;
-  // Has the number of stages changed?
+    oldMax = Number(eMaxOnPage.value);
+  // Has the 'never' value changed?
   if (oldMax !== newMax) {
+    // Update the slider's range with the new maximum:
+    const eLbp = el('label_position_breakpoint');
     eLbp.setAttribute('max', newMax);
     eMaxOnPage.value = newMax;
     // If the diagram has shrunk, OR if it's expanded but the 'never'
-    // option was chosen before, we need to adjust the breakpoint value
-    // to behave consistently:
-    if (eLbp.value > newMax || eLbp.value === oldMax) {
+    // option was chosen before, we need to adjust the breakpoint's value
+    // to be the new 'never' value:
+    if (cfg.label_position_breakpoint > newMax
+      || cfg.label_position_breakpoint === oldMax) {
       eLbp.value = newMax;
       cfg.label_position_breakpoint = newMax;
     }
@@ -731,7 +738,6 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 
   // Now that the stages & values are known, we can finish preparing the
   // Node & Flow objects for the SVG-rendering routine.
-
   const userColorArray
     = cfg.node_theme === 'none'
       ? [cfg.node_color] // (User wants just one color)
@@ -958,9 +964,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Given a Node index, apply its move to the SVG & remember it for later:
   function applyNodeMove(index) {
     const n = allNodes[index],
-      graphIsReversed = el('layout_reverse_graph').checked,
       // In the case of a reversed graph, we negate the x-move:
-      myXMove = n.move[0] * (graphIsReversed ? -1 : 1),
+      myXMove = n.move[0] * (cfg.layout_reverse_graph ? -1 : 1),
       availableW = graph.w - n.dx,
       availableH = graph.h - n.dy;
 
@@ -1312,17 +1317,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = () => {
   let [maxDecimalPlaces, maxNodeIndex, maxNodeVal] = [0, 0, 0];
-  const invalidLines = [],
-    uniqueNodes = new Map(),
-    approvedNodes = [],
-    goodFlows = [],
-    approvedFlows = [],
-    differences = [],
-    differencesEl = el('imbalances'),
-    listDifferencesEl = el('meta_list_imbalances'),
-    chartEl = el('chart'),
-    messagesEl = el('top_messages_container'),
-    graphIsReversed = el('layout_reverse_graph').checked;
+  const uniqueNodes = new Map(),
+    messagesEl = el('top_messages_container');
 
   // addMsgAbove: Put a message above the chart using the given class:
   function addMsgAbove(msgHTML, msgClass, msgGoesFirst) {
@@ -1364,20 +1360,6 @@ glob.process_sankey = () => {
       el(`theme_${t}_label`).textContent = theme.nickname;
     }
   }
-
-  // BEGIN by resetting all messages:
-  messagesEl.textContent = '';
-
-  // Go through lots of validation with plenty of bailout points and
-  // informative messages for the poor soul trying to do this.
-
-  // Checking the 'Transparent' background-color box *no longer* means that
-  // the color-picker is pointless; it still affects the color value which
-  // will be given to "Made with SankeyMATIC".
-  // Therefore, we no longer disable the Background Color element, even when
-  // 'Transparent' is checked.
-
-  // Flows validation:
 
   // addNodeName: Make sure a node's name is present in the 'unique' list
   // with the lowest row number the node has appeared on:
@@ -1423,16 +1405,32 @@ glob.process_sankey = () => {
     });
   }
 
+  // Go through lots of validation with plenty of bailout points and
+  // informative messages for the poor soul trying to do this.
+
+  // Note: Checking the 'Transparent' background-color box *no longer* means
+  // that the background-color-picker is pointless; it still affects the color
+  // value which will be given to "Made with SankeyMATIC".
+  // Therefore, we no longer disable the Background Color element, even when
+  // 'Transparent' is checked.
+
+  // BEGIN by resetting all messages:
+  messagesEl.textContent = '';
+
   // Parse inputs into: approvedNodes, approvedFlows, approvedConfig
   // As part of this step, we drop any zero-width spaces which may have
   // been appended or prepended to lines (e.g. when pasted from
   // PowerPoint), then trim again.
-  const sourceLines = elV('flows_in')
-    .split('\n')
-    .map((l) => l.trim()
-      .replace(/^\u200B+/, '')
-      .replace(/\u200B+$/, '')
-      .trim());
+  const invalidLines = [],
+    goodFlows = [],
+    approvedNodes = [],
+    approvedFlows = [],
+    sourceLines = elV('flows_in')
+      .split('\n')
+      .map((l) => l.trim()
+        .replace(/^\u200B+/, '')
+        .replace(/\u200B+$/, '')
+        .trim());
 
   // Loop through all the input lines, storing good ones vs bad ones:
   sourceLines.forEach((lineIn, row) => {
@@ -1519,72 +1517,8 @@ glob.process_sankey = () => {
     );
   });
 
-  // Set up some data & functions that only matter from this point on:
-
-  // approvedCfg begins with all the default values defined.
-  // Values the user enters will override these (if present & valid).
-  const approvedCfg = {
-    size_h: 600,
-    size_w: 600,
-    margin_t: 18, margin_r: 12, margin_b: 20, margin_l: 12,
-    bg_color: '#FFFFFF',
-    bg_transparent: 0,
-    node_border: 0,
-    node_color: '#006699',
-    node_height: 50,
-    node_opacity: 1.0,
-    node_spacing: 85,
-    node_theme: 'C',
-    node_width: 9,
-    flow_color: '#666666',
-    flow_curvature: 0.5,
-    flow_inherit_color_from: 'outside_in',
-    flow_opacity: 0.45,
-    layout_justify_ends: 0,
-    layout_justify_origins: 0,
-    layout_order: 'automatic',
-    layout_reverse_graph: 0,
-    label_color: '#000000',
-    label_font_face: 'sans-serif',
-    label_highlight: 0.55,
-    label_name_size: 15,
-    label_name_weight: 400,
-    label_position_breakpoint: 1,
-    label_position_first: 'before',
-    label_shows_name: 1,
-    label_shows_value: 1,
-    value_format: ',.',
-    value_prefix: '',
-    value_suffix: '',
-    meta_iterations: 25,
-    meta_mention_sankeymatic: 1,
-    meta_reveal_shadows: 0,
-    theme_a_offset: 7, theme_b_offset: 0,
-    theme_c_offset: 0, theme_d_offset: 0,
-  };
-
-  // reset_field: We got bad input, so reset the form field to the default value
-  function reset_field(fldName) {
-    el(fldName).value = approvedCfg[fldName];
-  }
-
-  // get_color_input: If a field has a valid-looking HTML color value, then use it
-  function get_color_input(fldName) {
-    const fieldEl = el(fldName);
-    let fldVal = fieldEl.value;
-    if (fldVal.match(/^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i)) {
-      approvedCfg[fldName] = fldVal;
-    } else if (fldVal.match(/^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i)) {
-      // Forgive colors with missing #:
-      fldVal = `#${fldVal}`;
-      approvedCfg[fldName] = fldVal;
-      fieldEl.value = fldVal;
-    } else {
-      reset_field(fldName);
-    }
-  }
-
   // Make the final list of Flows:
+  const graphIsReversed = el('layout_reverse_graph').checked;
   goodFlows.forEach((flow) => {
     // Look for extra content about this flow on the target-node end of the
     // string:
@@ -1651,43 +1585,96 @@ glob.process_sankey = () => {
       approvedNodes.push(n);
     });
 
-  // Whole positive numbers:
-  ['size_w', 'size_h', 'margin_t', 'margin_r', 'margin_b', 'margin_l',
-    'node_border', 'node_height', 'node_spacing', 'node_width',
-    'label_name_size', 'label_name_weight', 'label_position_breakpoint',
-    'meta_iterations'].forEach((fldName) => {
-    const fldVal = elV(fldName);
-    if (fldVal.length < 10 && fldVal.match(/^\d+$/)) {
-      approvedCfg[fldName] = Number(fldVal);
-    } else {
-      reset_field(fldName);
-    }
-  });
+  // MARK: Validate the user's settings.
+  const approvedCfg = {};
 
-  // Vet the color theme offset fields:
-  colorThemes.forEach((theme, themeKey) => {
-    const fldName = offsetField(themeKey),
-        fldVal = elV(fldName);
-    // Verify that the number matches up with the possible offset
-    // range for each theme.
-    // It has to be either 1 or 2 digits (some ranges have > 9 options):
-    if (fldVal.match(/^\d{1,2}$/)
-      // No '-', so it's at least a positive number. Is it too big?:
-      && Number(fldVal) <= (theme.colorset.length - 1)) {
-      // It's a valid offset, let it through:
-      approvedCfg[fldName] = Number(fldVal);
-    } else {
-      reset_field(fldName);
-    }
-  });
+  skmSettings.forEach((fldData, fldName) => {
+    const fldEl = el(fldName),
+      fldVal = fldEl === null ? '' : fldEl.value,
+      [dataType, defaultVal, allowList] = fldData,
+      fldIsNumeric = ['whole', 'decimal', 'margin'].includes(dataType);
+    let valueIsValid = false;
 
-  ['flow_color', 'bg_color', 'label_color', 'node_color']
-    .forEach((fldName) => {
-    get_color_input(fldName);
+    function setValidValue(v) {
+      approvedCfg[fldName] = v;
+      valueIsValid = true;
+    }
+
+    // resetField(): If we got bad input somehow, reset both the field on
+    // the web page AND the value in the approvedCfg to be the default:
+    function resetField() {
+      // Most types, we can just set the field on the page to a string.
+      // Deal with the weirdest exceptions first:
+      if (dataType === 'yn') { // Checkboxes
+        const boolVal = defaultVal === 'y';
+        fldEl.checked = boolVal;
+        approvedCfg[fldName] = boolVal;
+        return;
+      }
+
+      if (dataType === 'radio') { // Radio buttons
+        radioRef(fldName).value = defaultVal;
+        approvedCfg[fldName] = defaultVal;
+        return;
+    }
+
+      // The remaining non-numeric types are: color, list, text
+      approvedCfg[fldName] = fldIsNumeric ? Number(defaultVal) : defaultVal;
+      // Set the field on the page with the text version of the default value:
+      el(fldName).value = defaultVal;
+    }
+
+    // OK, ready to validate. Several types require special handling:
+    if (fldIsNumeric) {
+      // Verify the field's overall format is appropriate:
+      if ((['whole', 'margin'].includes(dataType) && reWholeNumber.test(fldVal))
+        || (dataType === 'decimal' && reDecimal.test(fldVal))) {
+        const fldAsNum = Number(fldVal);
+        let [minV, maxV] = [0];
+        switch (dataType) {
+          case 'whole': [minV, maxV] = allowList; break;
+          case 'decimal': maxV = 1.0; break;
+          // Margins are processed after the diagram's size is set
+          // (they appear later in the settings list), so we can
+          // compare them to their specific dimension:
+          case 'margin': maxV = approvedCfg[allowList[1]]; break;
+          // no default
+        }
+        if (fldAsNum >= minV && (maxV === undefined || fldAsNum <= maxV)) {
+          setValidValue(fldAsNum);
+        }
+      }
+    } else if (dataType === 'yn' && fldEl !== null) {
+      setValidValue(fldEl.checked);
+    } else if (dataType === 'radio') {
+      // Have to read a radio value in a special way:
+      const radioVal = radioRef(fldName).value;
+      if (allowList.includes(radioVal)) { setValidValue(radioVal); }
+    } else if (dataType === 'list' && allowList.includes(fldVal)) {
+      setValidValue(fldVal);
+    } else if (dataType === 'color') {
+      if (fldVal.match(/^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i)) {
+        setValidValue(fldVal);
+      } else if (fldVal.match(/^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i)) {
+        // Forgive colors with missing #:
+        fldEl.value = `#${fldVal}`; // Set it to be correct on the page
+        setValidValue(`#${fldVal}`);
+      }
+    } else if (dataType === 'text') {
+      const [minLen, maxLen] = allowList,
+        fldLen = fldVal.length;
+      if (fldLen >= minLen && (maxLen === undefined || fldLen <= maxLen)) {
+        setValidValue(fldVal);
+      }
+    }
+
+    // Was the input badly formed or out of range? Replace it with the default:
+    if (!valueIsValid) { resetField(fldName); }
   });
 
   // Since we know the canvas' intended size now, go ahead & set that up
   // (before we potentially quit):
+  const chartEl = el('chart');
   chartEl.style.height = `${approvedCfg.size_h}px`;
   chartEl.style.width = `${approvedCfg.size_w}px`;
 
@@ -1712,80 +1699,6 @@ glob.process_sankey = () => {
     return null;
   }
 
-  // Verify valid plain strings:
-  ['value_prefix', 'value_suffix'].forEach((fldName) => {
-    const fldVal = elV(fldName);
-    approvedCfg[fldName]
-      = (typeof fldVal !== 'undefined'
-        && fldVal !== null
-        && fldVal.length <= 10)
-        ? fldVal
-        : '';
-  });
-
-  // Interpret user's number format settings:
-  ['value_format'].forEach((fldName) => {
-    const fldVal = elV(fldName);
-    if (fldVal.length === 2 && (/^[,. X][,.]$/.exec(fldVal))) {
-      approvedCfg.value_format = fldVal;
-    } else {
-      reset_field(fldName);
-    }
-  });
-
-  // RADIO VALUES:
-
-  // Direction of flow color inheritance:
-  let flowInherit = radioRef('flow_inherit_color_from').value;
-  if (['source', 'target', 'outside_in', 'none'].includes(flowInherit)) {
-    if (graphIsReversed) {
-      switch (flowInherit) {
-        case 'source': flowInherit = 'target'; break;
-        case 'target': flowInherit = 'source'; break;
-        // no default
-      }
-    }
-    approvedCfg.flow_inherit_color_from = flowInherit;
-  }
-
-  const labelFirstPos = radioRef('label_position_first').value;
-  if (['before', 'after'].includes(labelFirstPos)) {
-    approvedCfg.label_position_first = labelFirstPos;
-  }
-
-  const fontFaceIn = radioRef('label_font_face').value;
-  if (['serif', 'sans-serif', 'monospace'].includes(fontFaceIn)) {
-    approvedCfg.label_font_face = fontFaceIn;
-  }
-
-  const layoutOrderIn = radioRef('layout_order').value;
-  if (['automatic', 'exact'].includes(layoutOrderIn)) {
-    approvedCfg.layout_order = layoutOrderIn;
-  }
-
-  const colorsetIn = radioRef('node_theme').value;
-  if (['a', 'b', 'c', 'd', 'none'].includes(colorsetIn)) {
-    approvedCfg.node_theme = colorsetIn;
-  }
-
-  // Checkboxes:
-  ['label_shows_name', 'label_shows_value', 'bg_transparent',
-    'layout_justify_origins', 'layout_justify_ends',
-    'meta_mention_sankeymatic', 'meta_reveal_shadows'].forEach((fldName) => {
-    approvedCfg[fldName] = el(fldName).checked;
-  });
-
-  // Decimal:
-  ['node_opacity', 'flow_opacity', 'label_highlight', 'flow_curvature']
-    .forEach((fldName) => {
-    const fldVal = elV(fldName);
-    if (fldVal.match(/^\d(?:.\d+)?$/)) {
-      approvedCfg[fldName] = fldVal;
-    } else {
-      reset_field(fldName);
-    }
-  });
-
   // Set up the numberStyle object. (It's used in render_sankey.)
   const [groupMark, decimalMark] = approvedCfg.value_format,
     numberStyle = {
@@ -1795,10 +1708,20 @@ glob.process_sankey = () => {
       },
       decimalPlaces: maxDecimalPlaces,
       // 'trimString' = string to be used in the d3.format expression later:
-      trimString: el('value_show_full_precision').checked ? '' : '~',
+      trimString: approvedCfg.value_show_full_precision ? '' : '~',
       prefix: approvedCfg.value_prefix,
       suffix: approvedCfg.value_suffix,
     };
+
+  // Deal with inheritance swap if graph is reversed:
+  if (approvedCfg.layout_reverse_graph) {
+    // Only two of the possible values require any change:
+    switch (approvedCfg.flow_inherit_color_from) {
+      case 'source': approvedCfg.flow_inherit_color_from = 'target'; break;
+      case 'target': approvedCfg.flow_inherit_color_from = 'source'; break;
+      // no default
+    }
+  }
 
   // All is ready. Do the actual rendering:
   render_sankey(approvedNodes, approvedFlows, approvedCfg, numberStyle);
@@ -1832,6 +1755,7 @@ glob.process_sankey = () => {
   // difference, defined as smallest-input-decimal/10; this lets us work
   // around various binary/decimal math issues.
   const epsilonDifference = 10 ** (-maxDecimalPlaces - 1),
+    differences = [],
     grandTotal = { [IN]: 0, [OUT]: 0 };
 
   // Look for imbalances in Nodes so we can respond to them:
@@ -1866,6 +1790,8 @@ glob.process_sankey = () => {
   });
 
   // Update UI options based on the presence of mismatched rows:
+  const listDifferencesEl = el('meta_list_imbalances'),
+    differencesEl = el('imbalances');
   if (differences.length) {
     // Enable the controls for letting the user show the differences:
     listDifferencesEl.disabled = false;
@@ -1949,4 +1875,4 @@ glob.process_sankey();
 
 // Make the linter happy about imported objects:
 /* global d3, canvg, sampleDiagramRecipes, global, fontMetrics, highlightStyles IN OUT
-  BEFORE AFTER */
+  BEFORE AFTER skmSettings reWholeNumber reDecimal */
