@@ -851,7 +851,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         switch (cfg.flow_inherit_color_from) {
           case 'source': f.color = f.source.color; break;
           case 'target': f.color = f.target.color; break;
-          case 'outside_in':
+          case 'outside-in':
             // Is the flow's midpoint in the right half, or left?
             // (In the exact middle, we use the source color.)
             f.color = flowMidpoint <= stagesMidpoint()
@@ -1874,5 +1874,5 @@ glob.process_sankey();
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
-/* global d3, canvg, sampleDiagramRecipes, global, fontMetrics, highlightStyles IN OUT
-  BEFORE AFTER skmSettings reWholeNumber reDecimal */
+/* global d3, canvg, sampleDiagramRecipes, global, fontMetrics, highlightStyles
+ IN OUT BEFORE AFTER skmSettings reWholeNumber reDecimal */
