@@ -42,7 +42,7 @@ const skmSettings
     ['layout_reverse_graph', ['yn', 'n', []]],
     ['label_font_face', ['radio', 'sans-serif', ['monospace', 'sans-serif', 'serif']]],
     ['label_color', ['color', '#000000', []]],
-    ['label_position_breakpoint', ['whole', '999', [2]]],
+    ['label_position_breakpoint', ['breakpoint', '9999', [2]]],
     ['label_position_first', ['radio', 'before', ['before', 'after']]],
     ['label_shows_name', ['yn', 'y', []]],
     ['label_shows_value', ['yn', 'y', []]],

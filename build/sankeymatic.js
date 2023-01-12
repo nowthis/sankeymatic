@@ -37,6 +37,10 @@ glob.togglePanel = (panel) => {
 
 function outputFieldEl(fld) { return el(`${fld}_val`); }
 
+// We store the breakpoint which means 'never' here for easy reference.
+// When there are valid inputs, this is set to (stages count + 1).
+glob.labelNeverBreakpoint = 9999;
+
 // updateOutput: Called directly from the page.
 // Given a field's name, update the visible value shown to the user.
 glob.updateOutput = (fld) => {
@@ -60,7 +64,7 @@ glob.updateOutput = (fld) => {
     case '%': oEl.textContent = `${fldVal}%`; break;
     case 'never':
       oEl.textContent
-        = (fldVal === elV('stages_plus_1') ? '∅' : fldVal);
+        = (Number(fldVal) === glob.labelNeverBreakpoint ? '∅' : fldVal);
       break;
     default: oEl.textContent = fldVal;
   }
@@ -601,24 +605,22 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Update the label breakpoint controls based on the # of stages.
   // We need a value meaning 'never'; that's 1 past the (1-based) end of the
   // array, so: length + 1
-  const newMax = stagesArr.length + 1,
-    // We compare to the previous cached 'never' value on the page:
-    eMaxOnPage = el('stages_plus_1'),
-    oldMax = Number(eMaxOnPage.value);
+  const newMax = stagesArr.length + 1;
   // Has the 'never' value changed?
-  if (oldMax !== newMax) {
+  if (newMax !== glob.labelNeverBreakpoint) {
     // Update the slider's range with the new maximum:
-    const eLbp = el('label_position_breakpoint');
-    eLbp.setAttribute('max', newMax);
-    eMaxOnPage.value = newMax;
-    // If the diagram has shrunk, OR if it's expanded but the 'never'
-    // option was chosen before, we need to adjust the breakpoint's value
-    // to be the new 'never' value:
+    const elBreakpointSlider = el('label_position_breakpoint');
+    elBreakpointSlider.setAttribute('max', newMax);
+    // If the stage count has become lower than the breakpoint value, OR
+    // if the stage count has increased but the old 'never' value was chosen,
+    // we also need to adjust the slider's value to be the new 'never' value:
     if (cfg.label_position_breakpoint > newMax
-      || cfg.label_position_breakpoint === oldMax) {
-      eLbp.value = newMax;
+      || cfg.label_position_breakpoint === glob.labelNeverBreakpoint) {
+      elBreakpointSlider.value = newMax;
       cfg.label_position_breakpoint = newMax;
     }
+    // After that check, we can update the remembered breakpoint:
+    glob.labelNeverBreakpoint = newMax;
   }
 
   // MARK Label-measuring time
@@ -1592,7 +1594,8 @@ glob.process_sankey = () => {
     const fldEl = el(fldName),
       fldVal = fldEl === null ? '' : fldEl.value,
       [dataType, defaultVal, allowList] = fldData,
-      fldIsNumeric = ['whole', 'decimal', 'margin'].includes(dataType);
+      fldIsNumeric
+        = ['whole', 'decimal', 'margin', 'breakpoint'].includes(dataType);
     let valueIsValid = false;
 
     function setValidValue(v) {
@@ -1627,12 +1630,13 @@ glob.process_sankey = () => {
     // OK, ready to validate. Several types require special handling:
     if (fldIsNumeric) {
       // Verify the field's overall format is appropriate:
-      if ((['whole', 'margin'].includes(dataType) && reWholeNumber.test(fldVal))
-        || (dataType === 'decimal' && reDecimal.test(fldVal))) {
+      if ((dataType === 'decimal' && reDecimal.test(fldVal))
+        || (dataType !== 'decimal' && reWholeNumber.test(fldVal))) {
         const fldAsNum = Number(fldVal);
         let [minV, maxV] = [0];
         switch (dataType) {
           case 'whole': [minV, maxV] = allowList; break;
+          case 'breakpoint': maxV = glob.labelNeverBreakpoint; break;
           case 'decimal': maxV = 1.0; break;
           // Margins are processed after the diagram's size is set
           // (they appear later in the settings list), so we can
