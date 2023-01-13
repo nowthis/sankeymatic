@@ -25,9 +25,10 @@ function elV(domId) { return document.getElementById(domId).value; }
 // Given a panel's name, hide or show that control panel.
 glob.togglePanel = (panel) => {
   const panelEl = el(panel),
+    displayStyle = panelEl.tagName === 'SPAN' ? 'inline' : '',
     // Set up the new values:
     newVals = panelEl.style.display === 'none'
-      ? { display: '', suffix: ':', action: String.fromCharCode(8211) }
+      ? { display: displayStyle, suffix: ':', action: String.fromCharCode(8211) }
       : { display: 'none', suffix: '...', action: '+' };
   panelEl.style.display = newVals.display;
   el(`${panel}_hint`).textContent = newVals.suffix;
@@ -195,12 +196,20 @@ function initializeDiagram(cfg) {
   svgEl.textContent = ''; // Someday use replaceChildren() instead
 }
 
-// render_png: Build a PNG file in the background
-function render_png(curDate) {
+// fileTimestamp() => 'yyyymmdd_hhmmss' for the current locale's time.
+// Set up the formatting function once:
+const formatTimestamp = d3.timeFormat('%Y%m%d_%H%M%S');
+glob.fileTimestamp = () => formatTimestamp(new Date());
+
+// humanTimestamp() => readable date in the current locale,
+// e.g. "1/3/2023, 7:33:31 PM"
+glob.humanTimestamp = () => new Date().toLocaleString();
+
+// scaledPNG: Build a data URL for a PNG representing the current diagram:
+function scaledPNG(scale) {
   const chartEl = el('chart'),
     orig = { w: chartEl.clientWidth, h: chartEl.clientHeight },
-    // What scale does the user want (1,2,4,6)?:
-    scaleFactor = clamp(elV('scale_x'), 1, 6),
+    scaleFactor = clamp(scale, 1, 6),
     scaled = { w: orig.w * scaleFactor, h: orig.h * scaleFactor },
     // Canvg 3 needs interesting offsets added when scaling up:
     offset = {
@@ -212,7 +221,9 @@ function render_png(curDate) {
     canvasContext = canvasEl.getContext('2d'),
     svgContent = (new XMLSerializer()).serializeToString(el('sankey_svg'));
 
-  // Set the canvas element to the final height/width the user wants:
+  // Set the canvas element to the final height/width the user wants.
+  // NOTE: THIS CAN FAIL. Canvases have maximum dimensions and a max area.
+  // TODO: Disable any export buttons which will fail silently.
   canvasEl.width = scaled.w;
   canvasEl.height = scaled.h;
 
@@ -232,30 +243,42 @@ function render_png(curDate) {
   );
   canvgObj.render();
 
-  // Turn canvg's output into a PNG:
-  const pngLinkEl = el('download_png_link'),
-    // Generate yyyymmdd_hhmmss string:
-    fileTimestamp
-      = (curDate.toISOString().replace(/T.+$/, '_')
-      + curDate.toTimeString().replace(/ .+$/, ''))
-        .replace(/[:-]/g, '');
-  // Convert canvas image to a URL-encoded PNG and update the link:
-  pngLinkEl.setAttribute('href', canvasEl.toDataURL('image/png'));
-  // update download link & filename with dimensions:
-  pngLinkEl.textContent = `Export ${scaled.w} x ${scaled.h} PNG`;
-  pngLinkEl.setAttribute('download', `sankeymatic_${fileTimestamp}_${scaled.w}x${scaled.h}.png`);
-
-  // Update img tag hint with the user's original dimensions:
-  el('img_tag_hint_w').textContent = orig.w;
-  el('img_tag_hint_h').textContent = orig.h;
+  // Turn canvg's output into a data URL and return it with size info:
+  return [scaled, canvasEl.toDataURL('image/png')];
 }
 
-// produce_svg_code: take the current state of 'sankey_svg' and
-// relay it nicely to the user
-function produce_svg_code(curDate) {
-  // For the user-facing SVG code, make a copy of the real SVG & make a
-  // few small changes:
-  const svgForCopying
+// downloadABlob: given an object & a filename, send it to the user:
+function downloadADataURL(dataURL, name) {
+  const newA = document.createElement('a');
+  newA.style.display = 'none';
+  newA.href = dataURL;
+  newA.download = name;
+  document.body.append(newA);
+  newA.click(); // This kicks off the download
+  newA.remove(); // Discard the Anchor we just clicked; it's no longer needed
+}
+
+glob.saveDiagramAsPNG = (scale) => {
+  const [size, pngURL] = scaledPNG(scale);
+  downloadADataURL(
+    pngURL,
+    `sankeymatic_${glob.fileTimestamp()}_${size.w}x${size.h}.png`
+  );
+};
+
+// downloadATextFile: given a string & a filename, send it to the user:
+function downloadATextFile(txt, name) {
+  const textBlob = new Blob([txt], { type: 'text/plain' }),
+    tempURL = URL.createObjectURL(textBlob);
+  downloadADataURL(tempURL, name);
+  URL.revokeObjectURL(tempURL);
+}
+
+// saveDiagramAsSVG: take the current state of 'sankey_svg' and relay
+// it nicely to the user
+glob.saveDiagramAsSVG = () => {
+  // Make a copy of the true SVG & make a few cosmetic changes:
+  const svgForExport
   = el('sankey_svg').outerHTML
     // Take out the id and the class declaration for the background:
     .replace(' id="sankey_svg"', '')
@@ -264,14 +287,13 @@ function produce_svg_code(curDate) {
     .replace(
       />/,
       '>\r\n<title>Your Diagram Title</title>\r\n'
-      + `<!-- Generated with SankeyMATIC: ${curDate.toLocaleString()} -->\r\n`
+          + `<!-- Generated with SankeyMATIC: ${glob.humanTimestamp()} -->\r\n`
       )
     // Add some line breaks to highlight where [g]roups start/end
     // and where each path/text/rect begins:
     .replace(/><(g|\/g|path|text|rect)/g, '>\r\n<$1');
-  // Display the result in the <div> as text for copying:
-  el('svg_for_export').textContent = svgForCopying;
-}
+  downloadATextFile(svgForExport, `sankeymatic_${glob.fileTimestamp()}.svg`);
+};
 
 // Functions for generating SVG path specs:
 
@@ -332,28 +354,6 @@ function curvedFlowPathFunction(curvature) {
     );
   };
 }
-
-// renderExportableOutputs: Called directly from the page (and from below).
-// Kick off a re-render of the static image and the user-copyable SVG code.
-// Used after each draw & when the user chooses a new PNG resolution.
-glob.renderExportableOutputs = () => {
-  // Reset the existing export output areas:
-  const curDate = new Date(),
-    pngLinkEl = el('download_png_link');
-  // Clear out the old image link, cue user that the graphic isn't yet ready:
-  pngLinkEl.textContent = '...creating downloadable graphic...';
-  pngLinkEl.setAttribute('href', '#');
-
-  // Wipe out the SVG from the old diagram:
-  el('svg_for_export').textContent = '(generating SVG code...)';
-
-  // Fire off asynchronous events for generating the export output,
-  // so we can give control back asap:
-  setTimeout(render_png(curDate), 0);
-  setTimeout(produce_svg_code(curDate), 0);
-
-  return null;
-};
 
 // hideReplaceGraphWarning: Called directly from the page (and from below)
 // Dismiss the note about overwriting the user's current inputs.
@@ -1030,9 +1030,6 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // so derive those attributes again:)
       .attr('fill', (f) => f.fill[f.renderAs])
       .attr('stroke-width', (f) => ep(f.stroke_width[f.renderAs]));
-
-    // Regenerate the exportable versions:
-    glob.renderExportableOutputs();
   }
 
   // Show helpful guides/content for the current drag. We put it all in a
@@ -1682,6 +1679,12 @@ glob.process_sankey = () => {
   chartEl.style.height = `${approvedCfg.size_h}px`;
   chartEl.style.width = `${approvedCfg.size_w}px`;
 
+  // Also update the PNG download buttons' title text with these dimensions:
+  [1, 2, 4, 6].forEach((s) => {
+    el(`save_as_png_${s}x`).title
+      = `PNG image file: ${approvedCfg.size_w * s} x ${approvedCfg.size_h * s}`;
+  });
+
   // Are there any good flows at all? If not, offer a little help & exit:
   if (!goodFlows.length) {
     addMsgAbove(
@@ -1694,12 +1697,6 @@ glob.process_sankey = () => {
     // Clear the contents of the graph in case there was an old graph left
     // over:
     initializeDiagram(approvedCfg);
-
-    // Also clear out any leftover export output by rendering the
-    // currently-blank canvas:
-    glob.renderExportableOutputs();
-
-    // No point in proceeding any further. Return to the browser:
     return null;
   }
 
@@ -1729,9 +1726,6 @@ glob.process_sankey = () => {
 
   // All is ready. Do the actual rendering:
   render_sankey(approvedNodes, approvedFlows, approvedCfg, numberStyle);
-
-  // Re-make the PNG+SVG outputs in the background so they are ready to use:
-  glob.renderExportableOutputs();
 
   // POST-RENDER ACTIVITY: various stats and UI updates.
 

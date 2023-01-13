@@ -1,7 +1,12 @@
 :root {
-  --border-base: 1px #069 solid;
-  --border-dark: 1px #036 solid;
-  --border-light: 1px #9ac solid;
+  --deep-blue: #036;
+  --medium-blue: #069;
+  --light-blue: #27a;
+  --gray-blue: #9ac;
+  --border-base: 1px solid var(--medium-blue);
+  --border-dark: 1px solid var(--deep-blue);
+  --border-light: 1px solid var(--gray-blue);
+  --bg-medium: #bdf;
   --bg-light: #def;
   --bg-pale: #eef7ff;
   --selected-option: #27b;
@@ -203,6 +208,12 @@ dfn {
   padding: 2px 3px;
 }
 
+.form_box {
+  border: var(--border-light);
+  margin: .1em .2em;
+  padding: .25em .4em;
+}
+
 /* for items which need leftward breathing room: */
 .spaced_label,
 .spaced_checkbox {
@@ -232,6 +243,21 @@ h3.ui_head {
 
 h3.ui_head:hover {
   background-color: #39d;
+}
+
+span.toggleable {
+  background-color: var(--bg-pale);
+  color: black;
+  padding: .1em .2em;
+  border: var(--border-light);
+  border-radius: 0.3em;
+  font-style: italic;
+  vertical-align: middle;
+}
+
+span.toggleable:hover {
+  color: var(--selected-option);
+  cursor: pointer;
 }
 
 #imbalance_control {
@@ -293,7 +319,7 @@ h3.ui_head:hover {
 .form_chunk {
   color: #024;
   background-color: #fbfeff;
-  margin: 0 3px 6px;
+  margin: 0 3px 5px;
   padding: 2px;
   border: var(--border-light);
   border-width: 0 1px 1px;
@@ -371,6 +397,29 @@ th#title {
   text-align: left;
   margin: auto;
   white-space: pre;
+}
+
+#download_central button {
+  background-color: var(--medium-blue);
+  color: white;
+  border-radius: 0.4em;
+  border: var(--border-base);
+  cursor: pointer;
+  vertical-align: middle;
+  padding: 0.25em 0.5em;
+}
+
+#download_central button:hover {
+  background-color: var(--light-blue);
+}
+
+button#save_as_svg {
+  background-color: #777;
+  border-color: #333;
+}
+
+button#save_as_svg:hover {
+  background-color: #999;
 }
 
 #example_diagrams {
