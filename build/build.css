@@ -423,13 +423,13 @@ button#save_as_svg:hover {
 }
 
 #example_diagrams {
-  width: 90%;
+  width: fit-content;
   background-color: #f3f4ff;
   border: var(--border-base);
   border-style: dotted;
   border-radius: 0.7em;
   margin: 0 auto 0.5em;
-  padding: 0.2em;
+  padding: 0.25em 1em;
   box-shadow: 0.1em 0.1em 0.2em gray;
 }
 
