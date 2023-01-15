@@ -790,12 +790,12 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // (Note: this is case sensitive!)
       // If there are no non-blank strings in the node name, substitute
       // a word-ish value (rather than crash):
-      const firstBlock
-        = (/^\s*(\S+)/.exec(n.name) || ['', 'name-is-blank'])[1];
+      const colorKeyString
+        = (n.name.match(/^\s*(\S+)/) || [null, 'name-is-blank'])[1];
       // Don't use up colors on shadow nodes:
-      n.color = n.isAShadow ? '#999' : colorScaleFn(firstBlock);
+      n.color = n.isAShadow ? colorGray60 : colorScaleFn(colorKeyString);
     }
-    // Now that we're guaranteed a color, we can calculate the border shade:
+    // Now that we're guaranteed a color, we can calculate a border shade:
     n.border_color
       = darkBg ? d3.rgb(n.color).brighter(2) : d3.rgb(n.color).darker(2);
 
@@ -843,7 +843,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // 2. inheritance-from-node-with-specific-paint-direction
       // 3. default-inheritance-direction OR default flow color
       if (f.isAShadow) {
-        f.color = '#999';
+        f.color = colorGray60;
       } else if (f.source.paint[AFTER]) {
         f.color = f.source.color;
       } else if (f.target.paint[BEFORE]) {
@@ -1392,7 +1392,7 @@ glob.process_sankey = () => {
 
     // If there's a color and it's a color CODE, put back the #:
     // TODO: honor or translate color names?
-    if (nodeParams.color?.match(/[0-9A-F]{3,6}/i)) {
+    if (nodeParams.color?.match(reBareColor)) {
       nodeParams.color = `#${nodeParams.color}`;
     }
 
@@ -1433,16 +1433,13 @@ glob.process_sankey = () => {
 
   // Loop through all the input lines, storing good ones vs bad ones:
   sourceLines.forEach((lineIn, row) => {
-    // Is it a blank line OR a comment? Skip it entirely.
-    // Currently comments can start with ' or //:
-    if (lineIn === '' || /^(?:'|\/\/)/.test(lineIn)) {
+    // Is it a blank line OR a comment? Skip it entirely:
+    if (lineIn === '' || reCommentLine.test(lineIn)) {
       return;
     }
 
     // Does this line look like a Node?
-    let matches = lineIn.match(
-      /^:(.+) #([0-9A-F]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i
-    );
+    let matches = lineIn.match(reNodeLine);
     if (matches !== null) {
       // Save/update it in the uniqueNodes structure:
       updateNodeAttrs({
@@ -1457,7 +1454,7 @@ glob.process_sankey = () => {
     }
 
     // Does this line look like a Flow?
-    matches = lineIn.match(/^(.+)\[([\d\s.+-]+)\](.+)$/);
+    matches = lineIn.match(reFlowLine);
     if (matches !== null) {
       // The Amount looked trivially like a number; reject the line
       // if it really isn't:
@@ -1492,7 +1489,7 @@ glob.process_sankey = () => {
       // checking operations (& display) later:
       maxDecimalPlaces = Math.max(
         maxDecimalPlaces,
-        ((amountIn.split(/\./))[1] || '').length
+        ((amountIn.split('.'))[1] || '').length
       );
       return;
     }
@@ -1526,12 +1523,12 @@ glob.process_sankey = () => {
     // Format of the Target node can be: Target node [#color[.opacity]]
     //   e.g. 'x [...] y #99aa00' or 'x [...] y #99aa00.25'
     // Look for a candidate string starting with # for color info:
-    const flowTargetWithSuffix = flow.target.match(/^(.+)\s+(#\S+)$/);
-    if (flowTargetWithSuffix !== null) {
+    const flowTargetPlus = flow.target.match(reFlowTargetWithSuffix);
+    if (flowTargetPlus !== null) {
       // IFF the # string matches a stricter pattern, separate the target
       // string into parts:
-      const [, possibleNodeName, possibleColor] = flowTargetWithSuffix,
-        colorOpacity = possibleColor.match(/^#([0-9A-F]{3,6})?(\.\d{1,4})?$/i);
+      const [, possibleNodeName, possibleColor] = flowTargetPlus,
+        colorOpacity = possibleColor.match(reColorPlusOpacity);
       if (colorOpacity !== null) {
         // Looks like we found a color or opacity or both.
         // Update the target's name with the trimmed string:
@@ -1654,9 +1651,9 @@ glob.process_sankey = () => {
     } else if (dataType === 'list' && allowList.includes(fldVal)) {
       setValidValue(fldVal);
     } else if (dataType === 'color') {
-      if (fldVal.match(/^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i)) {
+      if (fldVal.match(reRGBColor)) {
         setValidValue(fldVal);
-      } else if (fldVal.match(/^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i)) {
+      } else if (fldVal.match(reBareColor)) {
         // Forgive colors with missing #:
         fldEl.value = `#${fldVal}`; // Set it to be correct on the page
         setValidValue(`#${fldVal}`);
@@ -1873,4 +1870,6 @@ glob.process_sankey();
 
 // Make the linter happy about imported objects:
 /* global d3, canvg, sampleDiagramRecipes, global, fontMetrics, highlightStyles
- IN OUT BEFORE AFTER skmSettings reWholeNumber reDecimal */
+ IN OUT BEFORE AFTER skmSettings colorGray60 reWholeNumber reDecimal
+ reCommentLine reNodeLine reFlowLine reFlowTargetWithSuffix
+ reColorPlusOpacity reBareColor reRGBColor */

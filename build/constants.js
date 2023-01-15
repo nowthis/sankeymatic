@@ -59,6 +59,7 @@ const skmSettings
     ['theme_d_offset', ['whole', '0', [0, 11]]],
     ['meta_mention_sankeymatic', ['yn', 'y', []]],
     ['meta_list_imbalances', ['yn', 'y', []]],
+    // 'internal' settings are never exported, but can be imported:
     ['internal_iterations', ['whole', '25', [0, 50]]],
     ['internal_reveal_shadows', ['yn', 'n', []]],
   ]),
@@ -66,6 +67,14 @@ const skmSettings
   // Some reusable regular expressions to be precompiled (more coming):
   reWholeNumber = /^\d+$/,
   reDecimal = /^\d(?:.\d+)?$/,
+  reCommentLine = /^(?:'|\/\/)/, // Line starts with // or '
+  reNodeLine = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
+  reFlowLine = /^(.+)\[([\d\s.+-]+)\](.+)$/,
+  reFlowTargetWithSuffix = /^(.+)\s+(#\S+)$/,
+  reColorPlusOpacity = /^#([a-f0-9]{3,6})?(\.\d{1,4})?$/i,
+  reBareColor = /^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i,
+  reRGBColor = /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i,
+  colorGray60 = '#999',
 
   // Some prime constants for enum values:
   [IN, OUT, BEFORE, AFTER] = [11, 13, 17, 19],
