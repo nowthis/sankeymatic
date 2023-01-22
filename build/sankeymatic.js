@@ -5,7 +5,7 @@ by Steve Bogart (@nowthis; http://nowthis.com/; sbogart@sankeymatic.com)
 
 Requires:
   D3.js
-    - https://github.com/d3/d3 v7.3.0
+    - https://github.com/d3/d3 v7.x
   canvg.js
     - https://github.com/canvg/canvg v3.0.9
 */
