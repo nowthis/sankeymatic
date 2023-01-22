@@ -355,6 +355,39 @@ function curvedFlowPathFunction(curvature) {
   };
 }
 
+// Show a value quoted & bolded & HTML-escaped:
+function highlightSafeValue(userV) {
+  return `&quot;<strong>${escapeHTML(userV)}</strong>&quot;`;
+}
+
+// Isolated logic for managing messages to the user:
+const msg = {
+  areas: new Map([
+    ['issue', { id: 'issue_messages', class: 'errormessage' }],
+    ['difference', { id: 'imbalance_messages', class: 'differencemessage' }],
+    ['total', { id: 'totals_area', class: '' }],
+    ['info', { id: 'info_messages', class: 'okmessage' }],
+  ]),
+  add: (msgHTML, msgType = 'info') => {
+    const msgData = msg.areas.get(msgType) || msg.areas.get('info'),
+      msgDiv = document.createElement('div');
+
+    msgDiv.innerHTML = msgHTML;
+    if (msgData.class.length) { msgDiv.classList.add(msgData.class); }
+
+    el(msgData.id).append(msgDiv);
+  },
+  resetAll: () => {
+    Array.from(msg.areas.values())
+      .map((a) => a.id)
+      .forEach((id) => {
+        el(id).replaceChildren();
+      });
+  },
+};
+
+// MARK: Loading Saved Graphs
+
 // hideReplaceGraphWarning: Called directly from the page (and from below)
 // Dismiss the note about overwriting the user's current inputs.
 glob.hideReplaceGraphWarning = () => {
@@ -418,7 +451,10 @@ glob.replaceGraph = (graphName) => {
   const savedRecipe = sampleDiagramRecipes.get(graphName);
   if (!savedRecipe) {
     // (This shouldn't happen unless the user is messing around in the DOM)
-    console.log(`Requested sample diagram ${graphName} not found.`);
+    msg.add(
+      `Requested sample diagram ${highlightSafeValue(graphName)} not found.`,
+      'issue'
+    );
     return null;
   }
 
@@ -1316,25 +1352,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 // Gather inputs from user; validate them; render updated diagram
 glob.process_sankey = () => {
   let [maxDecimalPlaces, maxNodeIndex, maxNodeVal] = [0, 0, 0];
-  const uniqueNodes = new Map(),
-    messagesEl = el('top_messages_container');
-
-  // addMsgAbove: Put a message above the chart using the given class:
-  function addMsgAbove(msgHTML, msgClass, msgGoesFirst) {
-    const newMsg = `<div class="${msgClass}">${msgHTML}</div>`;
-    messagesEl.innerHTML = msgGoesFirst
-      ? (newMsg + messagesEl.innerHTML)
-      : (messagesEl.innerHTML + newMsg);
-  }
-
-  function setTotalsMsg(msgHTML) {
-    el('messages_container').innerHTML = `<div>${msgHTML}</div>`;
-  }
-
-  function setDifferencesMsg(msgHTML) {
-    el('imbalance_messages').innerHTML
-      = msgHTML.length ? `<div id="imbalance_msg">${msgHTML}</div>` : '';
-  }
+  const uniqueNodes = new Map();
 
   // Update the display of all known themes given their offsets:
   function updateColorThemeDisplay() {
@@ -1413,8 +1431,8 @@ glob.process_sankey = () => {
   // Therefore, we no longer disable the Background Color element, even when
   // 'Transparent' is checked.
 
-  // BEGIN by resetting all messages:
-  messagesEl.textContent = '';
+  // BEGIN by resetting all message areas:
+  msg.resetAll();
 
   // Parse inputs into: approvedNodes, approvedFlows, approvedConfig
   // As part of this step, we drop any zero-width spaces which may have
@@ -1462,7 +1480,7 @@ glob.process_sankey = () => {
       if (!isNumeric(amountIn)) {
         invalidLines.push({
           value: lineIn,
-          message: 'The Amount is not a valid decimal number.',
+          message: 'The Amount is not a valid decimal number',
         });
         return;
       }
@@ -1471,7 +1489,7 @@ glob.process_sankey = () => {
       if (amountIn <= 0) {
         invalidLines.push({
           value: lineIn,
-          message: 'Amounts must be greater than 0.',
+          message: 'Amounts must be greater than 0',
         });
         return;
       }
@@ -1489,7 +1507,7 @@ glob.process_sankey = () => {
       // checking operations (& display) later:
       maxDecimalPlaces = Math.max(
         maxDecimalPlaces,
-        ((amountIn.split('.'))[1] || '').length
+        (amountIn.split('.')[1] || '').length
       );
       return;
     }
@@ -1497,7 +1515,7 @@ glob.process_sankey = () => {
     // This is a non-blank line which did not match any pattern:
     invalidLines.push({
       value: lineIn,
-      message: 'Does not match the format of a Flow or a Node.',
+      message: 'Does not match the format of a Flow or a Node',
     });
   });
 
@@ -1506,10 +1524,9 @@ glob.process_sankey = () => {
 
   // Mention any un-parseable lines:
   invalidLines.forEach((parsingError) => {
-    addMsgAbove(
-      `&quot;<b>${escapeHTML(parsingError.value)}</b>&quot;: ${parsingError.message}`,
-      'errormessage',
-      false
+    msg.add(
+      `${parsingError.message}: ${highlightSafeValue(parsingError.value)}`,
+      'issue'
     );
   });
 
@@ -1682,14 +1699,13 @@ glob.process_sankey = () => {
       = `PNG image file: ${approvedCfg.size_w * s} x ${approvedCfg.size_h * s}`;
   });
 
-  // Are there any good flows at all? If not, offer a little help & exit:
+  // Were there any good flows at all? If not, offer a little help and then
+  // EXIT EARLY:
   if (!goodFlows.length) {
-    addMsgAbove(
+    msg.add(
       'Enter a list of Flows &mdash; one per line. '
-      + 'See the <a href="/manual/" target="_blank">Manual</a> for more help.',
-      'okmessage',
-      true
-    );
+      + 'See the <a href="/manual/" target="_blank">Manual</a> for more help.'
+      );
 
     // Clear the contents of the graph in case there was an old graph left
     // over:
@@ -1784,21 +1800,15 @@ glob.process_sankey = () => {
     }
   });
 
-  // Update UI options based on the presence of mismatched rows:
-  const listDifferencesEl = el('meta_list_imbalances'),
-    differencesEl = el('imbalances');
-  if (differences.length) {
-    // Enable the controls for letting the user show the differences:
-    listDifferencesEl.disabled = false;
-    differencesEl.setAttribute('aria-disabled', false);
-  } else {
-    // Disable the controls for telling the user about differences:
-    listDifferencesEl.disabled = true;
-    differencesEl.setAttribute('aria-disabled', true);
-  }
+  // Enable/disable the UI options for letting the user show differences.
+  // (If there are no differences, the checkbox is useless.)
+  const disableDifferenceControls = !differences.length,
+    listDifferencesEl = el('meta_list_imbalances');
+  listDifferencesEl.disabled = disableDifferenceControls;
+  el('imbalances').setAttribute('aria-disabled', disableDifferenceControls);
 
   // Were there any differences, and does the user want to know?
-  if (differences.length && listDifferencesEl.checked) {
+  if (!disableDifferenceControls && listDifferencesEl.checked) {
     // Construct a hyper-informative error message about any differences:
     const differenceRows = [
       '<tr><td></td><th>Total In</th><th>Total Out</th><th>Difference</th></tr>',
@@ -1812,12 +1822,10 @@ glob.process_sankey = () => {
         + `<td>${diffRec.difference}</td></tr>`
       );
     });
-    setDifferencesMsg(
-      `<table class="center_basic">${differenceRows.join('\n')}</table>`
+    msg.add(
+      `<table class="center_basic">${differenceRows.join('\n')}</table>`,
+      'difference'
     );
-  } else {
-    // Clear the messages area:
-    setDifferencesMsg('');
   }
 
   // Reflect summary stats to the user:
@@ -1835,7 +1843,7 @@ glob.process_sankey = () => {
     totalsMsg += 'Total Inputs = Total Outputs = '
       + `<strong>${withUnits(grandTotal[IN])}</strong> &#9989;`;
   }
-  setTotalsMsg(totalsMsg);
+  msg.add(totalsMsg, 'total');
 
   updateColorThemeDisplay();
 

@@ -1,5 +1,6 @@
 :root {
   --deep-blue: #036;
+  --dark-blue: #047;
   --medium-blue: #069;
   --light-blue: #27a;
   --gray-blue: #9ac;
@@ -11,6 +12,7 @@
   --bg-pale: #eef7ff;
   --selected-option: #27b;
   --warning: darkred;
+  --gray60: #999;
 }
 
 body { font-size: 13px; }
@@ -116,17 +118,18 @@ input[type="range"]:active::-webkit-slider-runnable-track {
 }
 
 .errormessage {
-  background-color: pink;
+  background-color: #fed;
+  width: fit-content;
   color: #600;
-  border: 1px solid red;
+  border: 1px solid indianred;
   padding: 4px;
-  margin: 2px;
+  margin: -1px 2px;
 }
 
 .okmessage {
-  text-align: center;
   background-color: var(--bg-light);
-  color: #036;
+  width: fit-content;
+  color: var(--deep-blue);
   border: var(--border-base);
   padding: 4px;
   margin: 2px;
@@ -210,8 +213,8 @@ dfn {
 
 .form_box {
   border: var(--border-light);
-  margin: .1em .2em;
-  padding: .25em .4em;
+  margin: 0.1em 0.2em;
+  padding: 0.25em 0.4em;
 }
 
 /* for items which need leftward breathing room: */
@@ -229,11 +232,11 @@ dfn {
 
 h2.ui_head {
   font-size: 15px;
-  background-color: #047;
+  background-color: var(--dark-blue);
 }
 
 h2.ui_head:hover {
-  background-color: #069;
+  background-color: var(--medium-blue);
 }
 
 h3.ui_head {
@@ -248,7 +251,7 @@ h3.ui_head:hover {
 span.toggleable {
   background-color: var(--bg-pale);
   color: black;
-  padding: .1em .2em;
+  padding: 0.1em 0.2em;
   border: var(--border-light);
   border-radius: 0.3em;
   font-style: italic;
@@ -263,12 +266,12 @@ span.toggleable:hover {
 #imbalance_control {
   padding: 0.4em 0.5em;
   background-color: var(--bg-light);
-  color: #036;
+  color: var(--deep-blue);
   border: var(--border-base);
   margin-top: 0.3em;
 }
 
-#imbalance_msg {
+.differencemessage {
   background-color: #ffa;
   color: var(--warning);
   text-align: center;
@@ -277,23 +280,23 @@ span.toggleable:hover {
   margin-top: -1px;
 }
 
-#imbalance_msg table {
+.differencemessage table {
   border-spacing: 0.75em 0;
   border-collapse: separate;
 }
 
-#imbalance_msg table th {
+.differencemessage table th {
   padding: 0.1em 0.2em;
   text-align: right;
   border-bottom: 1px solid var(--warning);
 }
 
-#imbalance_msg table td {
+.differencemessage table td {
   padding: 0.2em;
   text-align: right;
 }
 
-#imbalance_msg table td.nodename {
+.differencemessage table td.nodename {
   text-align: left;
   font-weight: bold;
 }
@@ -302,7 +305,7 @@ span.toggleable:hover {
   padding: 0.4em;
   text-align: center;
   background-color: var(--bg-light);
-  color: #036;
+  color: var(--deep-blue);
   border: var(--border-base);
 }
 
@@ -386,7 +389,7 @@ th#title {
   background-color: white;
   padding: 3px;
   margin: 3px;
-  border: 1px dotted #999;
+  border: 1px dotted var(--gray60);
 }
 
 #svg_for_export {
@@ -414,12 +417,12 @@ th#title {
 }
 
 button#save_as_svg {
-  background-color: #777;
-  border-color: #333;
+  background-color: slategray;
+  border-color: darkslategray;
 }
 
 button#save_as_svg:hover {
-  background-color: #999;
+  background-color: #8d9aa6;
 }
 
 #example_diagrams {
