@@ -48,13 +48,13 @@ glob.updateOutput = (fld) => {
   const fldVal = elV(fld),
     oEl = outputFieldEl(fld),
     formats = {
-      node_height: '%',
+      node_h: '%',
       node_spacing: '%',
       node_opacity: '.2',
       flow_curvature: '|',
       flow_opacity: '.2',
-      label_highlight: '.2',
-      label_position_breakpoint: 'never',
+      labels_highlight: '.2',
+      labelposition_breakpoint: 'never',
     };
   switch (formats[fld]) {
     case '|':
@@ -424,7 +424,7 @@ glob.replaceGraphConfirmed = () => {
   }
 
   // Then select all the existing input text...
-  const flowsEl = el('flows_in');
+  const flowsEl = el(userInputsField);
   flowsEl.focus();
   flowsEl.select();
   // ... then replace it with the new content.
@@ -466,7 +466,7 @@ glob.replaceGraph = (graphName) => {
   // 1) the inputs are empty, or
   // 2) the user is looking at inputs which exactly match any of the sample
   // diagrams.
-  const userInputs = elV('flows_in'),
+  const userInputs = elV(userInputsField),
     inputsMatchAnySample = Array.from(sampleDiagramRecipes.values())
       .some((r) => r.flows === userInputs);
 
@@ -521,7 +521,7 @@ function rotateColors(colors, offset) {
 }
 
 // We have to construct this fieldname in a few places:
-function offsetField(key) { return `theme_${key}_offset`; }
+function offsetField(key) { return `themeoffset_${key}`; }
 
 // nudgeColorTheme: Called directly from the page.
 // User just clicked an arrow on a color theme.
@@ -556,9 +556,9 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .attr('width', cfg.size_w)
     .attr('text-anchor', 'middle')
     .attr('opacity', '0') // Keep all this invisible...
-    .attr('font-family', cfg.label_font_face)
-    .attr('font-size', `${cfg.label_name_size}px`)
-    .attr('font-weight', cfg.label_name_weight);
+    .attr('font-family', cfg.labels_fontface)
+    .attr('font-size', `${cfg.labelname_size}px`)
+    .attr('font-weight', cfg.labelname_weight);
   scratchRoot.selectAll('*').remove(); // Clear out any past items
 
   // measureText(string, id):
@@ -602,7 +602,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // Firefox has unique SVG measurements in 2022, so we look for it:
       browserKey = isFirefox() ? 'firefox' : '*',
       metrics
-        = fontMetrics[browserKey][cfg.label_font_face]
+        = fontMetrics[browserKey][cfg.labels_fontface]
           || fontMetrics[browserKey]['*'],
       m = {
         dy: metrics.dy * boundingBoxH,
@@ -631,8 +631,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     sankeyObj = d3.sankey()
       .nodes(allNodes)
       .flows(allFlows)
-      .rightJustifyEndpoints(cfg.layout_justify_ends)
-      .leftJustifyOrigins(cfg.layout_justify_origins)
+      .rightJustifyEndpoints(cfg.layout_justifyends)
+      .leftJustifyOrigins(cfg.layout_justifyorigins)
       .setup();
 
   // After the .setup() step, Nodes are divided up into Stages.
@@ -645,15 +645,15 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Has the 'never' value changed?
   if (newMax !== glob.labelNeverBreakpoint) {
     // Update the slider's range with the new maximum:
-    const elBreakpointSlider = el('label_position_breakpoint');
+    const elBreakpointSlider = el('labelposition_breakpoint');
     elBreakpointSlider.setAttribute('max', newMax);
     // If the stage count has become lower than the breakpoint value, OR
     // if the stage count has increased but the old 'never' value was chosen,
     // we also need to adjust the slider's value to be the new 'never' value:
-    if (cfg.label_position_breakpoint > newMax
-      || cfg.label_position_breakpoint === glob.labelNeverBreakpoint) {
+    if (cfg.labelposition_breakpoint > newMax
+      || cfg.labelposition_breakpoint === glob.labelNeverBreakpoint) {
       elBreakpointSlider.value = newMax;
-      cfg.label_position_breakpoint = newMax;
+      cfg.labelposition_breakpoint = newMax;
     }
     // After that check, we can update the remembered breakpoint:
     glob.labelNeverBreakpoint = newMax;
@@ -665,23 +665,23 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // subtracted from the graph area):
 
   // shadowFilter(i): true/false value indicating whether to display an item.
-  // Normally shadows are hidden, but the reveal_shadows flag can override.
+  // Normally shadows are hidden, but the revealshadows flag can override.
   // i can be either a node or a flow.
-  function shadowFilter(i) { return !i.isAShadow || cfg.meta_reveal_shadows; }
+  function shadowFilter(i) { return !i.isAShadow || cfg.meta_revealshadows; }
 
-  if (cfg.label_shows_name) {
+  if (cfg.labelname_appears) {
     // Set up 'labelText' for all the Nodes. (This is done earlier than
     // it used to be, but we need to know now for the sake of layout):
     allNodes.filter(shadowFilter)
       .forEach((n) => {
       n.labelText
-        = cfg.label_shows_value
+        = cfg.labelvalue_appears
           ? `${n.name}: ${withUnits(n.value)}` : n.name;
       // Which side of the node will the label be on?
       const labelBefore
-        = cfg.label_position_first === 'before'
-          ? n.stage < cfg.label_position_breakpoint - 1
-          : n.stage >= cfg.label_position_breakpoint - 1;
+        = cfg.labelposition_first === 'before'
+          ? n.stage < cfg.labelposition_breakpoint - 1
+          : n.stage >= cfg.labelposition_breakpoint - 1;
       n.label = {
         dom_id: `label${n.index}`, // label0, label1..
         anchor: labelBefore ? 'end' : 'start',
@@ -730,7 +730,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // Find the smallest width we will allow -- all the Node widths
       // plus (5px + node_border) for every Flow region:
       minimumW
-        = (stagesArr.length * cfg.node_width)
+        = (stagesArr.length * cfg.node_w)
           + (lastStage * (cfg.node_border + 5)),
       // Pick which width we will actually use:
       finalW = Math.max(idealW, minimumW),
@@ -762,8 +762,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // (Note: This call further alters allNodes & allFlows with their
   // specific coordinates.)
   sankeyObj.size({ w: graph.w, h: graph.h })
-    .nodeWidth(cfg.node_width)
-    .nodeHeightFactor(cfg.node_height / 100)
+    .nodeWidth(cfg.node_w)
+    .nodeHeightFactor(cfg.node_h / 100)
     .nodeSpacingFactor(cfg.node_spacing / 100)
     .autoLayout(cfg.layout_order === 'automatic')
     .layout(cfg.meta_iterations); // Note: The 'layout()' step must be LAST
@@ -796,13 +796,13 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // Is the diagram background dark or light?
     darkBg = (cfg.bg_color.toUpperCase() < '#888'),
     // Is the label color more like black or like white?
-    darkLabel = (cfg.label_color.toUpperCase() < '#AAA'),
+    darkLabel = (cfg.labels_color.toUpperCase() < '#AAA'),
     // Set up label highlight values:
     hlStyle = highlightStyles[darkLabel ? 'dark' : 'light'];
-    hlStyle.orig.fill_opacity = Number(cfg.label_highlight);
+    hlStyle.orig.fill_opacity = Number(cfg.labels_highlight);
     // Given the user's opacity, calculate a reasonable hover
     // value (2/3 of the distance to 1):
-    hlStyle.hover.fill_opacity = 0.666 + Number(cfg.label_highlight) / 3;
+    hlStyle.hover.fill_opacity = 0.666 + Number(cfg.labels_highlight) / 3;
 
   // stagesMidpoint: Helpful value for deciding if something is in the first
   // or last half of the diagram:
@@ -836,7 +836,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       = darkBg ? d3.rgb(n.color).brighter(2) : d3.rgb(n.color).darker(2);
 
     // Set up label presentation values:
-    if (cfg.label_shows_name) {
+    if (cfg.labelname_appears) {
       // Which side of the node will the label be on?
       const labelBefore = n.label.anchor === 'end';
       n.label.x
@@ -886,7 +886,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         f.color = f.target.color;
       } else {
         const flowMidpoint = (f.source.stage + f.target.stage) / 2;
-        switch (cfg.flow_inherit_color_from) {
+        switch (cfg.flow_inheritfrom) {
           case 'source': f.color = f.source.color; break;
           case 'target': f.color = f.target.color; break;
           case 'outside-in':
@@ -1003,7 +1003,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   function applyNodeMove(index) {
     const n = allNodes[index],
       // In the case of a reversed graph, we negate the x-move:
-      myXMove = n.move[0] * (cfg.layout_reverse_graph ? -1 : 1),
+      myXMove = n.move[0] * (cfg.layout_reversegraph ? -1 : 1),
       availableW = graph.w - n.dx,
       availableH = graph.h - n.dy;
 
@@ -1139,7 +1139,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // Fun fact: In this context, event.subject is the same thing as 'd'.
     let myX = event.x,
       myY = event.y;
-    const graphIsReversed = el('layout_reverse_graph').checked;
+    const graphIsReversed = el('layout_reversegraph').checked;
 
     // Check for the Shift key:
     if (event.sourceEvent && event.sourceEvent.shiftKey) {
@@ -1253,11 +1253,11 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   const diagLabels = diagMain.append('g')
     .attr('id', 'sankey_labels')
     // These font spec defaults apply to all labels within
-    .attr('font-family', cfg.label_font_face)
-    .attr('font-size', `${cfg.label_name_size}px`)
-    .attr('font-weight', cfg.label_name_weight)
-    .attr('fill', cfg.label_color);
-  if (cfg.meta_mention_sankeymatic) {
+    .attr('font-family', cfg.labels_fontface)
+    .attr('font-size', `${cfg.labelname_size}px`)
+    .attr('font-weight', cfg.labelname_weight)
+    .attr('fill', cfg.labels_color);
+  if (cfg.meta_mentionsankeymatic) {
     diagLabels.append('text')
       // Anchor the text to the midpoint of the canvas (not the graph):
       .attr('text-anchor', 'middle')
@@ -1272,7 +1272,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       .text('Made with SankeyMATIC');
   }
 
-  if (cfg.label_shows_name) {
+  if (cfg.labelname_appears) {
     // Add labels in a distinct layer on the top (so nodes can't block them)
     diagLabels.selectAll()
       .data(allNodes.filter(shadowFilter))
@@ -1306,7 +1306,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         .attr('y', ep(labelBB.y + bg.offset.y))
         .attr('width', ep(labelBB.width + bg.offset.w))
         .attr('height', ep(labelBB.height + bg.offset.h))
-        .attr('rx', ep(cfg.label_name_size / 4))
+        .attr('rx', ep(cfg.labelname_size / 4))
         .attr('fill', bg.fill)
         .attr('fill-opacity', ep(bg.fill_opacity))
         .attr('stroke', bg.stroke)
@@ -1442,7 +1442,7 @@ glob.process_sankey = () => {
     goodFlows = [],
     approvedNodes = [],
     approvedFlows = [],
-    sourceLines = elV('flows_in')
+    sourceLines = elV(userInputsField)
       .split('\n')
       .map((l) => l.trim()
         .replace(/^\u200B+/, '')
@@ -1531,7 +1531,7 @@ glob.process_sankey = () => {
   });
 
   // Make the final list of Flows:
-  const graphIsReversed = el('layout_reverse_graph').checked;
+  const graphIsReversed = el('layout_reversegraph').checked;
   goodFlows.forEach((flow) => {
     // Look for extra content about this flow on the target-node end of the
     // string:
@@ -1606,7 +1606,7 @@ glob.process_sankey = () => {
       fldVal = fldEl === null ? '' : fldEl.value,
       [dataType, defaultVal, allowList] = fldData,
       fldIsNumeric
-        = ['whole', 'decimal', 'margin', 'breakpoint'].includes(dataType);
+        = ['whole', 'decimal', 'contained', 'breakpoint'].includes(dataType);
     let valueIsValid = false;
 
     function setValidValue(v) {
@@ -1649,10 +1649,10 @@ glob.process_sankey = () => {
           case 'whole': [minV, maxV] = allowList; break;
           case 'breakpoint': maxV = glob.labelNeverBreakpoint; break;
           case 'decimal': maxV = 1.0; break;
-          // Margins are processed after the diagram's size is set
-          // (they appear later in the settings list), so we can
-          // compare them to their specific dimension:
-          case 'margin': maxV = approvedCfg[allowList[1]]; break;
+          // Dynamic values (like margins) should be processed after the
+          // diagram's size is set (they appear later in the settings list),
+          // so that we can compare them to their specific dimension:
+          case 'contained': maxV = approvedCfg[allowList[1]]; break;
           // no default
         }
         if (fldAsNum >= minV && (maxV === undefined || fldAsNum <= maxV)) {
@@ -1722,17 +1722,17 @@ glob.process_sankey = () => {
       },
       decimalPlaces: maxDecimalPlaces,
       // 'trimString' = string to be used in the d3.format expression later:
-      trimString: approvedCfg.value_show_full_precision ? '' : '~',
+      trimString: approvedCfg.labelvalue_fullprecision ? '' : '~',
       prefix: approvedCfg.value_prefix,
       suffix: approvedCfg.value_suffix,
     };
 
   // Deal with inheritance swap if graph is reversed:
-  if (approvedCfg.layout_reverse_graph) {
+  if (approvedCfg.layout_reversegraph) {
     // Only two of the possible values require any change:
-    switch (approvedCfg.flow_inherit_color_from) {
-      case 'source': approvedCfg.flow_inherit_color_from = 'target'; break;
-      case 'target': approvedCfg.flow_inherit_color_from = 'source'; break;
+    switch (approvedCfg.flow_inheritfrom) {
+      case 'source': approvedCfg.flow_inheritfrom = 'target'; break;
+      case 'target': approvedCfg.flow_inheritfrom = 'source'; break;
       // no default
     }
   }
@@ -1803,7 +1803,7 @@ glob.process_sankey = () => {
   // Enable/disable the UI options for letting the user show differences.
   // (If there are no differences, the checkbox is useless.)
   const disableDifferenceControls = !differences.length,
-    listDifferencesEl = el('meta_list_imbalances');
+    listDifferencesEl = el('meta_listimbalances');
   listDifferencesEl.disabled = disableDifferenceControls;
   el('imbalances').setAttribute('aria-disabled', disableDifferenceControls);
 
@@ -1877,7 +1877,7 @@ glob.process_sankey();
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
-/* global d3, canvg, sampleDiagramRecipes, global, fontMetrics, highlightStyles
+/* global d3 canvg sampleDiagramRecipes global fontMetrics highlightStyles
  IN OUT BEFORE AFTER skmSettings colorGray60 reWholeNumber reDecimal
  reCommentLine reNodeLine reFlowLine reFlowTargetWithSuffix
- reColorPlusOpacity reBareColor reRGBColor */
+ reColorPlusOpacity reBareColor reRGBColor userInputsField */

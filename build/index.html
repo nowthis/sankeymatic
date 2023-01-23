@@ -122,10 +122,10 @@ Nodes<span id="node_options_hint">:</span></h2>
 <!-- tabindex="0" -->
 <div id="node_options" class="form_chunk">
 <p class="form_elements1">
-<span class="no_wrap output_container" onmouseover="revealVal('node_height');" onmouseout="fadeVal('node_height');">
-<label for="node_height"><strong>Height:</strong></label>
-.<input id="node_height" class="slider_small" type="range" min="0" max="100" step="1" value="50" onfocus="revealVal('node_height');" onblur="fadeVal('node_height');" oninput="updateOutput('node_height'); process_sankey();" onchange="process_sankey();">|
-<output id="node_height_val" for="node_height" class="fade-init output_wide"></output></span>
+<span class="no_wrap output_container" onmouseover="revealVal('node_h');" onmouseout="fadeVal('node_h');">
+<label for="node_h"><strong>Height:</strong></label>
+.<input id="node_h" class="slider_small" type="range" min="0" max="100" step="1" value="50" onfocus="revealVal('node_h');" onblur="fadeVal('node_h');" oninput="updateOutput('node_h'); process_sankey();" onchange="process_sankey();">|
+<output id="node_h_val" for="node_h" class="fade-init output_wide"></output></span>
 
 <span class="no_wrap output_container" onmouseover="revealVal('node_spacing');" onmouseout="fadeVal('node_spacing');">
 <label for="node_spacing" class="spaced_label"><strong>Spacing:</strong></label>
@@ -134,8 +134,8 @@ Nodes<span id="node_options_hint">:</span></h2>
 </p>
 
 <p class="form_elements2">
-<span class="no_wrap"><label for="node_width"><strong>Width:</strong></label>
-<input id="node_width" type="number" class="wholenumber number_100s" min="0" value="9" step="1" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="node_w"><strong>Width:</strong></label>
+<input id="node_w" type="number" class="wholenumber number_100s" min="0" value="9" step="1" onchange="process_sankey();"></span>
 
 <span class="no_wrap"><label for="node_border" class="spaced_label"><strong>Border:</strong></label>
 <input id="node_border" type="number" class="wholenumber number_10s" min="0" value="0" step="1" onchange="process_sankey();"></span>
@@ -161,7 +161,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td class="text_left">
 <span class="no_wrap">
 <button id="theme_a_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('a',1); return false;">&lt;</button>
-<label id="theme_a_guide" for="theme_a_radio"></label> <input type="hidden" id="theme_a_offset" value="9">
+<label id="theme_a_guide" for="theme_a_radio"></label> <input type="hidden" id="themeoffset_a" value="9">
 <button id="theme_a_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('a',-1); return false;">&gt;</button>
 </span>
 </td>
@@ -175,7 +175,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td class="text_left">
 <span class="no_wrap">
 <button id="theme_b_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('b',1); return false;">&lt;</button>
-<label id="theme_b_guide" for="theme_b_radio"></label> <input type="hidden" id="theme_b_offset" value="0">
+<label id="theme_b_guide" for="theme_b_radio"></label> <input type="hidden" id="themeoffset_b" value="0">
 <button id="theme_b_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('b',-1); return false;">&gt;</button>
 </span>
 </td>
@@ -189,7 +189,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td class="text_left">
 <span class="no_wrap">
 <button id="theme_c_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('c',1); return false;">&lt;</button>
-<label id="theme_c_guide" for="theme_c_radio"></label> <input type="hidden" id="theme_c_offset" value="0">
+<label id="theme_c_guide" for="theme_c_radio"></label> <input type="hidden" id="themeoffset_c" value="0">
 <button id="theme_c_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('c',-1); return false;">&gt;</button>
 </span>
 </td>
@@ -203,7 +203,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td class="text_left">
 <span class="no_wrap">
 <button id="theme_d_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('d',1); return false;">&lt;</button>
-<label id="theme_d_guide" for="theme_d_radio"></label> <input type="hidden" id="theme_d_offset" value="0">
+<label id="theme_d_guide" for="theme_d_radio"></label> <input type="hidden" id="themeoffset_d" value="0">
 <button id="theme_d_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('d',-1); return false;">&gt;</button>
 </span>
 </td>
@@ -236,13 +236,13 @@ Flows<span id="flow_options_hint">:</span></h2>
 
 <div class="fieldset_contents">
 
-Use <input name="flow_inherit_color_from" type="radio" id="flow_inherit_none" value="none" onchange="process_sankey();" /><label for="flow_inherit_none" class="ropt">one color:</label>
+Use <input name="flow_inheritfrom" type="radio" id="flow_inherit_none" value="none" onchange="process_sankey();" /><label for="flow_inherit_none" class="ropt">one color:</label>
 
 <input type="color" id="flow_color" size="7" maxlength="7" value="#999999" onchange="checkRadio('flow_inherit_none'); process_sankey();" /> or colors from:<br />
-<span class="no_wrap"><input name="flow_inherit_color_from" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_source">each flow's Source</label></span>
-<span class="no_wrap"><input name="flow_inherit_color_from" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_target">each flow's Target</label></span>
+<span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_source">each flow's Source</label></span>
+<span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_target">each flow's Target</label></span>
 <br />
-<span class="no_wrap"><input name="flow_inherit_color_from" type="radio" id="flow_inherit_outside_in" value="outside-in" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_inherit_outside_in">the outermost nodes (flowing in)</label></span>
+<span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_outside_in" value="outside-in" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_inherit_outside_in">the outermost nodes (flowing in)</label></span>
 </div>
 
 </fieldset>
@@ -257,28 +257,28 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 
 <div id="label_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
-<span><input type="checkbox" id="label_shows_name" value="1" onchange="process_sankey();" checked="checked">
-<label for="label_shows_name" class="ropt">Show labels</label> <small class="rnote">(hide to apply your own text to the graph)</small></span>
+<span><input type="checkbox" id="labelname_appears" value="1" onchange="process_sankey();" checked="checked">
+<label for="labelname_appears" class="ropt">Show labels</label> <small class="rnote">(hide to apply your own text to the graph)</small></span>
 <br />
 
-&nbsp;&nbsp;<span><input type="checkbox" id="label_shows_value" value="1" onchange="process_sankey();" checked="checked">
-<label for="label_shows_value" class="ropt">Show Node totals as part of labels</label></span>
+&nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_appears" value="1" onchange="process_sankey();" checked="checked">
+<label for="labelvalue_appears" class="ropt">Show Node totals as part of labels</label></span>
 <br />
 
-&nbsp;&nbsp;&nbsp;&nbsp;<span><input type="checkbox" id="value_show_full_precision" value="1" onchange="process_sankey();" checked="checked">
-<label for="value_show_full_precision" class="ropt">Show trailing zeroes <small>(best for currency)</small></label></span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_fullprecision" value="1" onchange="process_sankey();" checked="checked">
+<label for="labelvalue_fullprecision" class="ropt">Show trailing zeroes <small>(best for currency)</small></label></span>
 <br />
 </p>
 
 <p class="form_elements2">
-<label for="label_name_size"><strong>Size:</strong></label>
-<span class="no_wrap"><input id="label_name_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span>
-<input type="color" id="label_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
+<label for="labelname_size"><strong>Size:</strong></label>
+<span class="no_wrap"><input id="labelname_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span>
+<input type="color" id="labels_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
 
-<span class="no_wrap output_container spaced_label" onmouseover="revealVal('label_highlight');" onmouseout="fadeVal('label_highlight');">
-<label for="label_highlight" id="highlight_fld_label"><strong>Highlight:</strong></label>
-<span class="smalllabel">0</span><input id="label_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('label_highlight');" onblur="fadeVal('label_highlight');" oninput="updateOutput('label_highlight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">Max</span>
-<output id="label_highlight_val" for="label_highlight" class="fade-init output_medium"></output></span>
+<span class="no_wrap output_container spaced_label" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
+<label for="labels_highlight" id="highlight_fld_label"><strong>Highlight:</strong></label>
+<span class="smalllabel">0</span><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">Max</span>
+<output id="labels_highlight_val" for="labels_highlight" class="fade-init output_medium"></output></span>
 </p>
 
 <fieldset class="form_elements1">
@@ -287,31 +287,31 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 
 <p class="form_elements">
 Place the <strong>first</strong> labels:
-<span class="no_wrap"><input name="label_position_first" type="radio" id="label_first_before" value="before" onchange="process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the node</label></span>
-<span class="no_wrap"><input name="label_position_first" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the node</label></span>
+<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_before" value="before" onchange="process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the node</label></span>
+<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the node</label></span>
 </p>
 
 <p class="form_elements">
-<label for="label_position_breakpoint">Place labels on the <strong>other side</strong> starting at:</label>
-<span class="no_wrap output_container" onmouseover="revealVal('label_position_breakpoint');" onmouseout="fadeVal('label_position_breakpoint');">
-<span class="smalllabel">Stage 2</span><input id="label_position_breakpoint" class="slider_xxsmall" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('label_position_breakpoint');" onblur="fadeVal('label_position_breakpoint');" oninput="updateOutput('label_position_breakpoint'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">(never)</span>
-<output id="label_position_breakpoint_val" for="label_position_breakpoint" class="fade-init output_10s"></output></span>
+<label for="labelposition_breakpoint">Place labels on the <strong>other side</strong> starting at:</label>
+<span class="no_wrap output_container" onmouseover="revealVal('labelposition_breakpoint');" onmouseout="fadeVal('labelposition_breakpoint');">
+<span class="smalllabel">Stage 2</span><input id="labelposition_breakpoint" class="slider_xxsmall" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">(never)</span>
+<output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_10s"></output></span>
 </p>
 </div>
 </fieldset>
 
 <p class="form_elements2">
 <strong>Face:</strong>
-<span class="no_wrap"><input name="label_font_face" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
-<span class="no_wrap"><input name="label_font_face" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
-<span class="no_wrap"><input name="label_font_face" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
 
 &nbsp;
 
-<span class="no_wrap output_container" onmouseover="revealVal('label_name_weight');" onmouseout="fadeVal('label_name_weight');">
-<label for="label_name_weight"><strong>Style:</strong></label>
-<span class="smalllabel font_light">Light</span><input id="label_name_weight" class="slider_xxsmall" type="range" min="100" max="700" step="300" value="400" onfocus="revealVal('label_name_weight');" onblur="fadeVal('label_name_weight');" oninput="updateOutput('label_name_weight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel font_bolder">Bold</span>
-<output id="label_name_weight_val" for="label_name_weight" class="fade-init output_medium"></output></span>
+<span class="no_wrap output_container" onmouseover="revealVal('labelname_weight');" onmouseout="fadeVal('labelname_weight');">
+<label for="labelname_weight"><strong>Style:</strong></label>
+<span class="smalllabel font_light">Light</span><input id="labelname_weight" class="slider_xxsmall" type="range" min="100" max="700" step="300" value="400" onfocus="revealVal('labelname_weight');" onblur="fadeVal('labelname_weight');" oninput="updateOutput('labelname_weight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel font_bolder">Bold</span>
+<output id="labelname_weight_val" for="labelname_weight" class="fade-init output_medium"></output></span>
 </p>
 
 <fieldset class="form_elements1">
@@ -345,18 +345,18 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 
 <table style="width: 100%;"><tr>
 <td class="text_left">
-<input type="checkbox" id="layout_justify_origins" value="1" onchange="process_sankey();"><br />
-<label for="layout_justify_origins" class="ropt">Place all<br /> flow <strong>origins</strong><br /> at the <strong>left</strong> edge</label>
+<input type="checkbox" id="layout_justifyorigins" value="1" onchange="process_sankey();"><br />
+<label for="layout_justifyorigins" class="ropt">Place all<br /> flow <strong>origins</strong><br /> at the <strong>left</strong> edge</label>
 </td>
 <td class="text_right">
-<input type="checkbox" id="layout_justify_ends" value="1" onchange="process_sankey();"><br />
-<label for="layout_justify_ends" class="spaced_label ropt">Place all<br /> flow <strong>endpoints</strong><br /> at the <strong>right</strong> edge</label>
+<input type="checkbox" id="layout_justifyends" value="1" onchange="process_sankey();"><br />
+<label for="layout_justifyends" class="spaced_label ropt">Place all<br /> flow <strong>endpoints</strong><br /> at the <strong>right</strong> edge</label>
 </td>
 </tr></table>
 </div>
 <p class="form_elements2 center_content">
-<input type="checkbox" id="layout_reverse_graph" value="1" onchange="process_sankey();">
-<label for="layout_reverse_graph" class="ropt"><strong>Reverse the graph</strong> (flow right-to-left)</label>
+<input type="checkbox" id="layout_reversegraph" value="1" onchange="process_sankey();">
+<label for="layout_reversegraph" class="ropt"><strong>Reverse the graph</strong> (flow right-to-left)</label>
 </p>
 
 <p class="form_elements1 center_content">
@@ -377,7 +377,7 @@ Diagram Scales match as closely as possible.
     <output id="internal_iterations_val" for="internal_iterations" class="fade-init output_medium_long"></output></span>
 </div>
 <div class="form_elements2">
-<input type="checkbox" id="internal_reveal_shadows" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="internal_reveal_shadows" class="ropt">Reveal Shadow Nodes</label>
+<input type="checkbox" id="internal_revealshadows" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="internal_revealshadows" class="ropt">Reveal Shadow Nodes</label>
 </div>
 
 </div>
@@ -456,8 +456,8 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 <canvas id="png_preview" height="600" width="600" style="background-color: transparent; display: none;"></canvas>
 <div id="chartfooter">
 <p class="form_elements1 center_content">
-<input type="checkbox" id="meta_mention_sankeymatic" value="1" onchange="process_sankey();" checked>
-<label class="smalllabel ropt" for="meta_mention_sankeymatic">Include &ldquo;Made with SankeyMATIC&rdquo;</label>
+<input type="checkbox" id="meta_mentionsankeymatic" value="1" onchange="process_sankey();" checked>
+<label class="smalllabel ropt" for="meta_mentionsankeymatic">Include &ldquo;Made with SankeyMATIC&rdquo;</label>
 </p>
 </div>
 <table id="messages" class="expandable_box">
@@ -469,9 +469,9 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 </td></tr>
 <tr><td id="imbalances">
 <div id="imbalance_control">
-<label for="meta_list_imbalances">When Total Inputs &ne; Total Outputs:</label>
-<input type="checkbox" id="meta_list_imbalances" value="1" onchange="process_sankey();" checked="checked" />
-<label class="ropt" for="meta_list_imbalances">list the differences</label>.
+<label for="meta_listimbalances">When Total Inputs &ne; Total Outputs:</label>
+<input type="checkbox" id="meta_listimbalances" value="1" onchange="process_sankey();" checked="checked" />
+<label class="ropt" for="meta_listimbalances">list the differences</label>.
 </div>
 <div id="imbalance_messages"></div>
 </td></tr>

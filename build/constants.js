@@ -2,69 +2,67 @@
 /* eslint-disable no-unused-vars */
 
 // skmSettings = Settings required to render a diagram.
-// Format =
-//   field_name:
-//     [data type on the page, initial value, allowed values,
-//     (possible additions: readable name, type in text input, has_shortcut)]
-// 'Allowed values' means different things per type:
+// Format = field_name: [data type, initial value, allowed values]
+// 'Allowed values' contains different things per data type:
 //   whole = [min, [max]]
+//   contained = [min, dimension to compare to (either 'size_h' or 'size_w')]
+//   breakpoint = [min]
 //   text = [min-length, max-length]
-//   radio = [literal list of radio option values]
-//   margin = [0, max value key (either size_h or size_w)]
+//   radio & list = [literal list of allowed values]
 // These types' constraints are NOT specified here; they are enforced in code:
-//   decimal = (always 0.0 - 1.0)
-//   color = (always a hex color spec)
-//   yn = (always y or n)
+//   decimal = always 0.0 - 1.0
+//   color = always a hex color spec
+//   yn = always y or n
 const skmSettings
   = new Map([
-    ['size_w', ['whole', '600', [40]]],
-    ['size_h', ['whole', '600', [40]]],
-    ['margin_l', ['margin', '12', [0, 'size_w']]],
-    ['margin_r', ['margin', '12', [0, 'size_w']]],
-    ['margin_t', ['margin', '18', [0, 'size_h']]],
-    ['margin_b', ['margin', '20', [0, 'size_h']]],
+    ['size_w', ['whole', 600, [40]]],
+    ['size_h', ['whole', 600, [40]]],
+    ['margin_l', ['contained', 12, [0, 'size_w']]],
+    ['margin_r', ['contained', 12, [0, 'size_w']]],
+    ['margin_t', ['contained', 18, [0, 'size_h']]],
+    ['margin_b', ['contained', 20, [0, 'size_h']]],
     ['bg_color', ['color', '#ffffff', []]],
     ['bg_transparent', ['yn', 'n', []]],
-    ['node_height', ['whole', '50', [0, 100]]],
-    ['node_spacing', ['whole', '85', [0, 100]]],
-    ['node_width', ['whole', '9', [0]]],
-    ['node_border', ['whole', '0', [0]]],
+    ['node_w', ['contained', 9, [0, 'size_w']]],
+    ['node_h', ['whole', 50, [0, 100]]],
+    ['node_spacing', ['whole', 85, [0, 100]]],
+    ['node_border', ['contained', 0, [0, 'size_w']]],
     ['node_theme', ['radio', 'none', ['a', 'b', 'c', 'd', 'none']]],
     ['node_color', ['color', '#888888', []]],
-    ['node_opacity', ['decimal', '1.0', []]],
-    ['flow_inherit_color_from', ['radio', 'none', ['source', 'target', 'outside-in', 'none']]],
-    ['flow_curvature', ['decimal', '0.5', []]],
+    ['node_opacity', ['decimal', 1.0, []]],
+    ['flow_curvature', ['decimal', 0.5, []]],
+    ['flow_inheritfrom', ['radio', 'none', ['source', 'target', 'outside-in', 'none']]],
     ['flow_color', ['color', '#999999', []]],
-    ['flow_opacity', ['decimal', '0.45', []]],
+    ['flow_opacity', ['decimal', 0.45, []]],
     ['layout_order', ['radio', 'automatic', ['automatic', 'exact']]],
-    ['layout_justify_origins', ['yn', 'n', []]],
-    ['layout_justify_ends', ['yn', 'n', []]],
-    ['layout_reverse_graph', ['yn', 'n', []]],
-    ['label_font_face', ['radio', 'sans-serif', ['monospace', 'sans-serif', 'serif']]],
-    ['label_color', ['color', '#000000', []]],
-    ['label_position_breakpoint', ['breakpoint', '9999', [2]]],
-    ['label_position_first', ['radio', 'before', ['before', 'after']]],
-    ['label_shows_name', ['yn', 'y', []]],
-    ['label_shows_value', ['yn', 'y', []]],
-    ['label_name_size', ['whole', '16', [6]]],
-    ['label_name_weight', ['radio', '400', ['100', '400', '700']]],
-    ['label_highlight', ['decimal', '0.55', []]],
+    ['layout_justifyorigins', ['yn', 'n', []]],
+    ['layout_justifyends', ['yn', 'n', []]],
+    ['layout_reversegraph', ['yn', 'n', []]],
+    ['labels_color', ['color', '#000000', []]],
+    ['labels_highlight', ['decimal', 0.55, []]],
+    ['labels_fontface', ['radio', 'sans-serif', ['monospace', 'sans-serif', 'serif']]],
+    ['labelname_appears', ['yn', 'y', []]],
+    ['labelname_size', ['whole', 16, [6]]],
+    ['labelname_weight', ['radio', '400', ['100', '400', '700']]],
+    ['labelvalue_appears', ['yn', 'y', []]],
+    ['labelvalue_fullprecision', ['yn', 'y', []]],
+    ['labelposition_first', ['radio', 'before', ['before', 'after']]],
+    ['labelposition_breakpoint', ['breakpoint', 9999, [2]]],
+    ['value_format', ['list', ',.', [',.', '.,', ' .', ' ,', 'X.', 'X,']]],
     ['value_prefix', ['text', '', [0, 99]]],
     ['value_suffix', ['text', '', [0, 99]]],
-    ['value_format', ['list', ',.', [',.', '.,', ' .', ' ,', 'X.', 'X,']]],
-    ['value_show_full_precision', ['yn', 'y', []]],
-    ['theme_a_offset', ['whole', '9', [0, 9]]],
-    ['theme_b_offset', ['whole', '0', [0, 9]]],
-    ['theme_c_offset', ['whole', '0', [0, 7]]],
-    ['theme_d_offset', ['whole', '0', [0, 11]]],
-    ['meta_mention_sankeymatic', ['yn', 'y', []]],
-    ['meta_list_imbalances', ['yn', 'y', []]],
+    ['themeoffset_a', ['whole', 9, [0, 9]]],
+    ['themeoffset_b', ['whole', 0, [0, 9]]],
+    ['themeoffset_c', ['whole', 0, [0, 7]]],
+    ['themeoffset_d', ['whole', 0, [0, 11]]],
+    ['meta_mentionsankeymatic', ['yn', 'y', []]],
+    ['meta_listimbalances', ['yn', 'y', []]],
     // 'internal' settings are never exported, but can be imported:
-    ['internal_iterations', ['whole', '25', [0, 50]]],
-    ['internal_reveal_shadows', ['yn', 'n', []]],
+    ['internal_iterations', ['whole', 25, [0, 50]]],
+    ['internal_revealshadows', ['yn', 'n', []]],
   ]),
 
-  // Some reusable regular expressions to be precompiled (more coming):
+  // Some reusable regular expressions to be precompiled:
   reWholeNumber = /^\d+$/,
   reDecimal = /^\d(?:.\d+)?$/,
   reCommentLine = /^(?:'|\/\/)/, // Line starts with // or '
@@ -75,6 +73,7 @@ const skmSettings
   reBareColor = /^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i,
   reRGBColor = /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i,
   colorGray60 = '#999',
+  userInputsField = 'flows_in',
 
   // Some prime constants for enum values:
   [IN, OUT, BEFORE, AFTER] = [11, 13, 17, 19],
@@ -156,14 +155,14 @@ const skmSettings
       flows: "// Enter Flows between Nodes, like this:\n//         Source [AMOUNT] Target\n\nWages [1500] Budget\nOther [250] Budget\n\nBudget [450] Taxes\nBudget [420] Housing\nBudget [400] Food\nBudget [295] Transportation\nBudget [25] Savings\n\n// You can set a Node's color, like this:\n:Budget #708090\n//            ...or a color for a single Flow:\nBudget [160] Other Necessities #0F0\n\n// Use the controls below to customize\n// your diagram's appearance...",
       settings: {
         size_w: 600,
-        node_height: 50,
+        node_w: 9,
+        node_h: 50,
         node_spacing: 85,
-        node_width: 9,
         node_theme: 'a',
-        flow_inherit_color_from: 'outside_in',
-        layout_justify_ends: 'n',
+        flow_inheritfrom: 'outside-in',
+        layout_justifyends: 'n',
         layout_order: 'automatic',
-        label_name_size: 16,
+        labelname_size: 16,
         value_prefix: '',
         },
     }],
@@ -174,14 +173,14 @@ const skmSettings
       flows: '// Sample Ranked Election diagram\n\nGH - Round 1 [300000] GH - Round 2\nEF - Round 1 [220000] EF - Round 2\nCD - Round 1 [200000] CD - Round 2\nAB - Round 1 [10000] GH - Round 2\nAB - Round 1 [25000] EF - Round 2\nAB - Round 1 [20000] CD - Round 2\n\nGH - Round 2 [310000] GH - Round 3\nEF - Round 2 [245000] EF - Round 3\nCD - Round 2 [50000] GH - Round 3\nCD - Round 2 [95000] EF - Round 3\n\n// This line sets a custom gray color:\n:No further votes #555 <<\nAB - Round 1 [20000] No further votes\nCD - Round 2 [75000] No further votes',
       settings: {
         size_w: 700,
-        node_height: 76,
+        node_w: 9,
+        node_h: 76,
         node_spacing: 85,
-        node_width: 9,
         node_theme: 'a',
-        flow_inherit_color_from: 'source',
-        layout_justify_ends: 'n',
+        flow_inheritfrom: 'source',
+        layout_justifyends: 'n',
         layout_order: 'exact',
-        label_name_size: 14,
+        labelname_size: 14,
         value_prefix: '',
         },
     }],
@@ -192,14 +191,14 @@ const skmSettings
       flows: '// Sample Job Search diagram:\n\nApplications [4] Interview\nApplications [9] Rejected\nApplications [4] No Answer\n\nInterview [2] 2nd Interview\nInterview [2] No Offer\n\n2nd Interview [2] Offer\n\nOffer [1] Accepted\nOffer [1] Declined',
       settings: {
         size_w: 700,
-        node_height: 50,
+        node_w: 5,
+        node_h: 50,
         node_spacing: 50,
-        node_width: 5,
         node_theme: 'a',
-        flow_inherit_color_from: 'target',
-        layout_justify_ends: 'n',
+        flow_inheritfrom: 'target',
+        layout_justifyends: 'n',
         layout_order: 'automatic',
-        label_name_size: 14,
+        labelname_size: 14,
         value_prefix: '',
         },
     }],
@@ -210,14 +209,14 @@ const skmSettings
       flows: 'Division A [900] Revenue\nDivision B [750] Revenue\nDivision C [150] Revenue\n\nRevenue [1000] Gross Profit\n\nGross Profit [350] Operating Profit\nGross Profit [650] Operating Expenses\n\nOperating Profit [260] Net Profit\nOperating Profit [90] Tax\n\nOperating Expenses [640] S G & Admin\nOperating Expenses [10] Amortization\n\nRevenue [800] Cost of Sales\n\n// Profit - blue\n:Gross Profit #48e <<\n:Operating Profit #48e <<\n:Net Profit #48e <<\n\n// Expenses - rust\n:Operating Expenses #d74 <<\n:Tax #d74 <<\n:S G & Admin #d74 <<\n:Amortization #d74 <<\n\n// Cost - grayish-gold\n:Cost of Sales #e6cc91 <<\n\n// main Revenue node: dark grey\n:Revenue #444',
       settings: {
         size_w: 1000,
-        node_height: 70,
+        node_w: 5,
+        node_h: 70,
         node_spacing: 70,
-        node_width: 5,
         node_theme: 'none',
-        flow_inherit_color_from: 'none',
-        layout_justify_ends: 'y',
+        flow_inheritfrom: 'none',
+        layout_justifyends: 'y',
         layout_order: 'automatic',
-        label_name_size: 13,
+        labelname_size: 13,
         value_prefix: '$',
         },
     }],
@@ -228,14 +227,14 @@ const skmSettings
       flows: 'a [1] b\na [1] c',
       settings: {
         size_w: 600,
-        node_height: 50,
+        node_w: 12,
+        node_h: 50,
         node_spacing: 80,
-        node_width: 12,
         node_theme: 'none',
-        flow_inherit_color_from: 'none',
-        layout_justify_ends: 'n',
+        flow_inheritfrom: 'none',
+        layout_justifyends: 'n',
         layout_order: 'automatic',
-        label_name_size: 15,
+        labelname_size: 15,
         value_prefix: '',
         },
     }],
