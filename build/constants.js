@@ -90,6 +90,10 @@ const skmSettings
   reSettingsText = /^((?:\w+\s*){1,2}) '(.*)'$/,
 
   settingsAppliedPrefix = '// \u2713 ', // u2713 = a little check mark
+  settingsHeaderPrefix = '// SankeyMATIC diagram inputs -',
+  settingsURLLine = '// https://sankeymatic.com/build/',
+  settingsUserDataMarker = '// === Nodes and Flows ===',
+  settingsMarker = '// === Settings ===',
 
   reNodeLine = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
   reFlowLine = /^(.+)\[([\d\s.+-]+)\](.+)$/,

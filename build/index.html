@@ -85,7 +85,8 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 <span id="input_options_indicator" class="indicator">&ndash;</span>
 Inputs<span id="input_options_hint">:</span></h2>
 
-<div id="input_options" class="text_center">
+<div id="input_options" class="text_center grid_sidebar_right">
+<div>
     <textarea id="flows_in" rows="19" cols="40" class="font_sans" onchange="process_sankey();">// Enter Flows between Nodes, like this:
 //         Source [AMOUNT] Target
 
@@ -105,9 +106,21 @@ Budget [160] Other Necessities #0F0
 
 // Use the controls below to customize
 // your diagram's appearance...</textarea>
+</div>
 
-<button id="preview_graph" type="submit">Show &gt;</button>
-<p class="form_elements3">
+<div class="separated_stack">
+
+<div class="top_center_self"><button id="preview_graph" type="submit">Show &gt;</button></div>
+
+<div class="bottom_center_self">
+<button id="save_my_work_button" type="submit" class="loadsave_button"
+ onclick="saveDiagramToFile(); return false;"
+ title="Save the current diagram and settings to a local text file">Save my<br />work  &#9660;</button>
+
+</div>
+</div>
+
+<p class="form_elements3 grid_entire_row">
 <strong>Arrange the diagram:</strong><br />
 <span><input name="layout_order" id="layout_order_automatic" value="automatic" type="radio" onchange="process_sankey();" checked="checked" /><label for="layout_order_automatic" class="ropt">Automatically</label></span>
 <span><input name="layout_order" id="layout_order_exact" value="exact" type="radio" onchange="process_sankey();" class="spaced_checkbox" /><label for="layout_order_exact" class="ropt">Using the exact input order</label></span>

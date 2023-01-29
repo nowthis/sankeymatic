@@ -1467,6 +1467,72 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   }
 } // end of render_sankey
 
+// MARK Save diagram to a text file
+
+function outputSettings() {
+  let currentSettingGroup = '';
+  // outputFldName: produce the full field name or an indented short version:
+  function outputFldName(fld) {
+    const prefixLen = currentSettingGroup.length,
+      shortFldName = prefixLen && fld.startsWith(`${currentSettingGroup}_`)
+      ? `  ${fld.substring(prefixLen + 1)}`
+      : fld;
+    return shortFldName.replaceAll('_', ' ');
+  }
+
+  const outputFns = new Map([
+      ['list', (v) => `'${v}'`], // Always quote 'list' values
+      // In a text field we may encounter single-quotes, so double those:
+      ['text', (v) => `'${v.replaceAll("'", "''")}'`],
+    ]),
+    outputLines = [];
+
+  skmSettings.forEach((fldData, fldName) => {
+    if (fldName.startsWith('internal_')) { return; } // Ignore internals
+
+    const dataType = fldData[0],
+      activeHVal = getHumanValueFromPage(fldName, dataType),
+      outVal = outputFns.has(dataType)
+        ? outputFns.get(dataType)(activeHVal)
+        : activeHVal;
+    outputLines.push(`${outputFldName(fldName)} ${outVal}`);
+    currentSettingGroup = fldName.split('_')[0];
+  });
+
+  return outputLines.join('\n');
+}
+
+// Run through the current input lines & drop any old headers &
+// successfully applied settings. Returns a trimmed string.
+function removeAutoLines(lines) {
+  return lines
+    .filter(
+      (l) => !l.startsWith(settingsHeaderPrefix)
+        && ![settingsMarker, settingsUserDataMarker, settingsURLLine].includes(l)
+        && !l.startsWith(settingsAppliedPrefix)
+    )
+    .join('\n')
+    .replace(/^\n+/, '') // trim blank lines at the start and end
+    .replace(/\n+$/, '');
+}
+
+glob.saveDiagramToFile = () => {
+  const cleanedUpSourceLines = removeAutoLines(
+      elV(userInputsField).split('\n')
+    ),
+    diagramOutput = `${settingsHeaderPrefix} Saved: ${glob.humanTimestamp()}
+${settingsURLLine}
+\n${settingsUserDataMarker}
+\n${cleanedUpSourceLines}
+\n${settingsMarker}
+\n${outputSettings()}`;
+
+  downloadATextFile(
+    diagramOutput,
+    `sankeymatic_${glob.fileTimestamp()}_source.txt`
+  );
+};
+
 // MAIN FUNCTION:
 // process_sankey: Called directly from the page and within this script.
 // Gather inputs from user; validate them; render updated diagram
@@ -2018,9 +2084,13 @@ glob.process_sankey();
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
-/* global d3 canvg sampleDiagramRecipes global fontMetrics highlightStyles
- IN OUT BEFORE AFTER skmSettings colorGray60
+/* global
+ d3 canvg global IN OUT BEFORE AFTER
+ sampleDiagramRecipes fontMetrics highlightStyles
+ settingsMarker settingsAppliedPrefix settingsHeaderPrefix
+ settingsUserDataMarker settingsURLLine
+ skmSettings colorGray60 userInputsField
  reWholeNumber reDecimal reYesNo reYes
- reCommentLine reNodeLine reFlowLine reFlowTargetWithSuffix
- reSettingsValue reSettingsText settingsAppliedPrefix
- reColorPlusOpacity reBareColor reRGBColor userInputsField */
+ reCommentLine reSettingsValue reSettingsText reNodeLine reFlowLine
+ reFlowTargetWithSuffix reColorPlusOpacity
+ reBareColor reRGBColor */

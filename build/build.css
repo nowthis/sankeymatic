@@ -29,6 +29,15 @@ body { font-size: 13px; }
 .number_100s { width: 3em; }
 .number_10000s { width: 4.25em; }
 
+.grid_entire_row {
+  grid-column: 1 / -1;
+}
+
+.grid_sidebar_right {
+  display: grid;
+  grid-template-columns: 1fr fit-content(15ch);
+}
+
 /* Hover effects for slider value display: */
 .fade-init {
   visibility: hidden;
@@ -180,11 +189,6 @@ dfn {
   padding: 0.25em;
   margin: 0.25em;
   font-size: small;
-  vertical-align: middle;
-}
-
-/* Center the preview button vertically relative to the textarea: */
-#preview_graph {
   vertical-align: middle;
 }
 
@@ -402,7 +406,24 @@ th#title {
   white-space: pre;
 }
 
-#download_central button {
+.separated_stack {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  align-content: space-between;
+}
+
+.top_center_self {
+  place-self: start center;
+  padding: 1em 0.2em;
+}
+
+.bottom_center_self {
+  place-self: end center;
+  padding: 1em 0.2em 0;
+}
+
+#download_central button,
+.loadsave_button {
   background-color: var(--medium-blue);
   color: white;
   border-radius: 0.4em;
@@ -414,6 +435,15 @@ th#title {
 
 #download_central button:hover {
   background-color: var(--light-blue);
+}
+
+.loadsave_button {
+  font-size: 13px;
+  background-color: var(--dark-blue);
+}
+
+.loadsave_button:hover {
+  background-color: var(--medium-blue);
 }
 
 button#save_as_svg {
