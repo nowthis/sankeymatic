@@ -355,6 +355,129 @@ function curvedFlowPathFunction(curvature) {
   };
 }
 
+// MARK: Validation of Settings
+
+// settingIsValid(metadata, human value, size object {size_w: _, size_h: _}):
+// return [true, computer value] IF the given value meets the criteria.
+// Note: The 'size' object is only used when validating 'contained' settings.
+function settingIsValid(sData, hVal, cfg) {
+  const [dataType, defaultVal, allowList] = sData;
+
+  // Checkboxes: Translate y/n/Y/N/Yes/No to true/false.
+  if (dataType === 'yn' && reYesNo.test(hVal)) {
+    return [true, reYes.test(hVal)];
+  }
+
+  if (['radio', 'list'].includes(dataType)
+      && allowList.includes(hVal)) {
+    return [true, hVal];
+  }
+
+  if (dataType === 'color') {
+    let rgb;
+    if (reRGBColor.test(hVal)) {
+      rgb = d3.rgb(hVal);
+    } else if (reBareColor.test(hVal)) {
+      rgb = d3.rgb(`#${hVal}`);
+    } else { // maybe it's a CSS name like blue/green/lime/maroon/etc.?
+      const namedRGB = d3.color(hVal);
+      if (namedRGB) { rgb = namedRGB; }
+    }
+    // If we found a real color spec, return the full 6-char html value.
+    // (This fixes the problem of a 3-character color like #789.)
+    if (rgb) { return [true, rgb.formatHex()]; }
+  }
+
+  // valueInBounds: Verify a numeric value is in a range.
+  // 'max' can be undefined, which is treated as 'no maximum'
+  function valueInBounds(v, [min, max]) {
+    return v >= min && (max === undefined || v <= max);
+  }
+
+  if (dataType === 'text') {
+    // UN-double any single quotes:
+    const unescapedVal = hVal.replaceAll("''", "'");
+    // Make sure the string's length is in the right range:
+    if (valueInBounds(unescapedVal.length, allowList)) {
+      return [true, unescapedVal];
+    }
+  }
+
+  // The only types remaining are numbers:
+  const valAsNum = Number(hVal);
+  if (dataType === 'decimal'
+      && reDecimal.test(hVal)
+      && valueInBounds(valAsNum, [0, 1.0])) {
+    return [true, valAsNum];
+  }
+  if (['whole', 'contained', 'breakpoint'].includes(dataType)
+      && reWholeNumber.test(hVal)) {
+    let [minV, maxV] = [0];
+    switch (dataType) {
+      case 'whole': [minV, maxV] = allowList; break;
+      // Dynamic values (like margins) should be processed after the
+      // diagram's size is set so that we can compare them to their
+      // specific containing dimension (that's why they appear later
+      // in the settings list):
+      case 'contained': maxV = cfg[allowList[1]]; break;
+      // breakpoints: We can't just use the current 'never' value
+      // for comparison, since we may be importing a new diagram with
+      // a different number of stages:
+      case 'breakpoint': maxV = defaultVal; break;
+      // no default
+    }
+    if (valueInBounds(valAsNum, [minV, maxV])) {
+      return [true, valAsNum];
+    }
+  }
+  // If we could not affirmatively say this value is good:
+  return [false];
+}
+
+// setValueOnPage(name, type, computer-friendly value):
+// Given a valid value, update the field on the page to adopt it:
+function setValueOnPage(sName, dataType, cVal) {
+  // console.log(sName, dataType, cVal);
+  switch (dataType) {
+    case 'radio': radioRef(sName).value = cVal; break;
+    // cVal is expected to be boolean at this point for checkboxes:
+    case 'yn': el(sName).checked = cVal; break;
+    // All remaining types (color, list, text, whole/decimal/etc.):
+    default: el(sName).value = cVal;
+  }
+}
+
+// getHumanValueFromPage(name, type):
+// Look up a particular setting and return the appropriate human-friendly value
+function getHumanValueFromPage(fName, dataType) {
+  switch (dataType) {
+    case 'radio': return radioRef(fName).value;
+    case 'color': return el(fName).value.toLowerCase();
+    // translate true/false BACK to Y/N in this case:
+    case 'yn': return el(fName)?.checked ? 'Y' : 'N';
+    case 'list':
+    case 'text':
+      return el(fName).value;
+    // All remaining types are numeric:
+    default: return Number(el(fName).value);
+  }
+}
+
+// Take a human-friendly setting and make it JS-friendly:
+function settingHtoC(hVal, dataType) {
+  switch (dataType) {
+    case 'whole':
+    case 'decimal':
+    case 'contained':
+    case 'breakpoint':
+      return Number(hVal);
+    case 'yn': return reYes.test(hVal);
+    default: return hVal;
+  }
+}
+
+// MARK: Message Display
+
 // Show a value quoted & bolded & HTML-escaped:
 function highlightSafeValue(userV) {
   return `&quot;<strong>${escapeHTML(userV)}</strong>&quot;`;
@@ -404,16 +527,11 @@ glob.replaceGraphConfirmed = () => {
   const graphName = elV('demo_graph_chosen'),
     savedRecipe = sampleDiagramRecipes.get(graphName);
 
-  // Update any settings which accompany the stored diagram:
+  // Update any settings which accompanied the stored diagram:
   Object.entries(savedRecipe.settings).forEach(([fld, newVal]) => {
-    const dataType = skmSettings.get(fld)[0];
-    if (dataType === 'yn') { // checkbox
-      el(fld).checked = newVal === 'y';
-    } else if (dataType === 'radio') {
-      radioRef(fld).value = newVal;
-    } else { // non-boolean, non-radio? It's an ordinary value to set:
-      el(fld).value = newVal;
-    }
+    const fldData = skmSettings.get(fld),
+      [validSetting, finalValue] = settingIsValid(fldData, newVal, {});
+    if (validSetting) { setValueOnPage(fld, fldData[0], finalValue); }
   });
 
   // First, verify that the flow input field is visible.
@@ -1410,7 +1528,7 @@ glob.process_sankey = () => {
 
     // If there's a color and it's a color CODE, put back the #:
     // TODO: honor or translate color names?
-    if (nodeParams.color?.match(reBareColor)) {
+    if (reBareColor.test(nodeParams.color)) {
       nodeParams.color = `#${nodeParams.color}`;
     }
 
@@ -1434,23 +1552,102 @@ glob.process_sankey = () => {
   // BEGIN by resetting all message areas:
   msg.resetAll();
 
-  // Parse inputs into: approvedNodes, approvedFlows, approvedConfig
-  // As part of this step, we drop any zero-width spaces which may have
-  // been appended or prepended to lines (e.g. when pasted from
-  // PowerPoint), then trim again.
-  const invalidLines = [],
-    goodFlows = [],
-    approvedNodes = [],
-    approvedFlows = [],
-    sourceLines = elV(userInputsField)
-      .split('\n')
-      .map((l) => l.trim()
+  // Time to parse the user's input.
+  // Before we do anything at all, split it into an array of lines with
+  // no whitespace at either end.
+  // As part of this step, we make sure to drop any zero-width spaces
+  // which may have been appended or prepended to lines (e.g. when pasted
+  // from PowerPoint), then trim again.
+  const origSourceLines = elV(userInputsField).split('\n'),
+    sourceLines = origSourceLines.map(
+      (l) => l.trim()
         .replace(/^\u200B+/, '')
         .replace(/\u200B+$/, '')
-        .trim());
+        .trim()
+    ),
+    invalidLines = [], // contains objects with a 'value' and 'message'
+    linesWithSettings = new Set(),
+    linesWithValidSettings = new Set();
 
-  // Loop through all the input lines, storing good ones vs bad ones:
+  function warnAbout(line, warnMsg) {
+    invalidLines.push({ value: line, message: warnMsg });
+  }
+
+  // Search for Settings we can apply:
+  let currentSettingGroup = '';
   sourceLines.forEach((lineIn, row) => {
+    // Does it look like a regular Settings line (number, keyword, color)
+    // OR a Settings line with a quoted string?
+    const settingParts
+      = lineIn.match(reSettingsValue) ?? lineIn.match(reSettingsText);
+
+    // If either was found, let's process it:
+    if (settingParts !== null) {
+      // We found something, so remember this row index:
+      linesWithSettings.add(row);
+
+      // Derive the setting name we're looking at:
+      let origSettingName = settingParts[1],
+        settingName = origSettingName.replace(/\s+/g, '_');
+
+      // Syntactic sugar - if the user typed the long version of a word,
+      // fix it up so it's just the 1st letter so it will work:
+      'width height left right top bottom' // => w, h, l, r, t, b
+        .split(' ')
+        .filter((l) => settingName.endsWith(l))
+        .forEach((long) => {
+          settingName = settingName.replace(long, long[0]);
+        });
+
+      // If the given settingName still isn't valid, and it isn't already
+      // two words, try it with the prefix from the prior settings row:
+      if (!skmSettings.has(settingName)
+          && !/_/.test(settingName)
+          && currentSettingGroup.length) {
+        settingName = `${currentSettingGroup}_${settingName}`;
+        origSettingName = `${currentSettingGroup} ${origSettingName}`;
+      }
+
+      // Update the group-prefix, whether or not the value validates
+      // below. (Better to honor this prefix than to use one from
+      // further up.):
+      currentSettingGroup = settingName.split('_')[0];
+
+      const settingData = skmSettings.get(settingName);
+      // Validate & apply:
+      if (settingData) {
+        const settingValue = settingParts[2],
+          dataType = settingData[0],
+          sizeObj = dataType === 'contained'
+            ? { size_w: elV('size_w'), size_h: elV('size_h') }
+            : {},
+          [validValue, finalValue]
+            = settingIsValid(settingData, settingValue, sizeObj);
+        if (validValue) {
+          setValueOnPage(settingName, dataType, finalValue);
+          linesWithValidSettings.add(row);
+          return;
+        }
+        // The setting exists but the value wasn't right:
+        warnAbout(
+          settingValue,
+          `Invalid value for <strong>${origSettingName}<strong>`
+        );
+      } else {
+        // There wasn't a setting matching this name:
+        warnAbout(origSettingName, 'Not a valid setting name');
+      }
+    }
+  });
+
+  //  Parse inputs into: approvedNodes, approvedFlows
+  const goodFlows = [],
+    approvedNodes = [],
+    approvedFlows = [];
+
+  // Loop through all the non-setting input lines:
+  sourceLines.filter((l, i) => !linesWithSettings.has(i))
+    .forEach((lineIn, row) => {
     // Is it a blank line OR a comment? Skip it entirely:
     if (lineIn === '' || reCommentLine.test(lineIn)) {
       return;
@@ -1478,19 +1675,12 @@ glob.process_sankey = () => {
       // if it really isn't:
       const amountIn = matches[2].replace(/\s/g, '');
       if (!isNumeric(amountIn)) {
-        invalidLines.push({
-          value: lineIn,
-          message: 'The Amount is not a valid decimal number',
-        });
+        warnAbout(lineIn, 'The Amount is not a valid decimal number');
         return;
       }
-
       // Diagrams don't currently support negative numbers or 0:
       if (amountIn <= 0) {
-        invalidLines.push({
-          value: lineIn,
-          message: 'Amounts must be greater than 0',
-        });
+        warnAbout(lineIn, 'Amounts must be greater than 0');
         return;
       }
 
@@ -1513,10 +1703,10 @@ glob.process_sankey = () => {
     }
 
     // This is a non-blank line which did not match any pattern:
-    invalidLines.push({
-      value: lineIn,
-      message: 'Does not match the format of a Flow or a Node',
-    });
+    warnAbout(
+      lineIn,
+      'Does not match the format of a Flow or Node or Setting'
+      );
   });
 
   // TODO: Disable useless precision checkbox if maxDecimalPlaces === 0
@@ -1598,93 +1788,29 @@ glob.process_sankey = () => {
       approvedNodes.push(n);
     });
 
-  // MARK: Validate the user's settings.
+  // MARK: Import settings from the page's UI:
+
   const approvedCfg = {};
 
   skmSettings.forEach((fldData, fldName) => {
-    const fldEl = el(fldName),
-      fldVal = fldEl === null ? '' : fldEl.value,
-      [dataType, defaultVal, allowList] = fldData,
-      fldIsNumeric
-        = ['whole', 'decimal', 'contained', 'breakpoint'].includes(dataType);
-    let valueIsValid = false;
+    const [dataType, defaultVal] = fldData,
+      fldVal = getHumanValueFromPage(fldName, dataType),
+      sizeObj = dataType === 'contained'
+        ? { size_w: approvedCfg.size_w, size_h: approvedCfg.size_h }
+        : {},
+      // Consult the oracle to know if it's a good value:
+      [validSetting, finalValue] = settingIsValid(fldData, fldVal, sizeObj);
 
-    function setValidValue(v) {
-      approvedCfg[fldName] = v;
-      valueIsValid = true;
+    if (validSetting) {
+      approvedCfg[fldName] = finalValue;
+      return;
     }
 
-    // resetField(): If we got bad input somehow, reset both the field on
-    // the web page AND the value in the approvedCfg to be the default:
-    function resetField() {
-      // Most types, we can just set the field on the page to a string.
-      // Deal with the weirdest exceptions first:
-      if (dataType === 'yn') { // Checkboxes
-        const boolVal = defaultVal === 'y';
-        fldEl.checked = boolVal;
-        approvedCfg[fldName] = boolVal;
-        return;
-      }
-
-      if (dataType === 'radio') { // Radio buttons
-        radioRef(fldName).value = defaultVal;
-        approvedCfg[fldName] = defaultVal;
-        return;
-    }
-
-      // The remaining non-numeric types are: color, list, text
-      approvedCfg[fldName] = fldIsNumeric ? Number(defaultVal) : defaultVal;
-      // Set the field on the page with the text version of the default value:
-      el(fldName).value = defaultVal;
-    }
-
-    // OK, ready to validate. Several types require special handling:
-    if (fldIsNumeric) {
-      // Verify the field's overall format is appropriate:
-      if ((dataType === 'decimal' && reDecimal.test(fldVal))
-        || (dataType !== 'decimal' && reWholeNumber.test(fldVal))) {
-        const fldAsNum = Number(fldVal);
-        let [minV, maxV] = [0];
-        switch (dataType) {
-          case 'whole': [minV, maxV] = allowList; break;
-          case 'breakpoint': maxV = glob.labelNeverBreakpoint; break;
-          case 'decimal': maxV = 1.0; break;
-          // Dynamic values (like margins) should be processed after the
-          // diagram's size is set (they appear later in the settings list),
-          // so that we can compare them to their specific dimension:
-          case 'contained': maxV = approvedCfg[allowList[1]]; break;
-          // no default
-        }
-        if (fldAsNum >= minV && (maxV === undefined || fldAsNum <= maxV)) {
-          setValidValue(fldAsNum);
-        }
-      }
-    } else if (dataType === 'yn' && fldEl !== null) {
-      setValidValue(fldEl.checked);
-    } else if (dataType === 'radio') {
-      // Have to read a radio value in a special way:
-      const radioVal = radioRef(fldName).value;
-      if (allowList.includes(radioVal)) { setValidValue(radioVal); }
-    } else if (dataType === 'list' && allowList.includes(fldVal)) {
-      setValidValue(fldVal);
-    } else if (dataType === 'color') {
-      if (fldVal.match(reRGBColor)) {
-        setValidValue(fldVal);
-      } else if (fldVal.match(reBareColor)) {
-        // Forgive colors with missing #:
-        fldEl.value = `#${fldVal}`; // Set it to be correct on the page
-        setValidValue(`#${fldVal}`);
-      }
-    } else if (dataType === 'text') {
-      const [minLen, maxLen] = allowList,
-        fldLen = fldVal.length;
-      if (fldLen >= minLen && (maxLen === undefined || fldLen <= maxLen)) {
-        setValidValue(fldVal);
-      }
-    }
-
-    // Was the input badly formed or out of range? Replace it with the default:
-    if (!valueIsValid) { resetField(fldName); }
+    // If we got bad input somehow, reset both the field on the web page
+    // AND the value in the approvedCfg to be the default:
+    const typedVal = settingHtoC(defaultVal, dataType);
+    approvedCfg[fldName] = typedVal;
+    setValueOnPage(fldName, dataType, typedVal);
   });
 
   // Since we know the canvas' intended size now, go ahead & set that up
@@ -1698,6 +1824,17 @@ glob.process_sankey = () => {
     el(`save_as_png_${s}x`).title
       = `PNG image file: ${approvedCfg.size_w * s} x ${approvedCfg.size_h * s}`;
   });
+
+  // Mark as 'applied' any setting line which was successful.
+  // (This will put the interactive UI component in charge.)
+  // Un-commenting a settings line will apply it again (and then immediately
+  // comment it again).
+  // Use origSourceLines so that any original indentation is preserved:
+  const updatedSourceLines = origSourceLines
+    .map((l, i) => (
+      linesWithValidSettings.has(i) ? `${settingsAppliedPrefix}${l}` : l
+      ));
+  el(userInputsField).value = updatedSourceLines.join('\n');
 
   // Were there any good flows at all? If not, offer a little help and then
   // EXIT EARLY:
@@ -1878,6 +2015,8 @@ glob.process_sankey();
 
 // Make the linter happy about imported objects:
 /* global d3 canvg sampleDiagramRecipes global fontMetrics highlightStyles
- IN OUT BEFORE AFTER skmSettings colorGray60 reWholeNumber reDecimal
+ IN OUT BEFORE AFTER skmSettings colorGray60
+ reWholeNumber reDecimal reYesNo reYes
  reCommentLine reNodeLine reFlowLine reFlowTargetWithSuffix
+ reSettingsValue reSettingsText settingsAppliedPrefix
  reColorPlusOpacity reBareColor reRGBColor userInputsField */

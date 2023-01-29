@@ -66,13 +66,40 @@ const skmSettings
   reWholeNumber = /^\d+$/,
   reDecimal = /^\d(?:.\d+)?$/,
   reCommentLine = /^(?:'|\/\/)/, // Line starts with // or '
+  reYesNo = /^(?:y|yes|n|no)/i, // = Y/y/Yes/YES/etc. or N/n/No/NO/etc.
+  reYes = /^(?:y|yes)/i,        // = Y/y/Yes/YES/etc.
+
+  // Settings Notes:
+  //   * We look for settings lines FIRST.
+  //   * If they prove valid, we apply them to the UI and convert them to
+  //     COMMENTS in the input (with a checkmark to indicate success).
+  //   * The idea here is to avoid having input text conflicting with
+  //     the UI controls. Since any valid setting line is immediately
+  //     applied and disappears, we can't have a conflict.
+  //
+  // reSettingsValue:
+  // One to two words, followed by a value made up of letters,
+  // numbers, decimals and/or dashes.
+  // ex. "node theme a", "flow inheritfrom outside-in"
+  reSettingsValue = /^((?:\w+\s*){1,2}) (#?[\w.-]+)$/,
+
+  // reSettingsText:
+  // One to two words followed by a quoted string (possibly empty):
+  // ex: "value prefix ''", "suffix 'M'"
+  // If the raw string contains a single quote, it will be doubled here.
+  reSettingsText = /^((?:\w+\s*){1,2}) '(.*)'$/,
+
+  settingsAppliedPrefix = '// \u2713 ', // u2713 = a little check mark
+
   reNodeLine = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
   reFlowLine = /^(.+)\[([\d\s.+-]+)\](.+)$/,
   reFlowTargetWithSuffix = /^(.+)\s+(#\S+)$/,
+
   reColorPlusOpacity = /^#([a-f0-9]{3,6})?(\.\d{1,4})?$/i,
   reBareColor = /^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i,
   reRGBColor = /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i,
   colorGray60 = '#999',
+
   userInputsField = 'flows_in',
 
   // Some prime constants for enum values:
