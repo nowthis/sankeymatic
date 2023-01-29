@@ -1902,7 +1902,14 @@ glob.process_sankey = () => {
     .map((l, i) => (
       linesWithValidSettings.has(i) ? `${settingsAppliedPrefix}${l}` : l
       ));
-  el(userInputsField).value = updatedSourceLines.join('\n');
+  // Having marked the processed lines, can we delete them?
+  // Check if the input looks like it came from a source file pasted in:
+  if (updatedSourceLines[0].startsWith(settingsHeaderPrefix)) {
+    // Drop all the auto-generated content and all successful settings:
+    el(userInputsField).value = removeAutoLines(updatedSourceLines);
+  } else {
+    el(userInputsField).value = updatedSourceLines.join('\n');
+  }
 
   // Were there any good flows at all? If not, offer a little help and then
   // EXIT EARLY:
