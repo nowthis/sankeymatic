@@ -295,7 +295,7 @@ glob.saveDiagramAsSVG = () => {
   downloadATextFile(svgForExport, `sankeymatic_${glob.fileTimestamp()}.svg`);
 };
 
-// Functions for generating SVG path specs:
+// MARK SVG path specification functions
 
 // flatFlowPathMaker(f):
 // Returns an SVG path drawing a parallelogram between 2 nodes.
@@ -355,9 +355,9 @@ function curvedFlowPathFunction(curvature) {
   };
 }
 
-// MARK: Validation of Settings
+// MARK Validation of Settings
 
-// settingIsValid(metadata, human value, size object {size_w: _, size_h: _}):
+// settingIsValid(metadata, human value, size object {w: _, h: _}):
 // return [true, computer value] IF the given value meets the criteria.
 // Note: The 'size' object is only used when validating 'contained' settings.
 function settingIsValid(sData, hVal, cfg) {
@@ -476,7 +476,7 @@ function settingHtoC(hVal, dataType) {
   }
 }
 
-// MARK: Message Display
+// MARK Message Display
 
 // Show a value quoted & bolded & HTML-escaped:
 function highlightSafeValue(userV) {
@@ -509,7 +509,7 @@ const msg = {
   },
 };
 
-// MARK: Loading Saved Graphs
+// MARK Loading Sample Graphs
 
 // hideReplaceGraphWarning: Called directly from the page (and from below)
 // Dismiss the note about overwriting the user's current inputs.
@@ -601,6 +601,8 @@ glob.replaceGraph = (graphName) => {
 
   return null;
 };
+
+// MARK Color Theme handling
 
 // colorThemes: The available color arrays to assign to Nodes.
 const colorThemes = new Map([
@@ -1619,7 +1621,7 @@ glob.process_sankey = () => {
         const settingValue = settingParts[2],
           dataType = settingData[0],
           sizeObj = dataType === 'contained'
-            ? { size_w: elV('size_w'), size_h: elV('size_h') }
+            ? { w: elV('size_w'), h: elV('size_h') }
             : {},
           [validValue, finalValue]
             = settingIsValid(settingData, settingValue, sizeObj);
@@ -1788,7 +1790,7 @@ glob.process_sankey = () => {
       approvedNodes.push(n);
     });
 
-  // MARK: Import settings from the page's UI:
+  // MARK Import settings from the page's UI:
 
   const approvedCfg = {};
 
@@ -1796,7 +1798,7 @@ glob.process_sankey = () => {
     const [dataType, defaultVal] = fldData,
       fldVal = getHumanValueFromPage(fldName, dataType),
       sizeObj = dataType === 'contained'
-        ? { size_w: approvedCfg.size_w, size_h: approvedCfg.size_h }
+        ? { w: approvedCfg.size_w, h: approvedCfg.size_h }
         : {},
       // Consult the oracle to know if it's a good value:
       [validSetting, finalValue] = settingIsValid(fldData, fldVal, sizeObj);
@@ -1850,7 +1852,9 @@ glob.process_sankey = () => {
     return null;
   }
 
-  // Set up the numberStyle object. (It's used in render_sankey.)
+  // MARK Diagram does have data, so prepare to render.
+
+  // Set up the numberStyle object:
   const [groupMark, decimalMark] = approvedCfg.value_format,
     numberStyle = {
       marks: {
@@ -1877,7 +1881,7 @@ glob.process_sankey = () => {
   // All is ready. Do the actual rendering:
   render_sankey(approvedNodes, approvedFlows, approvedCfg, numberStyle);
 
-  // POST-RENDER ACTIVITY: various stats and UI updates.
+  // MARK Post-Render Activity - various stats & message updates.
 
   // withUnits: Format a value with the current style.
   function withUnits(n) { return formatUserData(n, numberStyle); }

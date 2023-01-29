@@ -5,7 +5,7 @@
 // Format = field_name: [data type, initial value, allowed values]
 // 'Allowed values' contains different things per data type:
 //   whole = [min, [max]]
-//   contained = [min, dimension to compare to (either 'size_h' or 'size_w')]
+//   contained = [min, dimension to compare to (either 'h' or 'w')]
 //   breakpoint = [min]
 //   text = [min-length, max-length]
 //   radio & list = [literal list of allowed values]
@@ -17,16 +17,16 @@ const skmSettings
   = new Map([
     ['size_w', ['whole', 600, [40]]],
     ['size_h', ['whole', 600, [40]]],
-    ['margin_l', ['contained', 12, [0, 'size_w']]],
-    ['margin_r', ['contained', 12, [0, 'size_w']]],
-    ['margin_t', ['contained', 18, [0, 'size_h']]],
-    ['margin_b', ['contained', 20, [0, 'size_h']]],
+    ['margin_l', ['contained', 12, [0, 'w']]],
+    ['margin_r', ['contained', 12, [0, 'w']]],
+    ['margin_t', ['contained', 18, [0, 'h']]],
+    ['margin_b', ['contained', 20, [0, 'h']]],
     ['bg_color', ['color', '#ffffff', []]],
     ['bg_transparent', ['yn', 'n', []]],
-    ['node_w', ['contained', 9, [0, 'size_w']]],
+    ['node_w', ['contained', 9, [0, 'w']]],
     ['node_h', ['whole', 50, [0, 100]]],
     ['node_spacing', ['whole', 85, [0, 100]]],
-    ['node_border', ['contained', 0, [0, 'size_w']]],
+    ['node_border', ['contained', 0, [0, 'w']]],
     ['node_theme', ['radio', 'none', ['a', 'b', 'c', 'd', 'none']]],
     ['node_color', ['color', '#888888', []]],
     ['node_opacity', ['decimal', 1.0, []]],
