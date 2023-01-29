@@ -1536,7 +1536,7 @@ ${settingsURLLine}
 // MAIN FUNCTION:
 // process_sankey: Called directly from the page and within this script.
 // Gather inputs from user; validate them; render updated diagram
-glob.process_sankey = () => {
+glob.process_sankey = (fileName = null) => {
   let [maxDecimalPlaces, maxNodeIndex, maxNodeVal] = [0, 0, 0];
   const uniqueNodes = new Map();
 
@@ -1903,10 +1903,12 @@ glob.process_sankey = () => {
       linesWithValidSettings.has(i) ? `${settingsAppliedPrefix}${l}` : l
       ));
   // Having marked the processed lines, can we delete them?
-  // Check if the input looks like it came from a source file pasted in:
+  // Check if the input looks like it came from a source file (either
+  // uploaded or pasted in):
   if (updatedSourceLines[0].startsWith(settingsHeaderPrefix)) {
     // Drop all the auto-generated content and all successful settings:
     el(userInputsField).value = removeAutoLines(updatedSourceLines);
+    if (fileName) { msg.add(`Imported <strong>${fileName}</strong>.`); }
   } else {
     el(userInputsField).value = updatedSourceLines.join('\n');
   }
@@ -2088,6 +2090,21 @@ glob.process_sankey = () => {
 
 // Render the default diagram on first load:
 glob.process_sankey();
+
+// MARK Load a diagram from a text file
+
+glob.loadDiagramFile = async () => {
+  const fileList = el('load_diagram_from_file').files;
+
+  // Did the user provide a file?
+  if (fileList.length === 0) { return; }
+
+  // Read the text:
+  const uploadedText = await fileList[0].text(),
+    userFileName = fileList[0].name;
+  el(userInputsField).value = uploadedText;
+  glob.process_sankey(userFileName);
+};
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:

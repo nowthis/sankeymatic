@@ -93,8 +93,9 @@ The 'left' value approximates a good place to place the tooltip.
 .text_center { text-align: center; }
 
 .hidden_under {
-  z-index: -1;
-  position: absolute;
+  opacity: 0; /* not gone, just not visible */
+  z-index: -1; /* move under the regular UI */
+  position: absolute; /* don't take up space in the visible layout */
 }
 
 /* START WEBKIT TWEAKS
@@ -444,6 +445,17 @@ th#title {
 
 .loadsave_button:hover {
   background-color: var(--medium-blue);
+}
+
+.label_as_button {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+input[type="file"]:focus + label {
+  outline: 2px solid var(--medium-blue);
+  outline: -webkit-focus-ring-color auto 5px;
 }
 
 button#save_as_svg {
