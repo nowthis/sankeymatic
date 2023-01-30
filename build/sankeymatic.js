@@ -1470,6 +1470,18 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 // MARK Save diagram to a text file
 
 function outputSettings() {
+  const outputLines = [];
+  // Iterate through any rememberedMoves and output those:
+  if (glob.rememberedMoves.size) {
+    outputLines.push(movesMarker, '');
+    glob.rememberedMoves.forEach((move, nodeName) => {
+      outputLines.push(
+        `move ${nodeName} ${ep(move[0], 8)}, ${ep(move[1], 8)}`
+        );
+    });
+    outputLines.push('');
+  }
+
   let currentSettingGroup = '';
   // outputFldName: produce the full field name or an indented short version:
   function outputFldName(fld) {
@@ -1484,9 +1496,9 @@ function outputSettings() {
       ['list', (v) => `'${v}'`], // Always quote 'list' values
       // In a text field we may encounter single-quotes, so double those:
       ['text', (v) => `'${v.replaceAll("'", "''")}'`],
-    ]),
-    outputLines = [];
+    ]);
 
+  outputLines.push(settingsMarker, '');
   skmSettings.forEach((fldData, fldName) => {
     if (fldName.startsWith('internal_')) { return; } // Ignore internals
 
@@ -1506,11 +1518,12 @@ function outputSettings() {
 // successfully applied settings. Returns a trimmed string.
 function removeAutoLines(lines) {
   return lines
-    .filter(
-      (l) => !l.startsWith(settingsHeaderPrefix)
-        && ![settingsMarker, settingsUserDataMarker, settingsURLLine].includes(l)
-        && !l.startsWith(settingsAppliedPrefix)
-    )
+    .filter((l) => !(
+      l.startsWith(sourceHeaderPrefix)
+      || l.startsWith(settingsAppliedPrefix)
+      || [settingsMarker, userDataMarker, sourceURLLine, movesMarker]
+          .includes(l)
+      ))
     .join('\n')
     .replace(/^\n+/, '') // trim blank lines at the start and end
     .replace(/\n+$/, '');
@@ -1520,12 +1533,11 @@ glob.saveDiagramToFile = () => {
   const cleanedUpSourceLines = removeAutoLines(
       elV(userInputsField).split('\n')
     ),
-    diagramOutput = `${settingsHeaderPrefix} Saved: ${glob.humanTimestamp()}
-${settingsURLLine}
-\n${settingsUserDataMarker}
+    diagramOutput = `${sourceHeaderPrefix} Saved: ${glob.humanTimestamp()}
+${sourceURLLine}
+\n${userDataMarker}
 \n${cleanedUpSourceLines}
-\n${settingsMarker}
-\n${outputSettings()}`;
+\n${outputSettings()}\n`;
 
   downloadATextFile(
     diagramOutput,
@@ -1644,6 +1656,19 @@ glob.process_sankey = (fileName = null) => {
   // Search for Settings we can apply:
   let currentSettingGroup = '';
   sourceLines.forEach((lineIn, row) => {
+    // Is it a Move line?
+    const moveParts = lineIn.match(reMoveLine);
+    if (moveParts !== null) {
+      linesWithSettings.add(row);
+      // Save this as a rememberedMove.
+      // We don't verify the name because we don't yet know the list to
+      // match against. Assume the node names are provided in good faith.
+      const [nodeName, moveX, moveY] = moveParts.slice(-3);
+      glob.rememberedMoves.set(nodeName, [Number(moveX), Number(moveY)]);
+      linesWithValidSettings.add(row);
+      return;
+    }
+
     // Does it look like a regular Settings line (number, keyword, color)
     // OR a Settings line with a quoted string?
     const settingParts
@@ -1905,7 +1930,7 @@ glob.process_sankey = (fileName = null) => {
   // Having marked the processed lines, can we delete them?
   // Check if the input looks like it came from a source file (either
   // uploaded or pasted in):
-  if (updatedSourceLines[0].startsWith(settingsHeaderPrefix)) {
+  if (updatedSourceLines[0].startsWith(sourceHeaderPrefix)) {
     // Drop all the auto-generated content and all successful settings:
     el(userInputsField).value = removeAutoLines(updatedSourceLines);
     if (fileName) { msg.add(`Imported <strong>${fileName}</strong>.`); }
@@ -2111,10 +2136,11 @@ glob.loadDiagramFile = async () => {
 /* global
  d3 canvg global IN OUT BEFORE AFTER
  sampleDiagramRecipes fontMetrics highlightStyles
- settingsMarker settingsAppliedPrefix settingsHeaderPrefix
- settingsUserDataMarker settingsURLLine
+ settingsMarker settingsAppliedPrefix
+ userDataMarker sourceHeaderPrefix sourceURLLine
  skmSettings colorGray60 userInputsField
  reWholeNumber reDecimal reYesNo reYes
  reCommentLine reSettingsValue reSettingsText reNodeLine reFlowLine
+ reMoveLine movesMarker
  reFlowTargetWithSuffix reColorPlusOpacity
  reBareColor reRGBColor */

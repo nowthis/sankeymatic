@@ -70,7 +70,7 @@ const skmSettings
   reYes = /^(?:y|yes)/i,        // = Y/y/Yes/YES/etc.
 
   // Settings Notes:
-  //   * We look for settings lines FIRST.
+  //   * We look for settings & move lines FIRST.
   //   * If they prove valid, we apply them to the UI and convert them to
   //     COMMENTS in the input (with a checkmark to indicate success).
   //   * The idea here is to avoid having input text conflicting with
@@ -88,12 +88,14 @@ const skmSettings
   // ex: "value prefix ''", "suffix 'M'"
   // If the raw string contains a single quote, it will be doubled here.
   reSettingsText = /^((?:\w+\s*){1,2}) '(.*)'$/,
+  reMoveLine = /^move (.+) (-?\d(?:.\d+)?), (-?\d(?:.\d+)?)$/,
 
-  settingsAppliedPrefix = '// \u2713 ', // u2713 = a little check mark
-  settingsHeaderPrefix = '// SankeyMATIC diagram inputs -',
-  settingsURLLine = '// https://sankeymatic.com/build/',
-  settingsUserDataMarker = '// === Nodes and Flows ===',
+  sourceHeaderPrefix = '// SankeyMATIC diagram inputs -',
+  sourceURLLine = '// https://sankeymatic.com/build/',
+  userDataMarker = '// === Nodes and Flows ===',
+  movesMarker = '// === Moved Nodes ===',
   settingsMarker = '// === Settings ===',
+  settingsAppliedPrefix = '// \u2713 ', // u2713 = a little check mark
 
   reNodeLine = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
   reFlowLine = /^(.+)\[([\d\s.+-]+)\](.+)$/,

@@ -5,7 +5,7 @@
 * Describe your data using text.
 * Customize your diagram's appearance interactively.
 * Export a finished product as a PNG image and as SVG code.
-<!-- (coming soon!) * Export/import your work in progress as readable plain text files. -->
+* Export/import your work in progress as readable (and diff-able) plain text files.
 
 Hosted and available for use at: **http://sankeymatic.com/build/**
 
