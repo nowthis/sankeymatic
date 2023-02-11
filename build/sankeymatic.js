@@ -787,7 +787,9 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // shadowFilter(i): true/false value indicating whether to display an item.
   // Normally shadows are hidden, but the revealshadows flag can override.
   // i can be either a node or a flow.
-  function shadowFilter(i) { return !i.isAShadow || cfg.meta_revealshadows; }
+  function shadowFilter(i) {
+    return !i.isAShadow || cfg.internal_revealshadows;
+  }
 
   if (cfg.labelname_appears) {
     // Set up 'labelText' for all the Nodes. (This is done earlier than
@@ -886,7 +888,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .nodeHeightFactor(cfg.node_h / 100)
     .nodeSpacingFactor(cfg.node_spacing / 100)
     .autoLayout(cfg.layout_order === 'automatic')
-    .layout(cfg.meta_iterations); // Note: The 'layout()' step must be LAST
+    .layout(cfg.internal_iterations); // Note: The 'layout()' step must be LAST
 
   // We *update* the final stages array here, because in theory it may
   // have been changed. The final array will be used for some layout
