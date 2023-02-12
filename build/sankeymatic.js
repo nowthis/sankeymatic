@@ -1992,12 +1992,13 @@ glob.process_sankey = (fileName = null) => {
   // add up to a node's total value in or out.
   function explainSum(n, dir) {
     const formattedSum = withUnits(n.total[dir]),
-      flowCt = n.flows[dir].length;
+      flowGroup = n.flows[dir].filter((f) => !f.isAShadow),
+      flowCt = flowGroup.length;
     if (flowCt === 1) { return formattedSum; }
 
     // When there are multiple amounts, the amount appears as a hover
     // target with a tooltip showing the breakdown in descending order.
-    const breakdown = n.flows[dir].map((f) => f.value)
+    const breakdown = flowGroup.map((f) => f.value)
         .sort((a, b) => b - a)
         .map((v) => withUnits(v))
         .join(' + ');
