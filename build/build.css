@@ -10,7 +10,7 @@
   --bg-medium: #bdf;
   --bg-light: #def;
   --bg-pale: #eef7ff;
-  --selected-option: #27b;
+  --selected-option: #00557f;
   --warning: darkred;
   --gray60: #999;
 }
@@ -459,12 +459,12 @@ input[type="file"]:focus + label {
 }
 
 button#save_as_svg {
-  background-color: slategray;
-  border-color: darkslategray;
+  background-color: #304550;
+  border-color: #1d3030;
 }
 
 button#save_as_svg:hover {
-  background-color: #8d9aa6;
+  background-color: #495961;
 }
 
 #example_diagrams {
@@ -538,7 +538,7 @@ button#save_as_svg:hover {
    Mnemonic: "ropt" = "radio option" */
 .ropt,
 .rnote {
-  color: darkslategray;
+  color: #293030;
 }
 
 input:checked ~ label.ropt,

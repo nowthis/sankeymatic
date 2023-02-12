@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-US">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="initial-scale=1">
 <title>SankeyMATIC: Build a Sankey Diagram</title>
 <link rel="stylesheet" href="build.css">
 <link rel="stylesheet" href="../main.css">
@@ -11,6 +12,7 @@
 <script defer src="constants.js"></script>
 <script defer src="sankey.js"></script>
 <script defer src="sankeymatic.js"></script>
+<meta name="description" content="Make beautiful Sankey diagrams. Export them as images or SVG with this free data visualization tool." />
 <meta property="og:title" content="SankeyMATIC: Build a Sankey Diagram" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://sankeymatic.com/build/" />
@@ -87,7 +89,7 @@ Inputs<span id="input_options_hint">:</span></h2>
 
 <div id="input_options" class="text_center grid_sidebar_right">
 <div>
-    <textarea id="flows_in" rows="19" cols="40" class="font_sans" onchange="process_sankey();">// Enter Flows between Nodes, like this:
+    <textarea id="flows_in" title="Diagram Inputs" rows="19" cols="40" class="font_sans" onchange="process_sankey();">// Enter Flows between Nodes, like this:
 //         Source [AMOUNT] Target
 
 Wages [1500] Budget
@@ -172,7 +174,7 @@ Nodes<span id="node_options_hint">:</span></h2>
 <legend>Default Node Colors:</legend>
 <div class="fieldset_contents">
 Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onchange="process_sankey();" /><label for="node_theme_none" class="ropt">one color:</label>
-<input type="color" id="node_color" size="7" maxlength="7" value="#888888" onchange="checkRadio('node_theme_none'); process_sankey();"> or a Theme:<br />
+<input type="color" id="node_color" title="Single Node Color" size="7" maxlength="7" value="#888888" onchange="checkRadio('node_theme_none'); process_sankey();"> or a Theme:<br />
 <table id="color_themes">
 <tr>
 <td class="text_left">
@@ -183,7 +185,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td class="text_left">
 <span class="no_wrap">
 <button id="theme_a_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('a',1); return false;">&lt;</button>
-<label id="theme_a_guide" for="theme_a_radio"></label> <input type="hidden" id="themeoffset_a" value="9">
+<span id="theme_a_guide"></span><input type="hidden" id="themeoffset_a" value="9">
 <button id="theme_a_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('a',-1); return false;">&gt;</button>
 </span>
 </td>
@@ -197,7 +199,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td class="text_left">
 <span class="no_wrap">
 <button id="theme_b_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('b',1); return false;">&lt;</button>
-<label id="theme_b_guide" for="theme_b_radio"></label> <input type="hidden" id="themeoffset_b" value="0">
+<span id="theme_b_guide"></span><input type="hidden" id="themeoffset_b" value="0">
 <button id="theme_b_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('b',-1); return false;">&gt;</button>
 </span>
 </td>
@@ -211,7 +213,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td class="text_left">
 <span class="no_wrap">
 <button id="theme_c_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('c',1); return false;">&lt;</button>
-<label id="theme_c_guide" for="theme_c_radio"></label> <input type="hidden" id="themeoffset_c" value="0">
+<span id="theme_c_guide"></span><input type="hidden" id="themeoffset_c" value="0">
 <button id="theme_c_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('c',-1); return false;">&gt;</button>
 </span>
 </td>
@@ -225,7 +227,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td class="text_left">
 <span class="no_wrap">
 <button id="theme_d_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('d',1); return false;">&lt;</button>
-<label id="theme_d_guide" for="theme_d_radio"></label> <input type="hidden" id="themeoffset_d" value="0">
+<span id="theme_d_guide"></span><input type="hidden" id="themeoffset_d" value="0">
 <button id="theme_d_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('d',-1); return false;">&gt;</button>
 </span>
 </td>
@@ -260,7 +262,7 @@ Flows<span id="flow_options_hint">:</span></h2>
 
 Use <input name="flow_inheritfrom" type="radio" id="flow_inherit_none" value="none" onchange="process_sankey();" /><label for="flow_inherit_none" class="ropt">one color:</label>
 
-<input type="color" id="flow_color" size="7" maxlength="7" value="#999999" onchange="checkRadio('flow_inherit_none'); process_sankey();" /> or colors from:<br />
+<input type="color" id="flow_color" title="Single Flow Color" size="7" maxlength="7" value="#999999" onchange="checkRadio('flow_inherit_none'); process_sankey();" /> or colors from:<br />
 <span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_source">each flow's Source</label></span>
 <span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_target">each flow's Target</label></span>
 <br />
@@ -491,7 +493,7 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 </td></tr>
 <tr><td id="imbalances">
 <div id="imbalance_control">
-<label for="meta_listimbalances">When Total Inputs &ne; Total Outputs:</label>
+When Total Inputs &ne; Total Outputs:
 <input type="checkbox" id="meta_listimbalances" value="1" onchange="process_sankey();" checked="checked" />
 <label class="ropt" for="meta_listimbalances">list the differences</label>.
 </div>
