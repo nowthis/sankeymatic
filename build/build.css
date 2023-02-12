@@ -10,6 +10,7 @@
   --bg-medium: #bdf;
   --bg-light: #def;
   --bg-pale: #eef7ff;
+  --bg-pale-warning: #fffff8;
   --selected-option: #00557f;
   --warning: darkred;
   --gray60: #999;
@@ -213,7 +214,7 @@ dfn {
   background-color: var(--bg-pale);
   border: var(--border-light);
   margin: 2px 3px 5px;
-  padding: 2px 3px;
+  padding: 3px 4px;
 }
 
 .form_box {
@@ -274,15 +275,14 @@ span.toggleable:hover {
   color: var(--deep-blue);
   border: var(--border-base);
   margin-top: 0.3em;
+  width: fit-content;
 }
 
 .differencemessage {
-  background-color: #ffa;
-  color: var(--warning);
+  background-color: var(--bg-pale-warning);
   text-align: center;
   border: var(--border-base);
-  padding: 0.4em;
-  margin-top: -1px;
+  padding: 0.3em;
 }
 
 .differencemessage table {
@@ -291,9 +291,9 @@ span.toggleable:hover {
 }
 
 .differencemessage table th {
-  padding: 0.1em 0.2em;
+  padding: 0.1em 0.2em 0;
   text-align: right;
-  border-bottom: 1px solid var(--warning);
+  border-bottom: 1px solid var(--dark-blue);
 }
 
 .differencemessage table td {
@@ -303,7 +303,6 @@ span.toggleable:hover {
 
 .differencemessage table td.nodename {
   text-align: left;
-  font-weight: bold;
 }
 
 #messages_area {
@@ -317,6 +316,18 @@ span.toggleable:hover {
 #messages h4 {
   margin: 0 0 0.2em;
   text-decoration: underline;
+}
+
+span.underline {
+  border-bottom: var(--border-dark);
+  display: inline-block;
+  margin-bottom: 0.3em;
+}
+
+p.lastrow {
+  border-top: var(--border-base);
+  margin: 0.3em;
+  padding: 0.1em;
 }
 
 .expandable_box {

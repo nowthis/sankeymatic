@@ -881,13 +881,14 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 
   // Ready for final layout!
   // We have the skeleton set up; add the remaining dimension values.
-  // (Note: This call further alters allNodes & allFlows with their
+  // (Note: This call further ALTERS allNodes & allFlows with their
   // specific coordinates.)
   sankeyObj.size({ w: graph.w, h: graph.h })
     .nodeWidth(cfg.node_w)
     .nodeHeightFactor(cfg.node_h / 100)
     .nodeSpacingFactor(cfg.node_spacing / 100)
     .autoLayout(cfg.layout_order === 'automatic')
+    .attachIncompletesTo(cfg.layout_attachincompletesto)
     .layout(cfg.internal_iterations); // Note: The 'layout()' step must be LAST
 
   // We *update* the final stages array here, because in theory it may
@@ -2046,13 +2047,20 @@ glob.process_sankey = (fileName = null) => {
 
   // Enable/disable the UI options for letting the user show differences.
   // (If there are no differences, the checkbox is useless.)
-  const disableDifferenceControls = !differences.length,
-    listDifferencesEl = el('meta_listimbalances');
-  listDifferencesEl.disabled = disableDifferenceControls;
-  el('imbalances').setAttribute('aria-disabled', disableDifferenceControls);
+  const disableDifferenceControls = !differences.length;
+  ['meta_listimbalances',
+    'layout_attachto_leading',
+    'layout_attachto_trailing',
+    'layout_attachto_nearest'].forEach((id) => {
+      el(id).disabled = disableDifferenceControls;
+     });
+  el('imbalances_area').setAttribute(
+    'aria-disabled',
+    disableDifferenceControls
+  );
 
   // Were there any differences, and does the user want to know?
-  if (!disableDifferenceControls && listDifferencesEl.checked) {
+  if (!disableDifferenceControls && approvedCfg.meta_listimbalances) {
     // Construct a hyper-informative error message about any differences:
     const differenceRows = [
       '<tr><td></td><th>Total In</th><th>Total Out</th><th>Difference</th></tr>',

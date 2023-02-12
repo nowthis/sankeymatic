@@ -491,13 +491,21 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
     <div id="totals_area"></div>
   </div>
 </td></tr>
-<tr><td id="imbalances">
+<tr><td id="imbalances_area">
 <div id="imbalance_control">
-When Total Inputs &ne; Total Outputs:
+<span class="underline"><strong><em>When Total Inputs &ne; Total Outputs:</em></strong></span><br>
+<p class="form_elements3">
+  Attach incomplete flow groups to:<br>
+<span><input name="layout_attachincompletesto" id="layout_attachto_leading" value="leading" type="radio" onchange="process_sankey();" /><label for="layout_attachto_leading" class="ropt">The leading edge of the Node</label></span><br>
+<span><input name="layout_attachincompletesto" id="layout_attachto_trailing" value="trailing" type="radio" onchange="process_sankey();" /><label for="layout_attachto_trailing" class="ropt">The trailing edge of the Node</label></span><br>
+<span><input name="layout_attachincompletesto" id="layout_attachto_nearest" value="nearest" type="radio" onchange="process_sankey();" checked="checked" /><label for="layout_attachto_nearest" class="ropt">The edge nearest to the flow group's center</label></span>
+</p>
+<p class="lastrow">
 <input type="checkbox" id="meta_listimbalances" value="1" onchange="process_sankey();" checked="checked" />
-<label class="ropt" for="meta_listimbalances">list the differences</label>.
-</div>
+<label class="ropt" for="meta_listimbalances">List all imbalanced Nodes</label>
+</p>
 <div id="imbalance_messages"></div>
+</div>
 </td></tr>
 </table>
 </td></tr></table>

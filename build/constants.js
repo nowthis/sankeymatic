@@ -38,6 +38,7 @@ const skmSettings
     ['layout_justifyorigins', ['yn', 'n', []]],
     ['layout_justifyends', ['yn', 'n', []]],
     ['layout_reversegraph', ['yn', 'n', []]],
+    ['layout_attachincompletesto', ['radio', 'nearest', ['leading', 'nearest', 'trailing']]],
     ['labels_color', ['color', '#000000', []]],
     ['labels_highlight', ['decimal', 0.55, []]],
     ['labels_fontface', ['radio', 'sans-serif', ['monospace', 'sans-serif', 'serif']]],
@@ -109,7 +110,7 @@ const skmSettings
   userInputsField = 'flows_in',
 
   // Some prime constants for enum values:
-  [IN, OUT, BEFORE, AFTER] = [11, 13, 17, 19],
+  [IN, OUT, BEFORE, AFTER] = [13, 17, 19, 23],
 
   // fontMetrics = measurements relating to labels & their highlights
   //   Structure:

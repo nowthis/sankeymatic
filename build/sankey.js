@@ -1,7 +1,12 @@
 d3.sankey = () => {
   'use strict';
 
-  const sankey = {};
+  const sankey = {},
+    // Set up some handy constants (acting as enums)
+    // These numbers are relatively prime so each cross-product is unique
+    // (when we need that)
+    [SOURCES, TARGETS, TOP, BOTTOM, NEAREST] = [2, 3, 5, 7, 11];
+
   // Set by inputs:
   let nodeWidth = 9,
       nodeHeightFactor = 0.5,
@@ -12,6 +17,7 @@ d3.sankey = () => {
       rightJustifyEndpoints = false,
       leftJustifyOrigins = false,
       autoLayout = true,
+      attachIncompletesTo = NEAREST,
       // Calculated:
       stagesArr = [],
       maximumNodeSpacing = 0,
@@ -63,6 +69,19 @@ d3.sankey = () => {
   sankey.autoLayout = function (x) {
     if (arguments.length) { autoLayout = x; return sankey; }
     return autoLayout;
+  };
+
+  sankey.attachIncompletesTo = function (x) {
+    if (arguments.length) {
+      switch (x.toLowerCase()) {
+        case 'leading': attachIncompletesTo = TOP; break;
+        case 'trailing': attachIncompletesTo = BOTTOM; break;
+        case 'nearest': attachIncompletesTo = NEAREST; break;
+        // no default
+      }
+      return sankey;
+    }
+    return attachIncompletesTo;
   };
 
   // Getters:
@@ -171,10 +190,6 @@ d3.sankey = () => {
   //   Compute the y-offset of every flow's source and target endpoints,
   //   relative to the each node's y-position.
   function placeFlowsInsideNodes(nodeList) {
-    // Set up some handy constants (basically enums)
-    // These numbers are relatively prime so each cross-product is unique.
-    const [SOURCES, TARGETS, TOP, BOTTOM] = [2, 3, 5, 7];
-
     // sortFlows(node, placing):
     //   Given a node & a side, reorder that group of flows as best we can.
     //   'placing' indicates which end of the flows we're working on here:
@@ -197,13 +212,18 @@ d3.sankey = () => {
           (f) => f.dy
         ),
         // Attach flows to the *top* of the range, *except* when:
-        // 1) the entire node's value is not all flowing somewhere, AND
-        // 2) the center of the flows which *are* attached is below the
-        //    node's own center.
+        // the entire node's value is not all flowing somewhere, AND
+        // - The caller says to attach them to the bottom, OR
+        // - The caller says to use the 'nearest' end AND
+        //   - the center-of-all-attached-flows is below the node's
+        //     own center.
         flowPosition
-          = (totalFlowValue < n.value)
-              && ((totalFlowWeight / totalFlowValue) > yCenter(n))
-            ? BOTTOM : TOP,
+          = totalFlowValue < n.value
+            && (attachIncompletesTo === BOTTOM
+                || (attachIncompletesTo === NEAREST
+                    && totalFlowWeight / totalFlowValue > yCenter(n)))
+              ? BOTTOM
+              : TOP,
         // upper/lower bounds = the range where flows may attach
         bounds
           = flowPosition === TOP
