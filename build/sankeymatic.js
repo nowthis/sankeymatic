@@ -796,9 +796,13 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // it used to be, but we need to know now for the sake of layout):
     allNodes.filter(shadowFilter)
       .forEach((n) => {
-      n.labelText
-        = cfg.labelvalue_appears
+      // Hide labels starting with a '*'
+      if (n.name.startsWith('*')) {
+        n.labelText = '';
+      } else {
+        n.labelText = cfg.labelvalue_appears
           ? `${n.name}: ${withUnits(n.value)}` : n.name;
+      }
       // Which side of the node will the label be on?
       const labelBefore
         = cfg.labelposition_first === 'before'
