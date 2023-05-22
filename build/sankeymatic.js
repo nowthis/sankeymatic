@@ -720,8 +720,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // it's what we have for now:
       exH = measureText('x', 'ex').w,
       // Firefox has unique SVG measurements in 2022, so we look for it:
-      browserKey = isFirefox() ? 'firefox' : 
-    ,
+      browserKey = isFirefox() ? 'firefox' : '*',
       metrics
         = fontMetrics[browserKey][cfg.labels_fontface]
           || fontMetrics[browserKey]['*'],
