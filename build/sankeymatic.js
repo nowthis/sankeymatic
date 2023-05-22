@@ -720,7 +720,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // it's what we have for now:
       exH = measureText('x', 'ex').w,
       // Firefox has unique SVG measurements in 2022, so we look for it:
-      browserKey = isFirefox() ? 'firefox' : '*',
+      browserKey = isFirefox() ? 'firefox' : 
+    ,
       metrics
         = fontMetrics[browserKey][cfg.labels_fontface]
           || fontMetrics[browserKey]['*'],
@@ -796,7 +797,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // it used to be, but we need to know now for the sake of layout):
     allNodes.filter(shadowFilter)
       .forEach((n) => {
-      // Hide labels starting with a '*'
+      // Hide labels with a strike-through notation. e.g.: '-hidden label-'
       if (n.name.startsWith('-') && n.name.endsWith('-')) {
         n.labelText = '';
       } else {
