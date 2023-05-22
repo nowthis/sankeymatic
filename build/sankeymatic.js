@@ -797,7 +797,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     allNodes.filter(shadowFilter)
       .forEach((n) => {
       // Hide labels starting with a '*'
-      if (n.name.startsWith('*')) {
+      if (n.name.startsWith('-') && n.name.endsWith('-')) {
         n.labelText = '';
       } else {
         n.labelText = cfg.labelvalue_appears
