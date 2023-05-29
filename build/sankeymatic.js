@@ -795,24 +795,21 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // Set up 'labelText' for all the Nodes. (This is done earlier than
     // it used to be, but we need to know now for the sake of layout):
     allNodes.filter(shadowFilter)
+      .filter((n) => !n.hideLabel)
       .forEach((n) => {
-      // Hide labels with a strike-through notation. e.g.: '-hidden label-'
-      if (n.name.startsWith('-') && n.name.endsWith('-')) {
-        n.labelText = '';
-      } else {
         n.labelText = cfg.labelvalue_appears
-          ? `${n.name}: ${withUnits(n.value)}` : n.name;
-      }
-      // Which side of the node will the label be on?
-      const labelBefore
-        = cfg.labelposition_first === 'before'
-          ? n.stage < cfg.labelposition_breakpoint - 1
-          : n.stage >= cfg.labelposition_breakpoint - 1;
-      n.label = {
-        dom_id: `label${n.index}`, // label0, label1..
-        anchor: labelBefore ? 'end' : 'start',
-      };
-    });
+            ? `${n.name}: ${withUnits(n.value)}` : n.name;
+
+        // Which side of the node will the label be on?
+        const labelBefore
+          = cfg.labelposition_first === 'before'
+            ? n.stage < cfg.labelposition_breakpoint - 1
+            : n.stage >= cfg.labelposition_breakpoint - 1;
+        n.label = {
+          dom_id: `label${n.index}`, // label0, label1..
+          anchor: labelBefore ? 'end' : 'start',
+        };
+      });
   }
 
   // maxLabelWidth(stageArr, labelsBefore):
@@ -963,7 +960,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       = darkBg ? d3.rgb(n.color).brighter(2) : d3.rgb(n.color).darker(2);
 
     // Set up label presentation values:
-    if (cfg.labelname_appears) {
+    if (cfg.labelname_appears && !n.hideLabel) {
       // Which side of the node will the label be on?
       const labelBefore = n.label.anchor === 'end';
       n.label.x
@@ -1404,6 +1401,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     diagLabels.selectAll()
       .data(allNodes.filter(shadowFilter))
       .enter()
+      .filter((n) => !n.hideLabel)
       .append('text')
       .attr('id', (n) => n.label.dom_id)
       // Associate this label with its Node using the CSS class:
@@ -1417,7 +1415,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 
     // For any nodes with a label highlight defined, render it:
     allNodes.filter(shadowFilter)
-      .filter((n) => n.label.bg)
+      .filter((n) => n.label?.bg)
       .forEach((n) => {
       // Use each label's size to make custom round-rects underneath:
       const labelTextSelector = `#${n.label.dom_id}`,
@@ -1583,22 +1581,44 @@ glob.process_sankey = (fileName = null) => {
     }
   }
 
+  // NODE-handling functions:
+
+  // getTrueNodeName: Parse cases where the node name is in strike-through
+  //   format (e.g. '-hidden label-') and return:
+  //   - trueName: the real node name (without minuses, if present)
+  //   - hideLabel: true if the name was struck through
+  function getTrueNodeName(rawName) {
+    const hiddenNameMatches = rawName.match(/^-(.*)-$/),
+      hideThisLabel = hiddenNameMatches !== null,
+      trueName = hideThisLabel ? hiddenNameMatches[1] : rawName;
+    return { trueName: trueName, hideLabel: hideThisLabel };
+  }
+
   // addNodeName: Make sure a node's name is present in the 'unique' list
   // with the lowest row number the node has appeared on:
   function addNodeName(nodeName, row) {
-    // Have we seen this node before? Then all we need to do is check
-    // if the new row # should replace the stored row #:
-    if (uniqueNodes.has(nodeName)) {
-      const thisNode = uniqueNodes.get(nodeName);
+    const nameInfo = getTrueNodeName(nodeName);
+    // Have we seen this node before?
+    if (uniqueNodes.has(nameInfo.trueName)) {
+      const thisNode = uniqueNodes.get(nameInfo.trueName);
+      // If so, should the new row # replace the stored row #?:
       if (thisNode.sourceRow > row) { thisNode.sourceRow = row; }
+      // If ANY instance of the name was struck through, then set hideLabel:
+      thisNode.hideLabel ||= nameInfo.hideLabel;
     } else {
       // Set up the node's raw object, keyed to the name:
-      uniqueNodes.set(nodeName, {
-        name: nodeName,
+      uniqueNodes.set(nameInfo.trueName, {
+        name: nameInfo.trueName,
+        hideLabel: nameInfo.hideLabel,
         sourceRow: row,
         paintInputs: [],
       });
     }
+  }
+
+  // getUniqueNode: return node 'foo' even when referenced as '-foo-':
+  function getUniqueNode(nodeName) {
+    return uniqueNodes.get(getTrueNodeName(nodeName).trueName);
   }
 
   // updateNodeAttrs: Update an existing node's attributes.
@@ -1619,10 +1639,13 @@ glob.process_sankey = (fileName = null) => {
       nodeParams.color = `#${nodeParams.color}`;
     }
 
+    // Allow for special name syntaxes (like strike-through):
+    const targetNode = getUniqueNode(nodeParams.name);
+    // Don't overwrite the 'name' value here, it can mess up tooltips:
+    delete nodeParams.name;
     Object.entries(nodeParams).forEach(([pName, pVal]) => {
-      if (typeof pVal !== 'undefined'
-        && pVal !== null && pVal !== '') {
-        uniqueNodes.get(nodeParams.name)[pName] = pVal;
+      if (typeof pVal !== 'undefined' && pVal !== null && pVal !== '') {
+        targetNode[pName] = pVal;
       }
     });
   }
@@ -1854,8 +1877,8 @@ glob.process_sankey = (fileName = null) => {
     // Add the updated flow to the list of approved flows:
     const f = {
       index: approvedFlows.length,
-      source: uniqueNodes.get(flow.source),
-      target: uniqueNodes.get(flow.target),
+      source: getUniqueNode(flow.source),
+      target: getUniqueNode(flow.target),
       value: flow.amount,
       color: flowColor,
       opacity: opacity,
