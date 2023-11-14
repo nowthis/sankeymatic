@@ -1556,13 +1556,21 @@ glob.saveDiagramToFile = () => {
 const queryStringParamName = "input"
 
 glob.saveDiagramToURL = () => {
-  const diagramOutput = getDiagramOutput();
-  const compressed = LZString.compressToEncodedURIComponent(diagramOutput);
-  const newURL = `?${queryStringParamName}=${compressed}`;
-  window.history.replaceState({}, "", newURL)
-  if (glob.navigator && glob.navigator.clipboard) {
-    glob.navigator.clipboard.writeText(location.href.toString());
-  }
+  msg.resetAll();
+  msg.add("Saving...");
+  // Perceived perf: get saving message to render, then followed by "saved"
+  setTimeout(() => {
+    const diagramOutput = getDiagramOutput();
+    const compressed = LZString.compressToEncodedURIComponent(diagramOutput);
+    const newURL = `?${queryStringParamName}=${compressed}`;
+    window.history.replaceState({}, "", newURL)
+
+    if (glob.navigator && glob.navigator.clipboard) {
+      glob.navigator.clipboard.writeText(location.href.toString());
+      msg.resetAll();
+      msg.add("Saved to clipboard!");
+    }
+  }, 50);
 };
 
 // Possibly load from a query string, if we are running in the browser context
