@@ -1560,7 +1560,7 @@ glob.saveDiagramToURL = () => {
   const compressed = LZString.compressToEncodedURIComponent(diagramOutput);
   const newURL = `?${queryStringParamName}=${compressed}`;
   window.history.replaceState({}, "", newURL)
-  if (glob.navigator.clipboard) {
+  if (glob.navigator && glob.navigator.clipboard) {
     glob.navigator.clipboard.writeText(location.href.toString());
   }
 };
