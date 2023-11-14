@@ -1574,7 +1574,7 @@ function loadFromQueryString() {
     const compressed = searchParams.get(queryStringParamName);
     const uploadedText = LZString.decompressFromEncodedURIComponent(compressed);
     el(userInputsField).value = uploadedText;
-    glob.process_sankey("");
+    glob.process_sankey("from shared URL");
     return true;
   }
   // No search param
