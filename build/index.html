@@ -50,10 +50,8 @@
   </div>
 </nav>
 </header>
+<div class="callout-container pad-small">If you find SankeyMATIC useful, please consider <a href="../about/" class="internal-link" title="(new window) About SankeyMATIC and how to support the site" target="_blank">donating to support further development</a>. Thanks!</div>
 
-<div class="callout_container"><span class="callout">
-If you find SankeyMATIC useful, please consider <a href="../about/" target="_blank">donating to support further development</a>. Thanks!
-</span></div>
 
 <main>
 <div class="center_basic">
@@ -177,12 +175,12 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <input type="color" id="node_color" title="Single Node Color" size="7" maxlength="7" value="#888888" onchange="checkRadio('node_theme_none'); process_sankey();"> or a Theme:<br />
 <table id="color_themes">
 <tr>
-<td class="text_left">
+<td>
 <span id="theme_a" class="theme_container">
 <input name="node_theme" type="radio" id="theme_a_radio" value="a" onchange="process_sankey();" checked="checked" /><label id="theme_a_label" for="theme_a_radio" class="ropt"></label>
 </span>
 </td>
-<td class="text_left">
+<td>
 <span class="no_wrap">
 <button id="theme_a_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('a',1); return false;">&lt;</button>
 <span id="theme_a_guide"></span><input type="hidden" id="themeoffset_a" value="9">
@@ -191,12 +189,12 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 </td>
 </tr>
 <tr>
-<td class="text_left">
+<td>
 <span id="theme_b" class="theme_container">
 <input name="node_theme" type="radio" id="theme_b_radio" value="b" onchange="process_sankey();" /><label id="theme_b_label" for="theme_b_radio" class="ropt"></label>
 </span>
 </td>
-<td class="text_left">
+<td>
 <span class="no_wrap">
 <button id="theme_b_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('b',1); return false;">&lt;</button>
 <span id="theme_b_guide"></span><input type="hidden" id="themeoffset_b" value="0">
@@ -205,12 +203,12 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 </td>
 </tr>
 <tr>
-<td class="text_left">
+<td>
 <span id="theme_c" class="theme_container">
 <input name="node_theme" type="radio" id="theme_c_radio" value="c" onchange="process_sankey();" /><label id="theme_c_label" for="theme_c_radio" class="ropt"></label>
 </span>
 </td>
-<td class="text_left">
+<td>
 <span class="no_wrap">
 <button id="theme_c_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('c',1); return false;">&lt;</button>
 <span id="theme_c_guide"></span><input type="hidden" id="themeoffset_c" value="0">
@@ -219,12 +217,12 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 </td>
 </tr>
 <tr>
-<td class="text_left">
+<td>
 <span id="theme_d" class="theme_container">
 <input name="node_theme" type="radio" id="theme_d_radio" value="d" onchange="process_sankey();" /><label id="theme_d_label" for="theme_d_radio" class="ropt"></label>
 </span>
 </td>
-<td class="text_left">
+<td>
 <span class="no_wrap">
 <button id="theme_d_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('d',1); return false;">&lt;</button>
 <span id="theme_d_guide"></span><input type="hidden" id="themeoffset_d" value="0">
@@ -368,7 +366,7 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 <small>Note: these options only apply to diagrams<br /> with 3 or more columns of nodes:</small>
 
 <table style="width: 100%;"><tr>
-<td class="text_left">
+<td>
 <input type="checkbox" id="layout_justifyorigins" value="1" onchange="process_sankey();"><br />
 <label for="layout_justifyorigins" class="ropt">Place all<br /> flow <strong>origins</strong><br /> at the <strong>left</strong> edge</label>
 </td>
@@ -521,9 +519,8 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 </div>
 
 
-<div class="callout_container">
-<span class="callout">
-If you find SankeyMATIC useful, please consider <a href="../about/" target="_blank">donating to support further development</a>. Thanks!</span>
+<div class="callout-container pad-medium">
+If you find SankeyMATIC useful, please consider <a href="../about/" class="internal-link" title="(new window) About SankeyMATIC and how to support the site" target="_blank">donating to support further development</a>. Thanks!
 </div>
 
 <footer>
@@ -549,6 +546,7 @@ If you find SankeyMATIC useful, please consider <a href="../about/" target="_bla
 (<a href="https://tilde.zone/@nowthis" target="_blank">@nowthis@tilde.zone</a>).<br />
 Source code is available at <a href="https://github.com/nowthis/sankeymatic" target="_blank">GitHub</a>.
 </p>
+<p><a href="/privacy/">Privacy Policy</a></p>
 </footer>
 
 </body>

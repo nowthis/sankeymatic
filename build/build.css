@@ -1,12 +1,16 @@
 :root {
   --deep-blue: #036;
   --dark-blue: #047;
+  --secondary-background: #057;
   --medium-blue: #069;
   --light-blue: #27a;
+  --lighter-blue: #5ec9ff;
   --gray-blue: #9ac;
+  --pale-blue-0: #c0eaff;
   --border-base: 1px solid var(--medium-blue);
   --border-dark: 1px solid var(--deep-blue);
   --border-light: 1px solid var(--gray-blue);
+  --border-dotted: 1px dotted var(--medium-blue);
   --bg-medium: #bdf;
   --bg-light: #def;
   --bg-pale: #eef7ff;
@@ -14,6 +18,7 @@
   --selected-option: #00557f;
   --warning: darkred;
   --gray60: #999;
+  --bg-attention: #e3ff9f;
 }
 
 body { font-size: 13px; }
@@ -127,6 +132,29 @@ input[type="range"]:active::-webkit-slider-runnable-track {
 [aria-disabled="true"] {
   opacity: 0.5;
 }
+
+a {
+  color: var(--medium-blue);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--dark-blue);
+  text-decoration: underline;
+}
+
+/* Make links which open a new window look distinct when selected/hovered: */
+
+a:not(.internal-link)[target="_blank"]:hover,
+a:not(.internal-link)[target="_blank"]:focus-visible {
+  background-color: var(--pale-blue-0);
+  border-top: var(--border-dotted);
+}
+
+td { text-align: left; }
+
+.pad-small { padding: 0.3em; }
+.pad-medium { padding: 0.7em; }
 
 .errormessage {
   background-color: #fed;
@@ -516,18 +544,37 @@ button#save_as_svg:hover {
   margin-bottom: 0;
 }
 
-.callout_container {
+
+.callout-container {
+  background-color: var(--secondary-background);
+  color: white;
+  width: 100%;
   text-align: center;
-  margin: 0.3em;
 }
 
-.callout {
-  background-color: #e3ff9f;
-  padding: 0.3em 1.5em;
-  font-size: 90%;
-  border-style: dotted;
-  border-color: #6ae58b;
-  border-width: 1px;
+.callout-container a {
+  color: var(--bg-medium);
+}
+
+.callout-container a:hover {
+  color: var(--lighter-blue);
+}
+
+.attention-bar {
+  padding: 0.4em;
+  margin-top: 0;
+  background-color: var(--bg-attention);
+  border-bottom: var(--border-dotted);
+  text-align: center;
+}
+
+.attention-bar a {
+  color: var(--dark-blue);
+  text-decoration: dashed underline;
+}
+
+.attention-bar a:hover {
+  color: var(--deep-blue);
 }
 
 #color_themes tr td {
