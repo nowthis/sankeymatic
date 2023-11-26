@@ -42,6 +42,16 @@ function outputFieldEl(fld) { return el(`${fld}_val`); }
 // When there are valid inputs, this is set to (stages count + 1).
 glob.labelNeverBreakpoint = 9999;
 
+/**
+ * Update the range on the label-breakpoint slider
+ * @param {number} newMax
+ */
+glob.resetMaxBreakpoint = (newMax) => {
+  const elBreakpointSlider = el(breakpointField);
+  elBreakpointSlider.setAttribute('max', String(newMax));
+  glob.labelNeverBreakpoint = newMax;
+};
+
 // updateOutput: Called directly from the page.
 // Given a field's name, update the visible value shown to the user.
 glob.updateOutput = (fld) => {
@@ -102,6 +112,23 @@ function radioRef(rId) { return document.forms.skm_form.elements[rId]; }
 
 // checkRadio: Given a radio field's id, check it.
 glob.checkRadio = (id) => { el(id).checked = true; };
+
+// If the current inputs came from some external source, name it in this string:
+glob.newInputsImportedFrom = null;
+
+/**
+ * Used when we're replacing the current diagram with something new - whether
+ * from a file or from a string in the URL.
+ * Also resets the maximum stage breakpoint for label positions
+ * @param {string} newData - the data which should go in the "Inputs" textarea
+ * @param {string} dataSource - where the tool should say the data came from
+ */
+function setUpNewInputs(newData, dataSource) {
+  el(userInputsField).value = newData;
+  // Reset breakpoint values to allow a high one in any imported diagram:
+  glob.resetMaxBreakpoint(MAXBREAKPOINT);
+  glob.newInputsImportedFrom = dataSource;
+}
 
 // rememberedMoves: Used to track the user's repositioning of specific nodes
 // (which should be preserved across diagram renders).
@@ -528,6 +555,8 @@ glob.replaceGraphConfirmed = () => {
     savedRecipe = sampleDiagramRecipes.get(graphName);
 
   // Update any settings which accompanied the stored diagram:
+  // In case the new breakpoint > the prior max, reset those now:
+  glob.resetMaxBreakpoint(MAXBREAKPOINT);
   Object.entries(savedRecipe.settings).forEach(([fld, newVal]) => {
     const fldData = skmSettings.get(fld),
       [validSetting, finalValue] = settingIsValid(fldData, newVal, {});
@@ -761,22 +790,20 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Update the label breakpoint controls based on the # of stages.
   // We need a value meaning 'never'; that's 1 past the (1-based) end of the
   // array, so: length + 1
-  const newMax = stagesArr.length + 1;
+  const newMax = stagesArr.length + 1,
+    oldMax = glob.labelNeverBreakpoint;
   // Has the 'never' value changed?
-  if (newMax !== glob.labelNeverBreakpoint) {
+  if (newMax !== oldMax) {
     // Update the slider's range with the new maximum:
-    const elBreakpointSlider = el('labelposition_breakpoint');
-    elBreakpointSlider.setAttribute('max', newMax);
+    glob.resetMaxBreakpoint(newMax);
     // If the stage count has become lower than the breakpoint value, OR
     // if the stage count has increased but the old 'never' value was chosen,
-    // we also need to adjust the slider's value to be the new 'never' value:
+    // let's adjust the slider's value to be the new 'never' value:
     if (cfg.labelposition_breakpoint > newMax
-      || cfg.labelposition_breakpoint === glob.labelNeverBreakpoint) {
-      elBreakpointSlider.value = newMax;
+      || cfg.labelposition_breakpoint === oldMax) {
+      el(breakpointField).value = newMax;
       cfg.labelposition_breakpoint = newMax;
     }
-    // After that check, we can update the remembered breakpoint:
-    glob.labelNeverBreakpoint = newMax;
   }
 
   // MARK Label-measuring time
@@ -1553,46 +1580,45 @@ glob.saveDiagramToFile = () => {
   );
 };
 
-const queryStringParamName = "input"
+const queryStringParamName = 'input';
 
 glob.saveDiagramToURL = () => {
   msg.resetAll();
-  msg.add("Saving...");
+  msg.add('Saving...');
   // Perceived perf: get saving message to render, then followed by "saved"
   setTimeout(() => {
-    const diagramOutput = getDiagramOutput();
-    const compressed = LZString.compressToEncodedURIComponent(diagramOutput);
-    const newURL = `?${queryStringParamName}=${compressed}`;
-    window.history.replaceState({}, "", newURL)
+    const diagramOutput = getDiagramOutput(),
+     compressed = LZString.compressToEncodedURIComponent(diagramOutput),
+     newURL = `?${queryStringParamName}=${compressed}`;
+    window.history.replaceState({}, '', newURL);
 
     if (glob.navigator && glob.navigator.clipboard) {
       glob.navigator.clipboard.writeText(location.href.toString());
       msg.resetAll();
-      msg.add("Saved to clipboard!");
+      msg.add('Saved to clipboard!');
     }
   }, 50);
 };
 
-// Possibly load from a query string, if we are running in the browser context
-// Returns true if a file was loaded from the query string
+/**
+ * If we are running in the browser context, check for a serialized diagram
+ * in the URL parameters. If found, load it.
+ */
 function loadFromQueryString() {
-  if (!glob.location || !glob.location.search) return false;
-  const searchParams = new URLSearchParams(glob.location.search);
-  if (searchParams.get(queryStringParamName)) {
-    const compressed = searchParams.get(queryStringParamName);
-    const uploadedText = LZString.decompressFromEncodedURIComponent(compressed);
-    el(userInputsField).value = uploadedText;
-    glob.process_sankey("from shared URL");
-    return true;
+  if (glob.location?.search) {
+    const searchParams = new URLSearchParams(glob.location.search);
+    if (searchParams.get(queryStringParamName)) {
+      const compressed = searchParams.get(queryStringParamName),
+        uploadedText = LZString.decompressFromEncodedURIComponent(compressed);
+      setUpNewInputs(uploadedText, 'URL');
+    }
   }
-  // No search param
-  return false;
 }
 
 // MAIN FUNCTION:
 // process_sankey: Called directly from the page and within this script.
 // Gather inputs from user; validate them; render updated diagram
-glob.process_sankey = (fileName = null) => {
+glob.process_sankey = () => {
   let [maxDecimalPlaces, maxNodeIndex, maxNodeVal] = [0, 0, 0];
   const uniqueNodes = new Map();
 
@@ -1996,13 +2022,16 @@ glob.process_sankey = (fileName = null) => {
     .map((l, i) => (
       linesWithValidSettings.has(i) ? `${settingsAppliedPrefix}${l}` : l
       ));
-  // Having marked the processed lines, can we delete them?
-  // Check if the input looks like it came from a source file (either
-  // uploaded or pasted in):
-  if (updatedSourceLines[0].startsWith(sourceHeaderPrefix)) {
+
+  // Having processed all the lines now -- if the current inputs came from a
+  // file or from a URL, we can clean out all the auto-generated stuff,
+  // leaving just the user's inputs:
+  if (glob.newInputsImportedFrom) {
     // Drop all the auto-generated content and all successful settings:
     el(userInputsField).value = removeAutoLines(updatedSourceLines);
-    if (fileName) { msg.add(`Imported <strong>${fileName}</strong>.`); }
+    // Also, leave them a note confirming where the inputs came from.
+    msg.add(`Imported diagram from ${glob.newInputsImportedFrom}`);
+    glob.newInputsImportedFrom = null;
   } else {
     el(userInputsField).value = updatedSourceLines.join('\n');
   }
@@ -2198,32 +2227,28 @@ glob.loadDiagramFile = async () => {
   // Did the user provide a file?
   if (fileList.length === 0) { return; }
 
-  // Read the text:
+  // Read the file's text contents:
   const uploadedText = await fileList[0].text(),
     userFileName = fileList[0].name;
-  el(userInputsField).value = uploadedText;
-  glob.process_sankey(userFileName);
+  setUpNewInputs(uploadedText, highlightSafeValue(userFileName));
+  glob.process_sankey();
 };
 
-const foundInput = loadFromQueryString();
-if (foundInput) {
-  return;
-}
-
-// Render the default diagram on first load:
+// Load a diagram definition from the URL if there was one:
+loadFromQueryString();
+// Render the present inputs:
 glob.process_sankey();
-
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
 /* global
- d3 canvg global IN OUT BEFORE AFTER
+ d3 canvg global IN OUT BEFORE AFTER MAXBREAKPOINT
  sampleDiagramRecipes fontMetrics highlightStyles
  settingsMarker settingsAppliedPrefix
  userDataMarker sourceHeaderPrefix sourceURLLine
- skmSettings colorGray60 userInputsField
+ skmSettings colorGray60 userInputsField breakpointField
  reWholeNumber reDecimal reYesNo reYes
  reCommentLine reSettingsValue reSettingsText reNodeLine reFlowLine
  reMoveLine movesMarker
  reFlowTargetWithSuffix reColorPlusOpacity
- reBareColor reRGBColor */
+ reBareColor reRGBColor LZString */

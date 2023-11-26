@@ -1,6 +1,7 @@
 // constants.js: Reference file with several values used in sankeymatic.js
 /* eslint-disable no-unused-vars */
 
+const MAXBREAKPOINT = 9999,
 // skmSettings = Settings required to render a diagram.
 // Format = field_name: [data type, initial value, allowed values]
 // 'Allowed values' contains different things per data type:
@@ -13,8 +14,8 @@
 //   decimal = always 0.0 - 1.0
 //   color = always a hex color spec
 //   yn = always y or n
-const skmSettings
-  = new Map([
+  skmSettings
+    = new Map([
     ['size_w', ['whole', 600, [40]]],
     ['size_h', ['whole', 600, [40]]],
     ['margin_l', ['contained', 12, [0, 'w']]],
@@ -48,7 +49,7 @@ const skmSettings
     ['labelvalue_appears', ['yn', 'y', []]],
     ['labelvalue_fullprecision', ['yn', 'y', []]],
     ['labelposition_first', ['radio', 'before', ['before', 'after']]],
-    ['labelposition_breakpoint', ['breakpoint', 9999, [2]]],
+    ['labelposition_breakpoint', ['breakpoint', MAXBREAKPOINT, [2]]],
     ['value_format', ['list', ',.', [',.', '.,', ' .', ' ,', 'X.', 'X,']]],
     ['value_prefix', ['text', '', [0, 99]]],
     ['value_suffix', ['text', '', [0, 99]]],
@@ -108,6 +109,7 @@ const skmSettings
   colorGray60 = '#999',
 
   userInputsField = 'flows_in',
+  breakpointField = 'labelposition_breakpoint',
 
   // Some prime constants for enum values:
   [IN, OUT, BEFORE, AFTER] = [13, 17, 19, 23],
@@ -232,6 +234,8 @@ const skmSettings
         flow_inheritfrom: 'target',
         layout_justifyends: 'n',
         layout_order: 'automatic',
+        labelposition_first: 'before',
+        labelposition_breakpoint: 5,
         labelname_size: 14,
         value_prefix: '',
         },
@@ -251,6 +255,8 @@ const skmSettings
         layout_justifyends: 'y',
         layout_order: 'automatic',
         labelname_size: 13,
+        labelposition_first: 'before',
+        labelposition_breakpoint: 5,
         value_prefix: '$',
         },
     }],
