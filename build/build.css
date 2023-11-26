@@ -486,6 +486,10 @@ th#title {
   background-color: var(--medium-blue);
 }
 
+.share_button {
+  margin-bottom: 1rem;
+}
+
 .label_as_button {
   display: inline-block;
   box-sizing: border-box;

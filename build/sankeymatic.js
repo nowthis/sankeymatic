@@ -1534,21 +1534,60 @@ function removeAutoLines(lines) {
     .replace(/\n+$/, '');
 }
 
-glob.saveDiagramToFile = () => {
+function getDiagramOutput() {
   const cleanedUpSourceLines = removeAutoLines(
       elV(userInputsField).split('\n')
-    ),
-    diagramOutput = `${sourceHeaderPrefix} Saved: ${glob.humanTimestamp()}
+    );
+  return `${sourceHeaderPrefix} Saved: ${glob.humanTimestamp()}
 ${sourceURLLine}
 \n${userDataMarker}
 \n${cleanedUpSourceLines}
 \n${outputSettings()}\n`;
+}
 
+glob.saveDiagramToFile = () => {
+  const diagramOutput = getDiagramOutput();
   downloadATextFile(
     diagramOutput,
     `sankeymatic_${glob.fileTimestamp()}_source.txt`
   );
 };
+
+const queryStringParamName = "input"
+
+glob.saveDiagramToURL = () => {
+  msg.resetAll();
+  msg.add("Saving...");
+  // Perceived perf: get saving message to render, then followed by "saved"
+  setTimeout(() => {
+    const diagramOutput = getDiagramOutput();
+    const compressed = LZString.compressToEncodedURIComponent(diagramOutput);
+    const newURL = `?${queryStringParamName}=${compressed}`;
+    window.history.replaceState({}, "", newURL)
+
+    if (glob.navigator && glob.navigator.clipboard) {
+      glob.navigator.clipboard.writeText(location.href.toString());
+      msg.resetAll();
+      msg.add("Saved to clipboard!");
+    }
+  }, 50);
+};
+
+// Possibly load from a query string, if we are running in the browser context
+// Returns true if a file was loaded from the query string
+function loadFromQueryString() {
+  if (!glob.location || !glob.location.search) return false;
+  const searchParams = new URLSearchParams(glob.location.search);
+  if (searchParams.get(queryStringParamName)) {
+    const compressed = searchParams.get(queryStringParamName);
+    const uploadedText = LZString.decompressFromEncodedURIComponent(compressed);
+    el(userInputsField).value = uploadedText;
+    glob.process_sankey("from shared URL");
+    return true;
+  }
+  // No search param
+  return false;
+}
 
 // MAIN FUNCTION:
 // process_sankey: Called directly from the page and within this script.
@@ -2151,9 +2190,6 @@ glob.process_sankey = (fileName = null) => {
   return null;
 };
 
-// Render the default diagram on first load:
-glob.process_sankey();
-
 // MARK Load a diagram from a text file
 
 glob.loadDiagramFile = async () => {
@@ -2168,6 +2204,15 @@ glob.loadDiagramFile = async () => {
   el(userInputsField).value = uploadedText;
   glob.process_sankey(userFileName);
 };
+
+const foundInput = loadFromQueryString();
+if (foundInput) {
+  return;
+}
+
+// Render the default diagram on first load:
+glob.process_sankey();
+
 }(window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:

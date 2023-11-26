@@ -11,6 +11,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/canvg@3/lib/umd.js" crossorigin="anonymous"></script>
 <script defer src="constants.js"></script>
 <script defer src="sankey.js"></script>
+<script defer src="lz-string.min.js"></script>
 <script defer src="sankeymatic.js"></script>
 <meta name="description" content="Make beautiful Sankey diagrams. Export them as images or SVG with this free data visualization tool." />
 <meta property="og:title" content="SankeyMATIC: Build a Sankey Diagram" />
@@ -113,6 +114,10 @@ Budget [160] Other Necessities #0F0
 <div class="top_center_self"><button id="preview_graph" type="submit">Show &gt;</button></div>
 
 <div class="bottom_center_self">
+<button id="share_button" type="submit" class="loadsave_button share_button"
+ onclick="saveDiagramToURL(); return false;"
+ title="Share the current diagram as a URL">Share</button>
+
 <button id="save_my_work_button" type="submit" class="loadsave_button"
  onclick="saveDiagramToFile(); return false;"
  title="Save the current diagram and settings to a local text file">Save my<br />work  &#9660;</button>
