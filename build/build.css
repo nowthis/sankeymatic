@@ -41,7 +41,7 @@ body { font-size: 13px; }
 
 .grid_sidebar_right {
   display: grid;
-  grid-template-columns: 1fr fit-content(15ch);
+  grid-template-columns: 1fr fit-content(10ch);
 }
 
 /* Hover effects for slider value display: */
@@ -198,6 +198,8 @@ dfn {
   padding-bottom: 4px;
 }
 
+.padded-inline { padding-inline: 0.4em; }
+
 .indicator,
 .float_right {
   float: right;
@@ -245,9 +247,9 @@ dfn {
   padding: 3px 4px;
 }
 
-.form_box {
-  border: var(--border-light);
-  margin: 0.1em 0.2em;
+.share-box {
+  border: 2px solid var(--light-blue);
+  margin: 0.1em 0.2em 0.5em;
   padding: 0.25em 0.4em;
 }
 
@@ -484,10 +486,6 @@ th#title {
 
 .loadsave_button:hover {
   background-color: var(--medium-blue);
-}
-
-.share_button {
-  margin-bottom: 1rem;
 }
 
 .label_as_button {
