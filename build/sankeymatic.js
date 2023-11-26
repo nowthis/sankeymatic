@@ -518,8 +518,8 @@ const msg = {
     ['total', { id: 'totals_area', class: '' }],
     ['info', { id: 'info_messages', class: 'okmessage' }],
   ]),
-  add: (msgHTML, msgType = 'info') => {
-    const msgData = msg.areas.get(msgType) || msg.areas.get('info'),
+  add: (msgHTML, msgArea = 'info') => {
+    const msgData = msg.areas.get(msgArea) || msg.areas.get('info'),
       msgDiv = document.createElement('div');
 
     msgDiv.innerHTML = msgHTML;
@@ -527,12 +527,19 @@ const msg = {
 
     el(msgData.id).append(msgDiv);
   },
+  queue: [],
+  addToQueue: (msgHTML, msgArea) => { msg.queue.push([msgHTML, msgArea]); },
+  // Clear out any old messages:
   resetAll: () => {
     Array.from(msg.areas.values())
       .map((a) => a.id)
       .forEach((id) => {
         el(id).replaceChildren();
       });
+  },
+  // If any pending messages have been queued, show them:
+  showQueued: () => {
+    while (msg.queue.length) { msg.add(...msg.queue.shift()); }
   },
 };
 
@@ -1580,7 +1587,7 @@ glob.saveDiagramToFile = () => {
   );
 };
 
-const queryStringParamName = 'input';
+const urlInputsParam = 'i';
 
 glob.saveDiagramToURL = () => {
   msg.resetAll();
@@ -1589,7 +1596,7 @@ glob.saveDiagramToURL = () => {
   setTimeout(() => {
     const diagramOutput = getDiagramOutput(),
      compressed = LZString.compressToEncodedURIComponent(diagramOutput),
-     newURL = `?${queryStringParamName}=${compressed}`;
+     newURL = `?${urlInputsParam}=${compressed}`;
     window.history.replaceState({}, '', newURL);
 
     if (glob.navigator && glob.navigator.clipboard) {
@@ -1605,12 +1612,26 @@ glob.saveDiagramToURL = () => {
  * in the URL parameters. If found, load it.
  */
 function loadFromQueryString() {
-  if (glob.location?.search) {
-    const searchParams = new URLSearchParams(glob.location.search);
-    if (searchParams.get(queryStringParamName)) {
-      const compressed = searchParams.get(queryStringParamName),
-        uploadedText = LZString.decompressFromEncodedURIComponent(compressed);
-      setUpNewInputs(uploadedText, 'URL');
+  const searchString = glob.location?.search;
+  if (searchString) {
+    const compressedInputs
+      = new URLSearchParams(searchString)?.get(urlInputsParam);
+    if (compressedInputs) {
+      const expandedInputs
+        = LZString.decompressFromEncodedURIComponent(compressedInputs);
+      // Make sure the input was successfully read.
+      // (LZstring gives back a blank string or a null when it fails):
+      if (expandedInputs) {
+        setUpNewInputs(expandedInputs, 'URL');
+      } else {
+        // Tell the user something went wrong:
+        msg.addToQueue(
+          `The input string provided in the URL (${highlightSafeValue(
+            `${compressedInputs.substring(0, 8)}...`
+          )}) was not decodable.`,
+          'issue'
+        );
+      }
     }
   }
 }
@@ -1724,8 +1745,9 @@ glob.process_sankey = () => {
   // Therefore, we no longer disable the Background Color element, even when
   // 'Transparent' is checked.
 
-  // BEGIN by resetting all message areas:
+  // BEGIN by resetting all message areas & revealing any queued messages:
   msg.resetAll();
+  msg.showQueued();
 
   // Time to parse the user's input.
   // Before we do anything at all, split it into an array of lines with
@@ -2047,6 +2069,7 @@ glob.process_sankey = () => {
     // Clear the contents of the graph in case there was an old graph left
     // over:
     initializeDiagram(approvedCfg);
+    updateColorThemeDisplay();
     return null;
   }
 
