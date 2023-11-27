@@ -133,6 +133,16 @@ input[type="range"]:active::-webkit-slider-runnable-track {
   opacity: 0.5;
 }
 
+.hs {
+  display: flex;
+  flex-direction: row;
+}
+
+.vs {
+  display: flex;
+  flex-direction: column;
+}
+
 a {
   color: var(--medium-blue);
   text-decoration: none;
@@ -190,6 +200,10 @@ dfn {
   margin: 0 auto;
   display: table;
 }
+
+.center { margin-inline: auto; }
+.indented { margin-inline: 2em; }
+.vspace { margin-block: 1em; }
 
 .center_para {
   margin: 0 auto 4px;
@@ -604,4 +618,81 @@ button#save_as_svg:hover {
 input:checked ~ label.ropt,
 .theme_container input:checked ~ * {
   color: var(--selected-option);
+}
+
+#getLinkDialog {
+  box-shadow: 0.2em 0.2em 0.2em gray;
+  border-radius: 1em;
+  border: 1px solid var(--medium-blue);
+  max-width: 90%;
+}
+
+#getLinkDialog::backdrop {
+  opacity: 0.55;
+  background-color: #888;
+}
+
+#getLinkDialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+}
+
+#getLinkDialog section {
+  max-width: 50em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+#getLinkDialog section p {
+  margin: 0.5em;
+}
+
+.warning-note {
+  background-color: #ffd;
+  color: black;
+  border: 1px solid #600;
+  padding: 0.5em;
+  max-width: 45em;
+}
+
+#closeDialogHeader {
+  font-size: x-large;
+  background-color: white;
+  border: none;
+  cursor: pointer;
+}
+
+#getLinkDialog footer {
+  background-color: #eee;
+  padding: 1em;
+}
+
+#closeDialogFooter {
+  background-color: gray;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.5em;
+  font-size: medium;
+}
+
+#copyLinkButton {
+  font-size: medium;
+}
+
+#copiedMsg { font-style: italic; }
+
+.long-link-area {
+  resize: both;
+  overflow: auto;
+  color: var(--dark-blue);
+  height: 6.5em;
+  max-width: 50em;
+  border: 1px dotted var(--dark-blue);
+  padding: 0.5em;
+  margin-block: 0.5em;
+  overflow-wrap: anywhere;
 }

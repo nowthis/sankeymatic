@@ -1583,7 +1583,23 @@ function getDiagramDefinition(verbose) {
   return outputLines.join('\n');
 }
 
-// MARK Save diagram to a text file
+const urlInputsParam = 'i',
+  linkTargetDiv = 'generatedLink',
+  copiedMsgId = 'copiedMsg';
+
+/**
+ * @returns {URL}
+ */
+function generateLink() {
+  const minDiagramDef = getDiagramDefinition(false),
+    compressed = LZString.compressToEncodedURIComponent(minDiagramDef),
+    currentUrl = new URL(window.location.href);
+  // Put the new parameters in place:
+  currentUrl.search = `${urlInputsParam}=${compressed}`;
+  return currentUrl;
+}
+
+// MARK Save/Load diagram definitions in text files
 
 glob.saveDiagramToFile = () => {
   const verboseDiagramDef = getDiagramDefinition(true);
@@ -1593,24 +1609,47 @@ glob.saveDiagramToFile = () => {
   );
 };
 
-const urlInputsParam = 'i';
+glob.loadDiagramFile = async () => {
+  const fileList = el('load_diagram_from_file').files;
 
-glob.saveDiagramToURL = () => {
-  msg.resetAll();
-  msg.add('Saving...');
-  // Perceived perf: get saving message to render, then followed by "saved"
-  setTimeout(() => {
-    const minDiagramDef = getDiagramDefinition(false),
-      compressed = LZString.compressToEncodedURIComponent(minDiagramDef),
-      newURL = `?${urlInputsParam}=${compressed}`;
-    window.history.replaceState({}, '', newURL);
+  // Did the user provide a file?
+  if (fileList.length === 0) { return; }
 
-    if (glob.navigator?.clipboard) {
-      glob.navigator.clipboard.writeText(location.href.toString());
-      msg.resetAll();
-      msg.add('Saved to clipboard!');
-    }
-  }, 50);
+  // Read the file's text contents:
+  const uploadedText = await fileList[0].text(),
+    userFileName = fileList[0].name;
+  setUpNewInputs(uploadedText, highlightSafeValue(userFileName));
+  glob.process_sankey();
+};
+
+// MARK dialog functions
+
+/**
+ * @param {string} dId - the ID of the dialog element to close (minus 'Dialog')
+ */
+glob.closeDialog = (dId) => {
+  const dEl = el(`${dId}Dialog`);
+  if (dEl) { dEl.close(); }
+};
+
+glob.openGetLinkDialog = () => {
+  const dEl = el('getLinkDialog');
+  if (dEl) {
+    dEl.showModal();
+    // Make the link for the current diagram's state & fill it in:
+    const diagramUrl = generateLink(),
+      tEl = el(linkTargetDiv);
+    tEl.innerText = diagramUrl.toString();
+    tEl.focus();
+  }
+};
+
+glob.copyGeneratedLink = () => {
+  if (glob.navigator?.clipboard) {
+    glob.navigator.clipboard.writeText(el(linkTargetDiv).innerText);
+    el(copiedMsgId).innerText = 'Copied!';
+    setTimeout(() => { el(copiedMsgId).innerText = ''; }, 2000);
+  }
 };
 
 /**
@@ -2246,21 +2285,6 @@ glob.process_sankey = () => {
 
   // All done. Give control back to the browser:
   return null;
-};
-
-// MARK Load a diagram from a text file
-
-glob.loadDiagramFile = async () => {
-  const fileList = el('load_diagram_from_file').files;
-
-  // Did the user provide a file?
-  if (fileList.length === 0) { return; }
-
-  // Read the file's text contents:
-  const uploadedText = await fileList[0].text(),
-    userFileName = fileList[0].name;
-  setUpNewInputs(uploadedText, highlightSafeValue(userFileName));
-  glob.process_sankey();
 };
 
 // Load a diagram definition from the URL if there was one:

@@ -417,7 +417,7 @@ Diagram Scales match as closely as possible.
 <p id="download_central" class="share-box">
 <strong class="padded-inline">Share:</strong>
 
-<button id="share_button" type="submit" onclick="saveDiagramToURL(); return false;" title="Share the current diagram as a URL" class="padded-inline"><strong>Copy a public link</strong></button>
+<button id="share_button" type="submit" onclick="openGetLinkDialog(); return false;" title="See options for generating a link to this diagram" class="padded-inline"><strong>Get a public link...</strong></button>
 
 <span class="padded-inline">or</span>
 
@@ -435,6 +435,38 @@ Diagram Scales match as closely as possible.
 
 <button id="save_as_svg" type="submit" title="Save this diagram as a Scalable Vector Graphics file" onclick="saveDiagramAsSVG(); return false;"><strong>Download .SVG</strong></button>
 </p>
+<dialog id="getLinkDialog">
+  <header>
+    <h3>Get a public link to this SankeyMATIC diagram</h3>
+    <button onclick="closeDialog('getLink');" id="closeDialogHeader">✕</button>
+  </header>
+
+  <section class="text_center">
+    <div class="center">
+    <div class="warning-note">
+    <p class="text_left"><strong>Please note:</strong> If your diagram contains <strong>sensitive or private data</strong>, we recommend that you <em><strong>DO NOT USE</strong></em> this public-linking feature to save or share your work.</p>
+<details class="indented">
+  <summary><em><u>Learn more...</u></em></summary>
+    <p class="text_left">Visiting the link below will potentially expose the data you have entered to <strong>any observer</strong> who can see your Internet traffic, up to and including the SankeyMATIC server itself (which, like all web servers, keeps a record of every visited link).</p>
+    <p class="text_left">Instead, you can use the &quot;<strong>Save my work</strong>&quot; and &quot;<strong>Load from file</strong>&quot; buttons to save &amp; reload a diagram in progress <em>without</em> sending a copy of your data beyond your own web browser.</p>
+    </details>
+    </div>
+    </div>
+
+    <div class="vspace">
+<p class="text_left"><strong>Your diagram's public link:</strong></p>
+<div id="generatedLink" class="long-link-area text_left" contenteditable="true">(generating link...)</div>
+<div class="hs" style="justify-content: space-around; align-items: start;">
+<p style="max-width: 25em;">Visiting this link will take anyone to the 'Build' interface and fill in the same data and settings you have now.</p>
+<p class="text_center"><button id="copyLinkButton" class="loadsave_button" onclick="copyGeneratedLink(); return false;">⧉ Copy Public Link</button><br /><span id="copiedMsg"></span></p>
+</div>
+</div>
+  </section>
+
+  <footer>
+    <button onclick="closeDialog('getLink');" id="closeDialogFooter">Close</button>
+  </footer>
+</dialog>
 </div>
 
 <!-- SIZE & SPACING & BACKGROUND -->
