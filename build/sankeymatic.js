@@ -1506,52 +1506,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   }
 } // end of render_sankey
 
-// MARK Save diagram to a text file
-
-function outputSettings() {
-  const outputLines = [];
-  // Iterate through any rememberedMoves and output those:
-  if (glob.rememberedMoves.size) {
-    outputLines.push(movesMarker, '');
-    glob.rememberedMoves.forEach((move, nodeName) => {
-      outputLines.push(
-        `move ${nodeName} ${ep(move[0], 8)}, ${ep(move[1], 8)}`
-        );
-    });
-    outputLines.push('');
-  }
-
-  let currentSettingGroup = '';
-  // outputFldName: produce the full field name or an indented short version:
-  function outputFldName(fld) {
-    const prefixLen = currentSettingGroup.length,
-      shortFldName = prefixLen && fld.startsWith(`${currentSettingGroup}_`)
-      ? `  ${fld.substring(prefixLen + 1)}`
-      : fld;
-    return shortFldName.replaceAll('_', ' ');
-  }
-
-  const outputFns = new Map([
-      ['list', (v) => `'${v}'`], // Always quote 'list' values
-      // In a text field we may encounter single-quotes, so double those:
-      ['text', (v) => `'${v.replaceAll("'", "''")}'`],
-    ]);
-
-  outputLines.push(settingsMarker, '');
-  skmSettings.forEach((fldData, fldName) => {
-    if (fldName.startsWith('internal_')) { return; } // Ignore internals
-
-    const dataType = fldData[0],
-      activeHVal = getHumanValueFromPage(fldName, dataType),
-      outVal = outputFns.has(dataType)
-        ? outputFns.get(dataType)(activeHVal)
-        : activeHVal;
-    outputLines.push(`${outputFldName(fldName)} ${outVal}`);
-    currentSettingGroup = fldName.split('_')[0];
-  });
-
-  return outputLines.join('\n');
-}
+// MARK Serializing the diagram
 
 // Run through the current input lines & drop any old headers &
 // successfully applied settings. Returns a trimmed string.
@@ -1564,25 +1519,76 @@ function removeAutoLines(lines) {
           .includes(l)
       ))
     .join('\n')
-    .replace(/^\n+/, '') // trim blank lines at the start and end
+    .replace(/^\n+/, '') // trim blank lines at the start & end
     .replace(/\n+$/, '');
 }
 
-function getDiagramOutput() {
-  const cleanedUpSourceLines = removeAutoLines(
-      elV(userInputsField).split('\n')
+/**
+ * Produce a text representation of the current diagram, including settings
+ * @param {boolean} verbose - If true, include extra content for humans
+ * @returns {string}
+ */
+function getDiagramDefinition(verbose) {
+  const outputLines = [],
+    customOutputFns = new Map([
+      ['list', (v) => `'${v}'`], // Always quote 'list' values
+      // In a text field we may encounter single-quotes, so double those:
+      ['text', (v) => `'${v.replaceAll("'", "''")}'`],
+    ]);
+  let currentSettingGroup = '';
+
+  // outputFldName: produce the full field name or an indented short version:
+  function outputFldName(fld) {
+    const prefixLen = currentSettingGroup.length,
+      shortFldName = prefixLen && fld.startsWith(`${currentSettingGroup}_`)
+      ? `  ${fld.substring(prefixLen + 1)}`
+      : fld;
+    return shortFldName.replaceAll('_', ' ');
+  }
+
+  function add(...lines) { outputLines.push(...lines); }
+  function addIfV(...lines) { if (verbose) { add(...lines); } }
+
+  addIfV(
+    `${sourceHeaderPrefix} Saved: ${glob.humanTimestamp()}`,
+    sourceURLLine,
+    '',
+    userDataMarker,
+    ''
     );
-  return `${sourceHeaderPrefix} Saved: ${glob.humanTimestamp()}
-${sourceURLLine}
-\n${userDataMarker}
-\n${cleanedUpSourceLines}
-\n${outputSettings()}\n`;
+  add(removeAutoLines(elV(userInputsField).split('\n')));
+  addIfV('', settingsMarker, '');
+
+  // Add all of the settings:
+  skmSettings.forEach((fldData, fldName) => {
+    if (fldName.startsWith('internal_')) { return; } // Ignore internals
+
+    const dataType = fldData[0],
+      activeHVal = getHumanValueFromPage(fldName, dataType),
+      outVal = customOutputFns.has(dataType)
+        ? customOutputFns.get(dataType)(activeHVal)
+        : activeHVal;
+    add(`${outputFldName(fldName)} ${outVal}`);
+    currentSettingGroup = fldName.split('_')[0];
+  });
+
+  // If there are any manually-moved nodes, add them to the output:
+  if (glob.rememberedMoves.size) {
+    addIfV('', movesMarker, '');
+    glob.rememberedMoves.forEach((move, nodeName) => {
+      add(`move ${nodeName} ${ep(move[0], 8)}, ${ep(move[1], 8)}`);
+    });
+  }
+
+  return outputLines.join('\n');
 }
 
+// MARK Save diagram to a text file
+
 glob.saveDiagramToFile = () => {
-  const diagramOutput = getDiagramOutput();
+  const verboseDiagramDef = getDiagramDefinition(true);
   downloadATextFile(
-    diagramOutput,
+    verboseDiagramDef,
     `sankeymatic_${glob.fileTimestamp()}_source.txt`
   );
 };
@@ -1594,12 +1600,12 @@ glob.saveDiagramToURL = () => {
   msg.add('Saving...');
   // Perceived perf: get saving message to render, then followed by "saved"
   setTimeout(() => {
-    const diagramOutput = getDiagramOutput(),
-     compressed = LZString.compressToEncodedURIComponent(diagramOutput),
-     newURL = `?${urlInputsParam}=${compressed}`;
+    const minDiagramDef = getDiagramDefinition(false),
+      compressed = LZString.compressToEncodedURIComponent(minDiagramDef),
+      newURL = `?${urlInputsParam}=${compressed}`;
     window.history.replaceState({}, '', newURL);
 
-    if (glob.navigator && glob.navigator.clipboard) {
+    if (glob.navigator?.clipboard) {
       glob.navigator.clipboard.writeText(location.href.toString());
       msg.resetAll();
       msg.add('Saved to clipboard!');
