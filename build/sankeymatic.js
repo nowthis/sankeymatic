@@ -1594,8 +1594,11 @@ function generateLink() {
   const minDiagramDef = getDiagramDefinition(false),
     compressed = LZString.compressToEncodedURIComponent(minDiagramDef),
     currentUrl = new URL(window.location.href);
-  // Put the new parameters in place:
-  currentUrl.search = `${urlInputsParam}=${compressed}`;
+  // Set the new parameter, encoded to keep it from wrapping strangely:
+  currentUrl.search
+    = `${urlInputsParam}=${
+      encodeURIComponent(compressed).replaceAll('-', '%2D')
+    }`;
   return currentUrl;
 }
 
