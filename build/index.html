@@ -122,7 +122,8 @@ Budget [160] Other Necessities #0F0
 <input type="file" id="load_diagram_from_file"
   accept=".txt,.text,.skm,text/plain"
   class="hidden_under"
-  onchange="loadDiagramFile(); return null;" />
+  onchange="loadDiagramFile(); return null;" 
+  onclick="loadDiagramFileModern(event);"/>
 <label id="load_diagram_button" for="load_diagram_from_file" role="button"
  class="label_as_button loadsave_button"
  title="Load a diagram definition from a text file"><strong>↖</strong> Load<br />from file</label></p>
