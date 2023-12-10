@@ -439,7 +439,7 @@ function settingIsValid(sData, hVal, cfg) {
   }
   if (['whole', 'contained', 'breakpoint'].includes(dataType)
       && reWholeNumber.test(hVal)) {
-    let [minV, maxV] = [0];
+    let [minV, maxV] = [0, 0];
     switch (dataType) {
       case 'whole': [minV, maxV] = allowList; break;
       // Dynamic values (like margins) should be processed after the
@@ -1576,7 +1576,7 @@ function getDiagramDefinition(verbose) {
   if (glob.rememberedMoves.size) {
     addIfV('', movesMarker, '');
     glob.rememberedMoves.forEach((move, nodeName) => {
-      add(`move ${nodeName} ${ep(move[0], 8)}, ${ep(move[1], 8)}`);
+      add(`move ${nodeName} ${ep(move[0])}, ${ep(move[1])}`);
     });
   }
 
@@ -1593,7 +1593,7 @@ const urlInputsParam = 'i',
 function generateLink() {
   const minDiagramDef = getDiagramDefinition(false),
     compressed = LZString.compressToEncodedURIComponent(minDiagramDef),
-    currentUrl = new URL(window.location.href);
+    currentUrl = new URL(glob.location.href);
   // Set the new parameter, encoded to keep it from wrapping strangely:
   currentUrl.search
     = `${urlInputsParam}=${
@@ -2222,7 +2222,7 @@ glob.process_sankey = () => {
      });
   el('imbalances_area').setAttribute(
     'aria-disabled',
-    disableDifferenceControls
+    disableDifferenceControls.toString()
   );
 
   // Were there any differences, and does the user want to know?
@@ -2294,7 +2294,7 @@ glob.process_sankey = () => {
 loadFromQueryString();
 // Render the present inputs:
 glob.process_sankey();
-}(window === 'undefined' ? global : window));
+}(typeof window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
 /* global

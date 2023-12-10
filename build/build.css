@@ -14,6 +14,7 @@
   --bg-medium: #bdf;
   --bg-light: #def;
   --bg-pale: #eef7ff;
+  --bg-palest: #fbfeff;
   --bg-pale-warning: #fffff8;
   --selected-option: #00557f;
   --warning: darkred;
@@ -381,7 +382,7 @@ p.lastrow {
 
 .form_chunk {
   color: #024;
-  background-color: #fbfeff;
+  background-color: var(--bg-palest);
   margin: 0 3px 5px;
   padding: 2px;
   border: var(--border-light);
@@ -496,6 +497,7 @@ th#title {
 .loadsave_button {
   font-size: 13px;
   background-color: var(--dark-blue);
+  min-width: 5.2em;
 }
 
 .loadsave_button:hover {
@@ -559,7 +561,6 @@ button#save_as_svg:hover {
   margin-left: 0.1em;
   margin-bottom: 0;
 }
-
 
 .callout-container {
   background-color: var(--secondary-background);
