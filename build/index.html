@@ -5,8 +5,6 @@
 <meta name="viewport" content="initial-scale=1">
 <title>SankeyMATIC: Build a Sankey Diagram</title>
 <link rel="stylesheet" href="build.css">
-<link rel="stylesheet" href="../main.css">
-<link rel="stylesheet" href="../nav.css">
 <script defer src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/canvg@3/lib/umd.js" crossorigin="anonymous"></script>
 <script defer src="constants.js"></script>
@@ -34,25 +32,18 @@
 <meta name="twitter:image:alt" content="Screenshot of the SankeyMATIC diagram-building interface" />
 </head>
 <body>
-<header>
-<nav id="top_nav" class="main_nav_behavior">
-  <label for="top_nav_checkbox" id="top_nav_icon" class="main_nav_icon">&#9776; &nbsp; SankeyMATIC</label>
-  <input id="top_nav_checkbox" class="main_nav_checkbox" type="checkbox" />
-  <!-- [MENU ITEMS] -->
-  <div id="top_nav_items" class="main_nav_items">
-<ul>
-  <li><a title="SankeyMATIC home page" href="/"><img alt="SankeyMATIC logo" src="i/SKM-trsp-300.png" height="27" width="27" class="skm_logo_small" />&nbsp;<strong>SankeyMATIC</strong></a></li>
-  <li><a title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></li>
-  <li><a title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
-  <li><a title="What's New with SankeyMATIC'" href="/news/">News</a></li>
-  <li><a title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></li>
-  <li><a title="About SankeyMATIC and how to support the site" href="/about/">About/Donate</a></li>
-</ul>
-  </div>
-</nav>
+<header class="header vs f-middle">
+  <nav class="header__nav hs-sm-vs space-between">
+  <a href="/" title="SankeyMATIC home page" class="header__logo hs f-middle align-center"><img alt="SankeyMATIC logo" src="i/SKM-trsp-300.png" height="27" width="27" class="skm_logo_small" />&nbsp;SankeyMATIC</a>
+  <ul class="header__links hs f-middle">
+    <li><a href="/news/" title="What's New with SankeyMATIC">News</a></li>
+    <li><a href="/gallery/" title="Gallery of SankeyMATIC Examples">Gallery</a></li>
+    <li><a href="/manual/" title="How to use SankeyMATIC to the fullest">Manual</a></li>
+    <li><a href="/about/" title="About SankeyMATIC and how to support the site">About</a></li>
+  </ul>
+  </nav>
 </header>
 <div class="callout-container pad-small">If you find SankeyMATIC useful, please consider <a href="../about/" class="internal-link" title="(new window) About SankeyMATIC and how to support the site" target="_blank">donating to support further development</a>. Thanks!</div>
-
 
 <main>
 <div id="example_diagrams" class="text_center">
@@ -377,12 +368,12 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 </td>
 </tr></table>
 </div>
-<p class="form_elements2 center_content">
+<p class="form_elements2 text_center">
 <input type="checkbox" id="layout_reversegraph" value="1" onchange="process_sankey();">
 <label for="layout_reversegraph" class="ropt"><strong>Reverse the graph</strong> (flow right-to-left)</label>
 </p>
 
-<p class="form_elements1 center_content">
+<p class="form_elements1 text_center">
 <strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
 For fair comparisons <em>between</em> diagrams:<br />
 1) Use the same units for each, and 2) Make their<br />
@@ -442,7 +433,7 @@ Diagram Scales match as closely as possible.
   </header>
 
   <section class="text_center">
-    <div class="center">
+    <div class="center_basic">
     <div class="warning-note">
     <p class="text_left"><strong>Please note:</strong> If your diagram contains <strong>sensitive or private data</strong>, we recommend that you <em><strong>DO NOT USE</strong></em> this public-linking feature to save or share your work.</p>
 <details class="indented">
@@ -517,7 +508,7 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 </p>
 <canvas id="png_preview" height="600" width="600" style="background-color: transparent; display: none;"></canvas>
 <div id="chartfooter">
-<p class="form_elements1 center_content">
+<p class="form_elements1 text_center">
 <input type="checkbox" id="meta_mentionsankeymatic" value="1" onchange="process_sankey();" checked>
 <label class="smalllabel ropt" for="meta_mentionsankeymatic">Include &ldquo;Made with SankeyMATIC&rdquo;</label>
 </p>
@@ -558,35 +549,41 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 <div class="ad_center">
 </div>
 
-
-<div class="callout-container pad-medium">
-If you find SankeyMATIC useful, please consider <a href="../about/" class="internal-link" title="(new window) About SankeyMATIC and how to support the site" target="_blank">donating to support further development</a>. Thanks!
-</div>
-
-<footer>
-
-<nav id="footer_nav" class="main_nav_behavior">
-  <input id="footer_nav_checkbox" class="main_nav_checkbox" type="checkbox" checked="checked" />
-  <!-- [MENU ITEMS] -->
-  <div id="footer_nav_items" class="main_nav_items">
-<ul>
-  <li><a title="SankeyMATIC home page" href="/"><img alt="SankeyMATIC logo" src="i/SKM-trsp-300.png" height="27" width="27" class="skm_logo_small" />&nbsp;<strong>SankeyMATIC</strong>&nbsp;Home</a></li>
-  <li><a title="Build a Sankey Diagram" href="/build/">Build a Sankey Diagram</a></li>
-  <li><a title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
-  <li><a title="What's New with SankeyMATIC'" href="/news/">News</a></li>
-  <li><a title="Gallery of Sankey Examples" href="/gallery/">Gallery</a></li>
-  <li><a title="About SankeyMATIC and how to support the site" href="/about/">About/Donate</a></li>
-</ul>
+<footer class="footer vs align-center reset-fonts">
+  <div class="callout-container pad-medium">
+  <span class="indented">If you find SankeyMATIC useful, please consider <a href="../about/" class="internal-link" title="(new window) About SankeyMATIC and how to support the site" target="_blank">donating to support further development</a>. Thanks!</span>
   </div>
-</nav>
+  <div class="footer__inner hs-md-vs align-center space-around">
+    <div class="footer__content text_left">
+    <p>
+    Follow:
+  🦣&nbsp;<strong><a href="https://vis.social/@SankeyMATIC" title="(new window) SankeyMATIC's Mastodon account" target="_blank" rel="noopener me">@SankeyMATIC@vis.social</a></strong>
+    </p>
+    <p>
+    <strong>SankeyMATIC</strong> is produced by
+  <a href="http://nowthis.com/" title="(new window) Steve's personal site" target="_blank" rel="noopener">Steve Bogart</a>
+  <small>(🦣&nbsp;<a href="https://tilde.zone/@nowthis" title="(new window) Steve's Mastodon account" target="_blank" rel="noopener">@nowthis@tilde.zone</a>)</small>.
+    </p>
+    <p>
+  <small><a href="https://github.com/nowthis/sankeymatic" title="(new window) SankeyMATIC source code at GitHub" target="_blank" rel="noopener"><strong>Source code</strong> is available</a> at GitHub.<br>
+  SankeyMATIC builds on the open source tool <a href="http://d3js.org/" title="(new window) D3's home page" target="_blank" rel="noopener">D3.js</a><br />
+  &amp; a modified version of its <a href="https://github.com/d3/d3-sankey" title="(new window) The D3 Sankey plugin at GitHub" target="_blank" rel="noopener">Sankey plugin</a>.
+    </small>
+    </p>
+  <p><a href="/privacy/">Privacy Policy</a></p>
+    </div>
 
-<p>
-<strong>SankeyMATIC</strong> (<a rel="me" href="https://vis.social/@SankeyMATIC" target="_blank">@SankeyMATIC@vis.social</a>) is produced by
-<a href="http://nowthis.com/" target="_blank">Steve Bogart</a>
-(<a href="https://tilde.zone/@nowthis" target="_blank">@nowthis@tilde.zone</a>).<br />
-Source code is available at <a href="https://github.com/nowthis/sankeymatic" target="_blank">GitHub</a>.
-</p>
-<p><a href="/privacy/">Privacy Policy</a></p>
+    <div class="footer__nav">
+      <ul class="hs-sm-vs align-center">
+      <li><a title="SankeyMATIC home page" href="/">Home</a></li>
+      <li><a title="What's New with SankeyMATIC" href="/news/">News</a></li>
+      <li><a title="Gallery of SankeyMATIC Examples" href="/gallery/">Gallery</a></li>
+      <li><a title="How to use SankeyMATIC to the fullest" href="/manual/">Manual</a></li>
+      <li><a title="About SankeyMATIC and how to support the site" href="/about/">About</a></li>
+      </ul>
+    </div>
+
+  </div>
 </footer>
 
 </body>

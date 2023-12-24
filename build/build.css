@@ -1,30 +1,49 @@
 :root {
+  --nav-level-1-bg: #013355;
   --deep-blue: #036;
   --dark-blue: #047;
   --secondary-background: #057;
   --medium-blue: #069;
+  --button-blue: #10afff;
   --light-blue: #27a;
   --lighter-blue: #5ec9ff;
   --gray-blue: #9ac;
   --pale-blue-0: #c0eaff;
-  --border-base: 1px solid var(--medium-blue);
-  --border-dark: 1px solid var(--deep-blue);
-  --border-light: 1px solid var(--gray-blue);
-  --border-dotted: 1px dotted var(--medium-blue);
+  --pale-blue-1: #e7f7ff;
+
   --bg-medium: #bdf;
   --bg-light: #def;
   --bg-pale: #eef7ff;
   --bg-palest: #fbfeff;
   --bg-pale-warning: #fffff8;
+  --bg-attention: #e3ff9f;
+
   --selected-option: #00557f;
   --warning: darkred;
+
   --gray60: #999;
-  --bg-attention: #e3ff9f;
+  --lighter-gray: #f1f5f9;
+
+  --border-base: 1px solid var(--medium-blue);
+  --border-dark: 1px solid var(--deep-blue);
+  --border-light: 1px solid var(--gray-blue);
+  --border-gray: 1px solid var(--gray60);
+  --border-dotted: 1px dotted var(--medium-blue);
+
+  --screen-sm: 675px;
+  --screen-md: 1024px;
+  --screen-lg: 1280px;
+
 }
 
-body { font-size: 13px; }
+body {
+  font-size: small;
+  font-family: sans-serif;
+  background-color: #FBFDFD;
+  margin: 0;
+}
 
-.smalllabel { font-size: 11px; }
+.smalllabel { font-size: smaller; }
 
 /* Sizes for various controls: */
 .slider_xxsmall { width: 3em; }
@@ -134,6 +153,8 @@ input[type="range"]:active::-webkit-slider-runnable-track {
   opacity: 0.5;
 }
 
+.hs-sm-vs,
+.hs-md-vs,
 .hs {
   display: flex;
   flex-direction: row;
@@ -143,6 +164,15 @@ input[type="range"]:active::-webkit-slider-runnable-track {
   display: flex;
   flex-direction: column;
 }
+
+.f-middle {
+  align-items: center;
+  justify-content: center;
+}
+
+.align-center { align-items: center; }
+.space-between { justify-content: space-between; }
+.space-around { justify-content: space-around; }
 
 a {
   color: var(--medium-blue);
@@ -154,7 +184,13 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Make links which open a new window look distinct when selected/hovered: */
+/* Make links which open a new window look distinct: */
+
+a:not(.internal-link)[target="_blank"] {
+  color: var(--deep-blue);
+  background-color: var(--pale-blue-1);
+  border-top: var(--border-gray);
+}
 
 a:not(.internal-link)[target="_blank"]:hover,
 a:not(.internal-link)[target="_blank"]:focus-visible {
@@ -162,7 +198,19 @@ a:not(.internal-link)[target="_blank"]:focus-visible {
   border-top: var(--border-dotted);
 }
 
-td { text-align: left; }
+main { margin: 1em; }
+
+/* cellspacing=0 for all tables */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+td {
+  vertical-align: top;
+  padding: 2px;
+  text-align: left;
+}
 
 .pad-small { padding: 0.3em; }
 .pad-medium { padding: 0.7em; }
@@ -193,7 +241,7 @@ td { text-align: left; }
 
 dfn {
   font-style: normal;
-  border-bottom: 1px dashed;
+  border-bottom: var(--border-dotted);
 }
 
 .center_basic {
@@ -235,6 +283,7 @@ dfn {
   border: var(--border-base);
   padding: 0.25em;
   margin: 0.25em;
+  font-family: sans-serif;
   font-size: small;
   vertical-align: middle;
 }
@@ -282,7 +331,7 @@ dfn {
 }
 
 h2.ui_head {
-  font-size: 15px;
+  font-size: medium;
   background-color: var(--dark-blue);
 }
 
@@ -291,7 +340,7 @@ h2.ui_head:hover {
 }
 
 h3.ui_head {
-  font-size: 13px;
+  font-size: small;
   background-color: #37b;
 }
 
@@ -338,7 +387,7 @@ span.toggleable:hover {
 .differencemessage table th {
   padding: 0.1em 0.2em 0;
   text-align: right;
-  border-bottom: 1px solid var(--dark-blue);
+  border-bottom: var(--border-dark);
 }
 
 .differencemessage table td {
@@ -436,6 +485,23 @@ th#title {
   font-size: large;
 }
 
+legend {
+  font-weight: bold;
+  color: black;
+  background-color: var(--bg-pale);
+  border: var(--border-light);
+  padding: 0.1em 0.4em;
+  margin-bottom: 0;
+}
+
+fieldset { border: var(--border-light); }
+
+.fieldset_contents {
+  padding-inline: 0.5em;
+  margin-top: 0;
+  padding-top: 0;
+}
+
 .download_link {
   margin-top: 8px;
 }
@@ -446,6 +512,7 @@ th#title {
   padding: 5px 8px;
 }
 
+/* 
 #img_tag_hint {
   background-color: white;
   padding: 3px;
@@ -462,6 +529,7 @@ th#title {
   margin: auto;
   white-space: pre;
 }
+*/
 
 .separated_stack {
   display: grid;
@@ -495,7 +563,7 @@ th#title {
 }
 
 .loadsave_button {
-  font-size: 13px;
+  font-size: small;
   background-color: var(--dark-blue);
   min-width: 5.2em;
 }
@@ -540,10 +608,7 @@ button#save_as_svg:hover {
   margin-bottom: 0;
 }
 
-#example_diagrams button {
-  margin-left: 0.5em;
-  margin-right: 0.5em;
-}
+#example_diagrams button { margin-inline: 0.5em; }
 
 #replace_graph_warning {
   background-color: #ffa;
@@ -599,9 +664,25 @@ button#save_as_svg:hover {
   padding: 1px 2px;
 }
 
+.no_wrap,
 .theme_container {
   white-space: nowrap;
 }
+
+/* Present themes with different color counts.
+   Each color swatch uses one non-breaking space (0.3em) plus padding.
+   12 colors: 12em = (12 * 0.3em) + (12 * .7em)  */
+.color_sample_12 { padding-inline: 0.35em; }
+
+/* 10 colors: 12em = (10 * 0.3em) + (10 * .9em)  */
+.color_sample_10 { padding-inline: 0.45em; }
+
+/*  9 colors: 12em = (9 * 0.3em) + (9 * 1.0333em)  */
+.color_sample_9 { padding-inline: 0.517em; }
+
+/*  8 colors: 12em = (8 * 0.3em) + (8 * 1.2em)
+    0.6em actually made this row appear slightly too wide, so: 0.599em */
+.color_sample_8 { padding-inline: 0.599em; }
 
 #highlight_fld_label {
   background-color: #fffc;
@@ -624,7 +705,7 @@ input:checked ~ label.ropt,
 #getLinkDialog {
   box-shadow: 0.2em 0.2em 0.2em gray;
   border-radius: 1em;
-  border: 1px solid var(--medium-blue);
+  border: var(--border-base);
   max-width: 90%;
 }
 
@@ -696,4 +777,159 @@ input:checked ~ label.ropt,
   padding: 0.5em;
   margin-block: 0.5em;
   overflow-wrap: anywhere;
+}
+
+.header {
+  color: white;
+  background-color: var(--nav-level-1-bg);
+  padding: 0.25em 1em 0.1em;
+  border-bottom: var(--border-base);
+}
+
+.header a { color: white; }
+
+.header__nav {
+  max-width: var(--screen-lg);
+  width: 100%;
+  font-size: initial;
+  padding: 3px;
+}
+
+.header__logo {
+  text-decoration: none;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.header__logo:hover {
+  color: inherit;
+  text-decoration: none;
+}
+
+.header__logo img {
+  margin-right: .5em;
+  padding-bottom: 3px;
+}
+
+.header__links {
+  list-style: none;
+  padding: 0;
+  margin: 0 1em;
+  font-size: 1.1em;
+}
+
+.header__links a {
+  color: inherit;
+  margin-left: 1.5em;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.1em;
+}
+
+.header__links li:first-child a{
+  margin-left: 0;
+}
+
+.header__links a:hover{
+  text-decoration-color: var(--lighter-blue);
+}
+
+
+hr.ad_divider { border-top: 4px double var(--medium-blue); }
+
+.ad_center {
+  margin: 0.5em auto;
+  text-align: center;
+}
+
+.reset-fonts {
+  font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-size: initial;
+}
+
+.footer {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--lighter-gray);
+  border-top: 1px dotted var(--button-blue)
+}
+
+.footer p {
+  margin-block: 0.8em;
+}
+
+.footer__inner {
+  max-width: var(--screen-lg);
+  padding: 1em;
+}
+
+.footer__content {
+  font-size: 1.2em;
+  max-width: var(--screen-sm);
+}
+
+.footer__nav {
+  font-size: 1.1em;
+  font-weight: bold;
+  padding-left: 1em;
+  flex-shrink: 0;
+}
+
+.footer__nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 1em;
+}
+
+.footer__nav ul:last-child {
+  margin-right: 0;
+}
+
+.footer__nav ul li {
+  margin: 0 1em;
+}
+
+.footer__nav a,
+.footer__inner a {
+  color: var(--medium-blue);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.1em;
+}
+
+.footer__nav a:hover,
+.footer__inner a:hover {
+  color: black;
+  text-decoration-color: var(--lighter-blue)
+}
+
+.footer .callout-container { background-color: var(--nav-level-1-bg); }
+
+/* media query land */
+
+@media screen and (width <= 1024px) {
+  .hs-md-vs { flex-direction: column; }
+
+  .footer__content { text-align: center; }
+
+  .footer__nav{
+    padding-left: 0;
+    margin-top: 1em;
+  }
+
+  .footer__nav ul{ margin: 0 .75em; }
+}
+
+@media screen and (width <= 675px) {
+  .hs-sm-vs { flex-direction: column; }
+
+  .header__links {
+    margin-top: 0.75em;
+    margin-bottom: 0;
+  }
+
+  .footer__nav ul li { margin: 0.3em; }
 }
