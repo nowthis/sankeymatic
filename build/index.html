@@ -79,7 +79,7 @@ Inputs<span id="input_options_hint">:</span></h2>
 
 <div id="input_options" class="text_center grid_sidebar_right">
 <div>
-    <textarea id="flows_in" title="Diagram Inputs" rows="19" cols="40" class="font_sans" onchange="process_sankey();">// Enter Flows between Nodes, like this:
+    <textarea id="flows_in" title="Diagram Inputs" rows="19" cols="40" class="font_sans" onchange="process_sankey();" onkeyup="debounced_process_sankey();">// Enter Flows between Nodes, like this:
 //         Source [AMOUNT] Target
 
 Wages [1500] Budget
