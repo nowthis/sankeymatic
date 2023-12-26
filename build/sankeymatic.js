@@ -36,24 +36,20 @@ glob.togglePanel = (panel) => {
   return null;
 };
 
-// Generic debounce utility function for use when responding to user keystrokes
-function debounce(callback, wait) {
-  if (wait === void 0) {
-    // Default 400 ms wait time
-    wait = 400;
-  }
-  var h;
-  var callable = function () {
-    var args = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-      args[_i] = arguments[_i];
-    }
-    clearTimeout(h);
-    h = setTimeout(function () {
-      return callback.apply(void 0, args);
-    }, wait);
+/**
+ * Kick off a function after a certain period has passed.
+ * Used to trigger live updates when the user stops typing.
+ * @param {function} callbackFn
+ * @param {number} [waitMilliseconds = 500] Default is 500.
+ * @returns {function}
+ */
+function debounce(callbackFn, waitMilliseconds = 500) {
+  let timeoutID;
+  const delayedFn = function (...params) {
+    clearTimeout(timeoutID);
+    timeoutID = setTimeout(() => callbackFn(...params), waitMilliseconds);
   };
-  return callable;
+  return delayedFn;
 }
 
 function outputFieldEl(fld) { return el(`${fld}_val`); }
@@ -2312,7 +2308,7 @@ glob.process_sankey = () => {
 
 // Debounced version of process_sankey as event handler for keystrokes:
 glob.debounced_process_sankey = debounce(glob.process_sankey);
-  
+
 // Load a diagram definition from the URL if there was one:
 loadFromQueryString();
 // Render the present inputs:
