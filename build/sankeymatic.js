@@ -46,7 +46,7 @@ glob.togglePanel = (panel) => {
 function debounce(callbackFn, waitMilliseconds = 500) {
   let timeoutID;
   const delayedFn = function (...params) {
-    clearTimeout(timeoutID);
+    if (timeoutID !== undefined) { clearTimeout(timeoutID); }
     timeoutID = setTimeout(() => callbackFn(...params), waitMilliseconds);
   };
   return delayedFn;
@@ -72,6 +72,7 @@ glob.resetMaxBreakpoint = (newMax) => {
 // Given a field's name, update the visible value shown to the user.
 glob.updateOutput = (fld) => {
   const fldVal = elV(fld),
+    fldValAsNum = Number(fldVal),
     oEl = outputFieldEl(fld),
     formats = {
       node_h: '%',
@@ -79,20 +80,25 @@ glob.updateOutput = (fld) => {
       node_opacity: '.2',
       flow_curvature: '|',
       flow_opacity: '.2',
+      labelname_weight: 'font',
       labels_highlight: '.2',
-      labelposition_breakpoint: 'never',
-    };
+      labelposition_breakpoint: 'breakpoint',
+    },
+    fontWeights = { 100: 'Light', 400: 'Normal', 700: 'Bold' };
   switch (formats[fld]) {
     case '|':
       // 0.1 is treated as 0 for curvature. Display that:
-      if (fldVal <= 0.1) { oEl.textContent = '0.00'; break; }
-      // FALLS THROUGH to '.2' format when fldVal > 0.1:
-    case '.2': oEl.textContent = d3.format('.2f')(fldVal); break;
+      if (fldValAsNum <= 0.1) { oEl.textContent = '0.00'; break; }
+      // FALLS THROUGH to '.2' format when fldValAsNum > 0.1:
+    case '.2': oEl.textContent = d3.format('.2f')(fldValAsNum); break;
     case '%': oEl.textContent = `${fldVal}%`; break;
-    case 'never':
-      oEl.textContent
-        = (Number(fldVal) === glob.labelNeverBreakpoint ? '∅' : fldVal);
+    case 'breakpoint':
+      oEl.textContent = fldValAsNum === glob.labelNeverBreakpoint
+            ? 'Never'
+            : `Stage ${fldVal}`;
       break;
+    case 'font':
+      oEl.textContent = fontWeights[fldValAsNum] ?? fldVal; break;
     default: oEl.textContent = fldVal;
   }
   return null;
@@ -117,10 +123,10 @@ glob.fadeVal = (fld) => {
 // isNumeric: borrowed from jQuery/Angular
 function isNumeric(n) { return !Number.isNaN(n - parseFloat(n)); }
 
-// clamp: Ensure a numeric value n is between min and max.
+// clamp: Ensure a value n (if numeric) is between min and max.
 // Default to min if not numeric.
 function clamp(n, min, max) {
-  return isNumeric(n) ? Math.min(Math.max(n, min), max) : min;
+  return isNumeric(n) ? Math.min(Math.max(Number(n), min), max) : min;
 }
 
 // radioRef: get the object which lets you get/set a radio input value:
@@ -1475,7 +1481,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // Put the highlight rectangle just before each text:
       diagLabels.insert('rect', labelTextSelector)
         .attr('id', bg.dom_id)
-        // Make sure a Node drag will affect this as well:
+        // Attach a class to make a drag operation affect a Node's label too:
         .attr('class', n.css_class)
         .attr('x', ep(labelBB.x + bg.offset.x))
         .attr('y', ep(labelBB.y + bg.offset.y))
@@ -1953,7 +1959,7 @@ glob.process_sankey = () => {
         return;
       }
       // Diagrams don't currently support negative numbers or 0:
-      if (amountIn <= 0) {
+      if (Number(amountIn) <= 0) {
         warnAbout(lineIn, 'Amounts must be greater than 0');
         return;
       }

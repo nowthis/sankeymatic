@@ -45,16 +45,6 @@ body {
 
 .smalllabel { font-size: smaller; }
 
-/* Sizes for various controls: */
-.slider_xxsmall { width: 3em; }
-.slider_xsmall { width: 4.5em; }
-.slider_small { width: 6em; }
-.slider_medium { width: 9.5em; }
-
-.number_10s { width: 2.5em; }
-.number_100s { width: 3em; }
-.number_10000s { width: 4.25em; }
-
 .grid_entire_row {
   grid-column: 1 / -1;
 }
@@ -94,18 +84,51 @@ output {
   background-color: var(--bg-pale);
   color: var(--selected-option);
   border: var(--border-dark);
+  font-variant-numeric: tabular-nums;
 }
 
-/*
-The output 'width' here refers to the size of the value which might be
-shown, not the size of the slider.
-The 'left' value approximates a good place to place the tooltip.
-- Typically the label is included in the container width.
-*/
-.output_10s { width: 2em; left: 45%; }
-.output_medium { width: 2.5em; left: 56%; }
-.output_medium_long { width: 2.5em; left: 66%; }
-.output_wide { width: 3.3em; left: 52%; }
+/* If there are tick (list) marks, they move the hint text down.
+   This adjusts it back upward. */
+/* input[list] + span + output, */
+span + span > input[list] + output { top: -2.2em; }
+
+/* If we're in an hstack with <div> labels, tick geometry works differently */
+div + span > input[list] + output { top: -1.3em; }
+
+/* firefox has a very different idea of the slider size; compensate here: */
+@supports  (-moz-appearance:none) {
+  output { top: -2.2em; }
+}
+
+.number_10s { width: 2.5em; }
+.number_100s { width: 3em; }
+.number_10000s { width: 4.25em; }
+
+/* Sizes for various controls: */
+.slider_xxsmall { width: 3em; }
+.slider_xsmall { width: 4.5em; }
+.slider_small { width: 6em; }
+.slider_medium { width: 9.5em; }
+
+/* The output 'width' here refers to the size of the value which might
+be shown, not the size of the slider. */
+.output_3 { width: 2.5em; }
+.output_4 { width: 3.3em; }
+.output_6 { width: 5em; }
+.output_9 { width: 6em; }
+.output_12 { width: 7em; }
+
+/* Combinations of slider + output sizes affect where hints should appear: */
+.slider_xxsmall + .output_3 { left: 0.25em; }
+.slider_xsmall + .output_3 { left: 1.05em; }
+.slider_xsmall + .output_6 { left: -0.2em; }
+.slider_small + .output_3 { left: 1.9em; }
+.slider_small + .output_4 { left: 1.4em; }
+.slider_small + .output_12 { left: -0.45em; }
+.slider_medium + .output_3 { left: 3.7em; }
+.slider_medium + .output_6 { left: 2.5em; }
+.slider_medium + .output_9 { left: 1.9em; }
+.slider_medium + .output_12 { left: 1.3em; }
 
 .font_sans { font-family: sans-serif; }
 .font_serif { font-family: serif; }
@@ -170,6 +193,7 @@ input[type="range"]:active::-webkit-slider-runnable-track {
   justify-content: center;
 }
 
+.align-start { align-items: start; }
 .align-center { align-items: center; }
 .space-between { justify-content: space-between; }
 .space-around { justify-content: space-around; }
@@ -684,7 +708,7 @@ button#save_as_svg:hover {
     0.6em actually made this row appear slightly too wide, so: 0.599em */
 .color_sample_8 { padding-inline: 0.599em; }
 
-#highlight_fld_label {
+.highlight_fld_label {
   background-color: #fffc;
   padding: 0.25em 0.3em;
   border-radius: 0.5em;

@@ -136,15 +136,14 @@ Nodes<span id="node_options_hint">:</span></h2>
 <!-- tabindex="0" -->
 <div id="node_options" class="form_chunk">
 <p class="form_elements1">
-<span class="no_wrap output_container" onmouseover="revealVal('node_h');" onmouseout="fadeVal('node_h');">
+<span class="no_wrap" onmouseover="revealVal('node_h');" onmouseout="fadeVal('node_h');">
 <label for="node_h"><strong>Height:</strong></label>
-.<input id="node_h" class="slider_small" type="range" min="0" max="100" step="1" value="50" onfocus="revealVal('node_h');" onblur="fadeVal('node_h');" oninput="updateOutput('node_h'); process_sankey();" onchange="process_sankey();">|
-<output id="node_h_val" for="node_h" class="fade-init output_wide"></output></span>
+.<span class="output_container"><input id="node_h" class="slider_small" type="range" min="0" max="100" step="1" value="50" onfocus="revealVal('node_h');" onblur="fadeVal('node_h');" oninput="updateOutput('node_h'); process_sankey();" onchange="process_sankey();"><output id="node_h_val" for="node_h" class="fade-init output_4">-</output></span>|</span>
 
-<span class="no_wrap output_container" onmouseover="revealVal('node_spacing');" onmouseout="fadeVal('node_spacing');">
+
+<span class="no_wrap" onmouseover="revealVal('node_spacing');" onmouseout="fadeVal('node_spacing');">
 <label for="node_spacing" class="spaced_label"><strong>Spacing:</strong></label>
-<span class="smalllabel">0</span><input id="node_spacing" class="slider_small" type="range" min="0" max="100" step="1" value="85" onfocus="revealVal('node_spacing');" onblur="fadeVal('node_spacing');" oninput="updateOutput('node_spacing'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">Max</span>
-<output id="node_spacing_val" for="node_spacing" class="fade-init output_wide"></output></span>
+<span class="smalllabel">0</span><span class="output_container"><input id="node_spacing" class="slider_small" type="range" min="0" max="100" step="1" value="85" onfocus="revealVal('node_spacing');" onblur="fadeVal('node_spacing');" oninput="updateOutput('node_spacing'); process_sankey();" onchange="process_sankey();"><output id="node_spacing_val" for="node_spacing" class="fade-init output_4">-</output></span><span class="smalllabel">Max</span></span>
 </p>
 
 <p class="form_elements2">
@@ -154,10 +153,9 @@ Nodes<span id="node_options_hint">:</span></h2>
 <span class="no_wrap"><label for="node_border" class="spaced_label"><strong>Border:</strong></label>
 <input id="node_border" type="number" class="wholenumber number_10s" min="0" value="0" step="1" onchange="process_sankey();"></span>
 
-<span class="no_wrap output_container" onmouseover="revealVal('node_opacity');" onmouseout="fadeVal('node_opacity');">
+<span class="no_wrap" onmouseover="revealVal('node_opacity');" onmouseout="fadeVal('node_opacity');">
 <label for="node_opacity" class="spaced_label"><strong>Opacity:</strong></label>
-<span class="smalllabel">0</span><input id="node_opacity" class="slider_xxsmall" type="range" min="0" max="1" step="0.05" value="1.0" onfocus="revealVal('node_opacity');" onblur="fadeVal('node_opacity');" oninput="updateOutput('node_opacity'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">1</span>
-<output id="node_opacity_val" for="node_opacity" class="fade-init output_medium"></output></span>
+<span class="smalllabel">0</span><span class="output_container"><input id="node_opacity" class="slider_xxsmall" type="range" min="0" max="1" step="0.05" value="1.0" onfocus="revealVal('node_opacity');" onblur="fadeVal('node_opacity');" oninput="updateOutput('node_opacity'); process_sankey();" onchange="process_sankey();"><output id="node_opacity_val" for="node_opacity" class="fade-init output_3">-</output></span><span class="smalllabel">1</span></span>
 </p>
 
 <fieldset class="form_elements1">
@@ -234,15 +232,13 @@ Flows<span id="flow_options_hint">:</span></h2>
 
 <div id="flow_options" class="form_chunk">
 <p class="form_elements1">
-<span class="no_wrap output_container" onmouseover="revealVal('flow_opacity');" onmouseout="fadeVal('flow_opacity');">
+<span class="no_wrap" onmouseover="revealVal('flow_opacity');" onmouseout="fadeVal('flow_opacity');">
 <label for="flow_opacity"><strong>Opacity:</strong></label>
-<span class="smalllabel">0</span><input id="flow_opacity" class="slider_xsmall" type="range" min="0" max="1" step="0.05" value="0.45" onfocus="revealVal('flow_opacity');" onblur="fadeVal('flow_opacity');" oninput="updateOutput('flow_opacity'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">1</span>
-<output id="flow_opacity_val" for="flow_opacity" class="fade-init output_medium"></output></span>
+<span class="smalllabel">0</span><span class="output_container"><input id="flow_opacity" class="slider_xsmall" type="range" min="0" max="1" step="0.05" value="0.45" onfocus="revealVal('flow_opacity');" onblur="fadeVal('flow_opacity');" oninput="updateOutput('flow_opacity'); process_sankey();" onchange="process_sankey();"><output id="flow_opacity_val" for="flow_opacity" class="fade-init output_3">-</output></span><span class="smalllabel">1</span></span>
 
-<span class="no_wrap output_container" onmouseover="revealVal('flow_curvature');" onmouseout="fadeVal('flow_curvature');">
+<span class="no_wrap" onmouseover="revealVal('flow_curvature');" onmouseout="fadeVal('flow_curvature');">
 <label for="flow_curvature" class="spaced_label"><strong>Curviness:</strong></label>&nbsp;
-|<input id="flow_curvature" class="slider_small" type="range" min="0.1" max="0.9" step="0.04" value="0.5" onfocus="revealVal('flow_curvature');" onblur="fadeVal('flow_curvature');" oninput="updateOutput('flow_curvature'); process_sankey();" onchange="process_sankey();">(
-<output id="flow_curvature_val" for="flow_curvature" class="fade-init output_medium_long"></output></span>
+|<span class="output_container"><input id="flow_curvature" class="slider_small" type="range" min="0.1" max="0.9" step="0.04" value="0.5" onfocus="revealVal('flow_curvature');" onblur="fadeVal('flow_curvature');" oninput="updateOutput('flow_curvature'); process_sankey();" onchange="process_sankey();"><output id="flow_curvature_val" for="flow_curvature" class="fade-init output_3">-</output></span>(</span>
 </p>
 
 <fieldset class="form_elements2">
@@ -264,6 +260,17 @@ Use <input name="flow_inheritfrom" type="radio" id="flow_inherit_none" value="no
 </div>
 
 <!-- LABELS -->
+
+<datalist id="tick400"><option value="400"></option></datalist>
+<datalist id="tick-stages">
+<option value="2"></option><option value="3"></option>
+<option value="4"></option><option value="5"></option>
+<option value="6"></option><option value="7"></option>
+<option value="8"></option><option value="9"></option>
+<option value="10"></option><option value="11"></option>
+<option value="12"></option><option value="13"></option>
+<option value="14"></option><option value="15"></option>
+</datalist>
 
 <h2 class="ui_head" onclick="togglePanel('label_options');">
 <span id="label_options_indicator" class="indicator">+</span>
@@ -289,10 +296,9 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <span class="no_wrap"><input id="labelname_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span>
 <input type="color" id="labels_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
 
-<span class="no_wrap output_container spaced_label" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
-<label for="labels_highlight" id="highlight_fld_label"><strong>Highlight:</strong></label>
-<span class="smalllabel">0</span><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">Max</span>
-<output id="labels_highlight_val" for="labels_highlight" class="fade-init output_medium"></output></span>
+<span class="no_wrap spaced_label" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
+<label for="labels_highlight" class="highlight_fld_label"><strong>Highlights:</strong></label>
+<span class="smalllabel">0</span><span class="output_container"><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><output id="labels_highlight_val" for="labels_highlight" class="fade-init output_3">-</output></span><span class="smalllabel highlight_fld_label">Max</span></span>
 </p>
 
 <fieldset class="form_elements1">
@@ -305,11 +311,11 @@ Place the <strong>first</strong> labels:
 <span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the node</label></span>
 </p>
 
-<p class="form_elements">
-<label for="labelposition_breakpoint">Place labels on the <strong>other side</strong> starting at:</label>
-<span class="no_wrap output_container" onmouseover="revealVal('labelposition_breakpoint');" onmouseout="fadeVal('labelposition_breakpoint');">
-<span class="smalllabel">Stage 2</span><input id="labelposition_breakpoint" class="slider_xxsmall" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); process_sankey();" onchange="process_sankey();"><span class="smalllabel">(never)</span>
-<output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_10s"></output></span>
+<p class="form_elements text_center">
+<label for="labelposition_breakpoint">Place labels on the <strong>opposite side</strong> starting at:</label><br />
+<span class="no_wrap" onmouseover="revealVal('labelposition_breakpoint');" onmouseout="fadeVal('labelposition_breakpoint');">
+<span class="no_wrap">Stage 2</span><span class="output_container"><input id="labelposition_breakpoint" class="slider_medium" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); process_sankey();" onchange="process_sankey();" list="tick-stages"><output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_12">-</output></span><span>(Never)</span>
+</span>
 </p>
 </div>
 </fieldset>
@@ -322,10 +328,9 @@ Place the <strong>first</strong> labels:
 
 &nbsp;
 
-<span class="no_wrap output_container" onmouseover="revealVal('labelname_weight');" onmouseout="fadeVal('labelname_weight');">
-<label for="labelname_weight"><strong>Style:</strong></label>
-<span class="smalllabel font_light">Light</span><input id="labelname_weight" class="slider_xxsmall" type="range" min="100" max="700" step="300" value="400" onfocus="revealVal('labelname_weight');" onblur="fadeVal('labelname_weight');" oninput="updateOutput('labelname_weight'); process_sankey();" onchange="process_sankey();"><span class="smalllabel font_bolder">Bold</span>
-<output id="labelname_weight_val" for="labelname_weight" class="fade-init output_medium"></output></span>
+<span class="no_wrap" onmouseover="revealVal('labelname_weight');" onmouseout="fadeVal('labelname_weight');"><label for="labelname_weight"><strong>Style:</strong></label>
+<span class="smalllabel font_light">Light</span><span class="output_container"><input id="labelname_weight" class="slider_xsmall" type="range" min="100" max="700" step="300" value="400" list="tick400" onfocus="revealVal('labelname_weight');" onblur="fadeVal('labelname_weight');" oninput="updateOutput('labelname_weight'); process_sankey();" onchange="process_sankey();"><output id="labelname_weight_val" for="labelname_weight" class="fade-init output_6">-</output></span><span class="smalllabel font_bolder">Bold</span>
+</span>
 </p>
 
 <fieldset class="form_elements1">
@@ -383,12 +388,12 @@ Diagram Scales match as closely as possible.
 <h3 class="ui_head" onclick="togglePanel('debug_options');"><span id="debug_options_indicator" class="indicator">+</span>Tools for Debugging<span id="debug_options_hint">...</span></h3>
 <div id="debug_options" class="form_chunk" style="display: none;">
 <div class="form_elements1">
-  <span class="no_wrap output_container" onmouseover="revealVal('internal_iterations');" onmouseout="fadeVal('internal_iterations');">
+  <span class="no_wrap" onmouseover="revealVal('internal_iterations');" onmouseout="fadeVal('internal_iterations');">
     <label for="internal_iterations" class="spaced_label"><strong># of Layout Iterations:</strong></label>
     <span class="smalllabel">0</span>
-    <input id="internal_iterations" class="slider_small" type="range" min="0" max="30" step="1" value="25" onfocus="revealVal('internal_iterations');" onblur="fadeVal('internal_iterations');" oninput="updateOutput('internal_iterations'); process_sankey();" onchange="process_sankey();">
+    <span class="output_container"><input id="internal_iterations" class="slider_small" type="range" min="0" max="30" step="1" value="25" onfocus="revealVal('internal_iterations');" onblur="fadeVal('internal_iterations');" oninput="updateOutput('internal_iterations'); process_sankey();" onchange="process_sankey();"><output id="internal_iterations_val" for="internal_iterations" class="fade-init output_3">-</output></span>
     <span class="smalllabel">30</span>
-    <output id="internal_iterations_val" for="internal_iterations" class="fade-init output_medium_long"></output></span>
+    </span>
 </div>
 <div class="form_elements2">
 <input type="checkbox" id="internal_revealshadows" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="internal_revealshadows" class="ropt">Reveal Shadow Nodes</label>
@@ -447,7 +452,7 @@ Diagram Scales match as closely as possible.
     <div class="vspace">
 <p class="text_left"><strong>Your diagram's public link:</strong></p>
 <div id="generatedLink" class="long-link-area text_left" contenteditable="true">(generating link...)</div>
-<div class="hs" style="justify-content: space-around; align-items: start;">
+<div class="hs align-start space-around">
 <p style="max-width: 25em;">Visiting this link will take anyone to the 'Build' interface and fill in the same data and settings you have now.</p>
 <p class="text_center"><button id="copyLinkButton" class="loadsave_button" onclick="copyGeneratedLink(); return false;">⧉ Copy Public Link</button><br /><span id="copiedMsg"></span></p>
 </div>
