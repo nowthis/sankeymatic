@@ -128,6 +128,99 @@ Budget [160] Other Necessities #0F0
 </p>
 </div>
 
+<!-- LABELS -->
+
+<datalist id="tick400"><option value="400"></option></datalist>
+<datalist id="tick-stages">
+<option value="2"></option><option value="3"></option>
+<option value="4"></option><option value="5"></option>
+<option value="6"></option><option value="7"></option>
+<option value="8"></option><option value="9"></option>
+<option value="10"></option><option value="11"></option>
+<option value="12"></option><option value="13"></option>
+<option value="14"></option><option value="15"></option>
+</datalist>
+
+<h2 class="ui_head" onclick="togglePanel('label_options');">
+<span id="label_options_indicator" class="indicator">+</span>
+Labels &amp; Units<span id="label_options_hint">...</span></h2>
+
+<div id="label_options" class="form_chunk" style="display: none;">
+<p class="form_elements1">
+<span><input type="checkbox" id="labelname_appears" value="1" onchange="process_sankey();" checked="checked">
+<label for="labelname_appears" class="ropt">Show labels</label> <small class="rnote">(hide to apply your own text to the graph)</small></span>
+<br />
+
+&nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_appears" value="1" onchange="process_sankey();" checked="checked">
+<label for="labelvalue_appears" class="ropt">Show Node totals as part of labels</label></span>
+<br />
+
+&nbsp;&nbsp;&nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_fullprecision" value="1" onchange="process_sankey();" checked="checked">
+<label for="labelvalue_fullprecision" class="ropt">Show trailing zeroes <small>(best for currency)</small></label></span>
+<br />
+</p>
+
+<p class="form_elements2">
+<label for="labelname_size"><strong>Size:</strong></label>
+<span class="no_wrap"><input id="labelname_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span>
+<input type="color" id="labels_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
+
+<span class="no_wrap spaced_label" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
+<label for="labels_highlight" class="highlight_fld_label"><strong>Highlights:</strong></label>
+<span class="smalllabel">0</span><span class="output_container"><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><output id="labels_highlight_val" for="labels_highlight" class="fade-init output_3">-</output></span><span class="smalllabel highlight_fld_label">Max</span></span>
+</p>
+
+<fieldset class="form_elements1">
+<legend>Position:</legend>
+<div class="fieldset_contents">
+
+<p class="form_elements">
+Place the <strong>first</strong> labels:
+<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_before" value="before" onchange="process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the node</label></span>
+<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the node</label></span>
+</p>
+
+<p class="form_elements text_center">
+<label for="labelposition_breakpoint">Place labels on the <strong>opposite side</strong> starting at:</label><br />
+<span class="no_wrap" onmouseover="revealVal('labelposition_breakpoint');" onmouseout="fadeVal('labelposition_breakpoint');">
+<span class="no_wrap">Stage 2</span><span class="output_container"><input id="labelposition_breakpoint" class="slider_medium" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); process_sankey();" onchange="process_sankey();" list="tick-stages"><output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_12">-</output></span><span>(Never)</span>
+</span>
+</p>
+</div>
+</fieldset>
+
+<p class="form_elements2">
+<strong>Face:</strong>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
+
+&nbsp;
+
+<span class="no_wrap" onmouseover="revealVal('labelname_weight');" onmouseout="fadeVal('labelname_weight');"><label for="labelname_weight"><strong>Style:</strong></label>
+<span class="smalllabel font_light">Light</span><span class="output_container"><input id="labelname_weight" class="slider_xsmall" type="range" min="100" max="700" step="300" value="400" list="tick400" onfocus="revealVal('labelname_weight');" onblur="fadeVal('labelname_weight');" oninput="updateOutput('labelname_weight'); process_sankey();" onchange="process_sankey();"><output id="labelname_weight_val" for="labelname_weight" class="fade-init output_6">-</output></span><span class="smalllabel font_bolder">Bold</span>
+</span>
+</p>
+
+<fieldset class="form_elements1">
+<legend>Units:</legend>
+<div class="fieldset_contents">
+<span class="no_wrap"><label for="value_prefix">Prefix =</label> <input type="text" id="value_prefix" size="3" maxlength="10" onchange="process_sankey();"></span>
+<span class="no_wrap"><label for="value_suffix">Suffix =</label> <input type="text" id="value_suffix" size="5" maxlength="10" onchange="process_sankey();"></span>
+<br />
+<label for="value_format"><strong>Number Format:</strong></label>
+<select id="value_format" onchange="process_sankey();">
+<option value=",." selected="selected">1,000,000.00</option>
+<option value=".,">1.000.000,00</option>
+<option value=" .">1 000 000.00</option>
+<option value=" ,">1 000 000,00</option>
+<option value="X.">1000000.00</option>
+<option value="X,">1000000,00</option>
+</select>
+</div>
+</fieldset>
+</div> <!-- End LABELS -->
+
 <!-- NODES -->
 
 <h2 class="ui_head" onclick="togglePanel('node_options');">
@@ -224,7 +317,9 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 </div>
 
 </fieldset>
-</div>
+</div> <!-- End NODES -->
+
+<!-- FLOWS -->
 
 <h2 class="ui_head" onclick="togglePanel('flow_options');">
 <span id="flow_options_indicator" class="indicator">&ndash;</span>
@@ -254,104 +349,8 @@ Use <input name="flow_inheritfrom" type="radio" id="flow_inherit_none" value="no
 <br />
 <span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_outside_in" value="outside-in" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_inherit_outside_in">the outermost nodes (flowing in)</label></span>
 </div>
-
 </fieldset>
-
-</div>
-
-<!-- LABELS -->
-
-<datalist id="tick400"><option value="400"></option></datalist>
-<datalist id="tick-stages">
-<option value="2"></option><option value="3"></option>
-<option value="4"></option><option value="5"></option>
-<option value="6"></option><option value="7"></option>
-<option value="8"></option><option value="9"></option>
-<option value="10"></option><option value="11"></option>
-<option value="12"></option><option value="13"></option>
-<option value="14"></option><option value="15"></option>
-</datalist>
-
-<h2 class="ui_head" onclick="togglePanel('label_options');">
-<span id="label_options_indicator" class="indicator">+</span>
-Labels &amp; Units<span id="label_options_hint">...</span></h2>
-
-<div id="label_options" class="form_chunk" style="display: none;">
-<p class="form_elements1">
-<span><input type="checkbox" id="labelname_appears" value="1" onchange="process_sankey();" checked="checked">
-<label for="labelname_appears" class="ropt">Show labels</label> <small class="rnote">(hide to apply your own text to the graph)</small></span>
-<br />
-
-&nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_appears" value="1" onchange="process_sankey();" checked="checked">
-<label for="labelvalue_appears" class="ropt">Show Node totals as part of labels</label></span>
-<br />
-
-&nbsp;&nbsp;&nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_fullprecision" value="1" onchange="process_sankey();" checked="checked">
-<label for="labelvalue_fullprecision" class="ropt">Show trailing zeroes <small>(best for currency)</small></label></span>
-<br />
-</p>
-
-<p class="form_elements2">
-<label for="labelname_size"><strong>Size:</strong></label>
-<span class="no_wrap"><input id="labelname_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span>
-<input type="color" id="labels_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
-
-<span class="no_wrap spaced_label" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
-<label for="labels_highlight" class="highlight_fld_label"><strong>Highlights:</strong></label>
-<span class="smalllabel">0</span><span class="output_container"><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><output id="labels_highlight_val" for="labels_highlight" class="fade-init output_3">-</output></span><span class="smalllabel highlight_fld_label">Max</span></span>
-</p>
-
-<fieldset class="form_elements1">
-<legend>Position:</legend>
-<div class="fieldset_contents">
-
-<p class="form_elements">
-Place the <strong>first</strong> labels:
-<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_before" value="before" onchange="process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the node</label></span>
-<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the node</label></span>
-</p>
-
-<p class="form_elements text_center">
-<label for="labelposition_breakpoint">Place labels on the <strong>opposite side</strong> starting at:</label><br />
-<span class="no_wrap" onmouseover="revealVal('labelposition_breakpoint');" onmouseout="fadeVal('labelposition_breakpoint');">
-<span class="no_wrap">Stage 2</span><span class="output_container"><input id="labelposition_breakpoint" class="slider_medium" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); process_sankey();" onchange="process_sankey();" list="tick-stages"><output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_12">-</output></span><span>(Never)</span>
-</span>
-</p>
-</div>
-</fieldset>
-
-<p class="form_elements2">
-<strong>Face:</strong>
-<span class="no_wrap"><input name="labels_fontface" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
-<span class="no_wrap"><input name="labels_fontface" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
-<span class="no_wrap"><input name="labels_fontface" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
-
-&nbsp;
-
-<span class="no_wrap" onmouseover="revealVal('labelname_weight');" onmouseout="fadeVal('labelname_weight');"><label for="labelname_weight"><strong>Style:</strong></label>
-<span class="smalllabel font_light">Light</span><span class="output_container"><input id="labelname_weight" class="slider_xsmall" type="range" min="100" max="700" step="300" value="400" list="tick400" onfocus="revealVal('labelname_weight');" onblur="fadeVal('labelname_weight');" oninput="updateOutput('labelname_weight'); process_sankey();" onchange="process_sankey();"><output id="labelname_weight_val" for="labelname_weight" class="fade-init output_6">-</output></span><span class="smalllabel font_bolder">Bold</span>
-</span>
-</p>
-
-<fieldset class="form_elements1">
-<legend>Units:</legend>
-<div class="fieldset_contents">
-<span class="no_wrap"><label for="value_prefix">Prefix =</label> <input type="text" id="value_prefix" size="3" maxlength="10" onchange="process_sankey();"></span>
-<span class="no_wrap"><label for="value_suffix">Suffix =</label> <input type="text" id="value_suffix" size="5" maxlength="10" onchange="process_sankey();"></span>
-<br />
-<label for="value_format"><strong>Number Format:</strong></label>
-<select id="value_format" onchange="process_sankey();">
-<option value=",." selected="selected">1,000,000.00</option>
-<option value=".,">1.000.000,00</option>
-<option value=" .">1 000 000.00</option>
-<option value=" ,">1 000 000,00</option>
-<option value="X.">1000000.00</option>
-<option value="X,">1000000,00</option>
-</select>
-</div>
-</fieldset>
-
-</div>
+</div> <!-- End FLOWS -->
 
 <!-- LAYOUT OPTIONS -->
 
@@ -401,11 +400,11 @@ Diagram Scales match as closely as possible.
 
 </div>
 
-</div>
+</div> <!-- End LAYOUT -->
 
 </td>
 </tr>
-</table>
+</table> <!-- End Left Column -->
 
 </td><td id="grapharea">
 <!-- EXPORT -->
@@ -542,7 +541,7 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 </div>
 </td></tr>
 </table>
-</td></tr></table>
+</td></tr></table> <!-- End SKM Form -->
 </form>
 
 </div>
