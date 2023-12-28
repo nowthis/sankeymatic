@@ -89,11 +89,10 @@ output {
 
 /* If there are tick (list) marks, they move the hint text down.
    This adjusts it back upward. */
-/* input[list] + span + output, */
-span + span > input[list] + output { top: -2.2em; }
+span > span + span.output_container > input[list] + output { top: -2.2em; }
 
-/* If we're in an hstack with <div> labels, tick geometry works differently */
-div + span > input[list] + output { top: -1.3em; }
+/* If we're in a <div>, tick geometry works differently: */
+div > span.output_container > input[list] + output { top: -1.3em; }
 
 /* firefox has a very different idea of the slider size; compensate here: */
 @supports  (-moz-appearance:none) {
@@ -193,10 +192,23 @@ input[type="range"]:active::-webkit-slider-runnable-track {
   justify-content: center;
 }
 
+.gap-small { gap: 0.5em; }
+
 .align-start { align-items: start; }
 .align-center { align-items: center; }
 .space-between { justify-content: space-between; }
 .space-around { justify-content: space-around; }
+.justify-center { justify-content: center; }
+
+
+.b-divider {
+  padding-bottom: 0.5em;
+  border-bottom: var(--border-light);
+}
+
+.b-pad { padding-bottom: 0.5em; }
+.t-pad { padding-top: 0.5em; }
+.l-pad { padding-left: 0.5em; }
 
 a {
   color: var(--medium-blue);
@@ -931,6 +943,36 @@ hr.ad_divider { border-top: 4px double var(--medium-blue); }
 }
 
 .footer .callout-container { background-color: var(--nav-level-1-bg); }
+
+details {
+  margin-block-start: 0.25em;
+  margin-block-end: 0.5em;
+  margin-inline: 0.5em;
+}
+
+details > summary {
+  padding: 0.25em 0.5em;
+  cursor: pointer;
+  border: var(--border-dotted);
+}
+
+details > div {
+  padding: 0.5em;
+  border: var(--border-light);
+  border-top: none;
+}
+
+.form_chunk details,
+.form_chunk details > summary,
+.form_elements1 details,
+.form_elements1 details > summary {
+  background-color: var(--bg-pale);
+}
+
+.form_chunk details[open] > summary,
+.form_elements1 details[open] > summary {
+  background-color: var(--bg-light);
+}
 
 /* media query land */
 

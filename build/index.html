@@ -143,7 +143,7 @@ Budget [160] Other Necessities #0F0
 
 <h2 class="ui_head" onclick="togglePanel('label_options');">
 <span id="label_options_indicator" class="indicator">+</span>
-Labels &amp; Units<span id="label_options_hint">...</span></h2>
+Labels<span id="label_options_hint">...</span></h2>
 
 <div id="label_options" class="form_chunk" style="display: none;">
 <p class="form_elements1">
@@ -153,10 +153,6 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 
 &nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_appears" value="1" onchange="process_sankey();" checked="checked">
 <label for="labelvalue_appears" class="ropt">Show Node totals as part of labels</label></span>
-<br />
-
-&nbsp;&nbsp;&nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_fullprecision" value="1" onchange="process_sankey();" checked="checked">
-<label for="labelvalue_fullprecision" class="ropt">Show trailing zeroes <small>(best for currency)</small></label></span>
 <br />
 </p>
 
@@ -174,23 +170,26 @@ Labels &amp; Units<span id="label_options_hint">...</span></h2>
 <legend>Position:</legend>
 <div class="fieldset_contents">
 
-<p class="form_elements">
-Place the <strong>first</strong> labels:
-<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_before" value="before" onchange="process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the node</label></span>
-<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the node</label></span>
-</p>
+<div class="hs align-center justify-center gap-small t-pad b-divider">
+<span class="text_right">Place labels for<br /> the <strong>first stage</strong>:</span>
+<div class="vs">
+<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_before" value="before" onchange="process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the Nodes</label></span>
 
-<p class="form_elements text_center">
-<label for="labelposition_breakpoint">Place labels on the <strong>opposite side</strong> starting at:</label><br />
-<span class="no_wrap" onmouseover="revealVal('labelposition_breakpoint');" onmouseout="fadeVal('labelposition_breakpoint');">
-<span class="no_wrap">Stage 2</span><span class="output_container"><input id="labelposition_breakpoint" class="slider_medium" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); process_sankey();" onchange="process_sankey();" list="tick-stages"><output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_12">-</output></span><span>(Never)</span>
-</span>
-</p>
+<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the Nodes</label></span>
+</div>
+</div>
+
+<div class="vs align-center justify-center text_center" onmouseover="revealVal('labelposition_breakpoint');" onmouseout="fadeVal('labelposition_breakpoint');">
+<label for="labelposition_breakpoint" style="line-height: 2;">Place labels on the <strong>opposite side</strong> starting at:</label>
+<div class="hs align-center justify-center gap-small">
+<span class="no_wrap">Stage <strong>2</strong></span><span class="output_container"><input id="labelposition_breakpoint" class="slider_medium" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); process_sankey();" onchange="process_sankey();" list="tick-stages"><output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_12">-</output></span><span>(Never)</span>
+</div>
+</div>
 </div>
 </fieldset>
 
 <p class="form_elements2">
-<strong>Face:</strong>
+<strong>Font:</strong>
 <span class="no_wrap"><input name="labels_fontface" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
 <span class="no_wrap"><input name="labels_fontface" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
 <span class="no_wrap"><input name="labels_fontface" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
@@ -202,13 +201,15 @@ Place the <strong>first</strong> labels:
 </span>
 </p>
 
-<fieldset class="form_elements1">
-<legend>Units:</legend>
-<div class="fieldset_contents">
-<span class="no_wrap"><label for="value_prefix">Prefix =</label> <input type="text" id="value_prefix" size="3" maxlength="10" onchange="process_sankey();"></span>
-<span class="no_wrap"><label for="value_suffix">Suffix =</label> <input type="text" id="value_suffix" size="5" maxlength="10" onchange="process_sankey();"></span>
-<br />
-<label for="value_format"><strong>Number Format:</strong></label>
+<details><summary><strong>Number Format</strong></summary>
+<div class="hs align-center gap-small space-around">
+<div class="vs gap-small">
+<span><label for="value_prefix">Prefix:</label> <input type="text" id="value_prefix" size="4" maxlength="10" onchange="process_sankey();"></span>
+<span><label for="value_suffix">Suffix:</label> <input type="text" id="value_suffix" size="4" maxlength="10" onchange="process_sankey();"></span>
+</div>
+
+<div class="text_center">
+<label for="value_format">Format:</label>
 <select id="value_format" onchange="process_sankey();">
 <option value=",." selected="selected">1,000,000.00</option>
 <option value=".,">1.000.000,00</option>
@@ -217,8 +218,12 @@ Place the <strong>first</strong> labels:
 <option value="X.">1000000.00</option>
 <option value="X,">1000000,00</option>
 </select>
+<br />
+<span><input type="checkbox" id="labelvalue_fullprecision" value="1" onchange="process_sankey();" checked="checked">
+<label for="labelvalue_fullprecision" class="ropt">Show trailing 0s <small>(best for currency)</small></label></span>
 </div>
-</fieldset>
+</div>
+</details> <!-- End Number Format -->
 </div> <!-- End LABELS -->
 
 <!-- NODES -->
@@ -252,7 +257,7 @@ Nodes<span id="node_options_hint">:</span></h2>
 </p>
 
 <fieldset class="form_elements1">
-<legend>Default Node Colors:</legend>
+<legend>Default Node Colors</legend>
 <div class="fieldset_contents">
 Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onchange="process_sankey();" /><label for="node_theme_none" class="ropt">one color:</label>
 <input type="color" id="node_color" title="Single Node Color" size="7" maxlength="7" value="#888888" onchange="checkRadio('node_theme_none'); process_sankey();"> or a Theme:<br />
@@ -337,7 +342,7 @@ Flows<span id="flow_options_hint">:</span></h2>
 </p>
 
 <fieldset class="form_elements2">
-<legend>Default Flow Colors:</legend>
+<legend>Default Flow Colors</legend>
 
 <div class="fieldset_contents">
 
