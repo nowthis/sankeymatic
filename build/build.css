@@ -43,6 +43,21 @@ body {
   margin: 0;
 }
 
+/* items for screen readers which do not need to be visible: */
+.sr-only {
+  border: 0;
+  clip: rect(1px, 1px, 1px, 1px);
+  -webkit-clip-path: inset(50%);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  margin: -1px;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  white-space: nowrap;
+}
+
 .smalllabel { font-size: smaller; }
 
 .grid_entire_row {
@@ -193,9 +208,11 @@ input[type="range"]:active::-webkit-slider-runnable-track {
 }
 
 .gap-small { gap: 0.5em; }
+.gap-medium { gap: 1em; }
 
 .align-start { align-items: start; }
 .align-center { align-items: center; }
+.align-baseline { align-items: baseline; }
 .space-between { justify-content: space-between; }
 .space-around { justify-content: space-around; }
 .justify-center { justify-content: center; }

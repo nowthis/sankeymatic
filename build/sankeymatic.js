@@ -83,6 +83,7 @@ glob.updateOutput = (fld) => {
       labelname_weight: 'font',
       labels_highlight: '.2',
       labelposition_breakpoint: 'breakpoint',
+      labelvalue_weight: 'font',
     },
     fontWeights = { 100: 'Light', 400: 'Normal', 700: 'Bold' };
   switch (formats[fld]) {
@@ -735,22 +736,63 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .attr('text-anchor', 'middle')
     .attr('opacity', '0') // Keep all this invisible...
     .attr('font-family', cfg.labels_fontface)
-    .attr('font-size', `${cfg.labelname_size}px`)
-    .attr('font-weight', cfg.labelname_weight);
+    .attr('font-size', `${cfg.labelname_size}px`);
   scratchRoot.selectAll('*').remove(); // Clear out any past items
 
-  // measureText(string, id):
-  //   Measure an SVG text element, placed at the hidden canvas' midpoint
-  function measureText(txt, id) {
+  /**
+   * Add <tspan> elements to an existing SVG <text> node
+   * @param {*} d3selection
+   * @param {Object[]} textObjs
+   * @param {string} textObjs[].txt
+   * @param {number} textObjs[].size
+   * @param {number} textObjs[].weight
+   */
+  function addTSpans(d3selection, textObjs) {
+    textObjs.forEach((tspan) => {
+      d3selection.append('tspan')
+        .attr('font-weight', tspan.weight)
+        .attr('font-size', `${ep(tspan.size)}px`)
+        .text(tspan.txt);
+      });
+  }
+
+  /**
+   * @typedef {Object} SVGDimensions
+   * @property {number} w - width
+   * @property {number} h - height
+   */
+  /**
+   * Set up and measure an SVG <text> element, placed at the hidden canvas'
+   * midpoint. The text element may be assembled from multiple spans.
+   * @param {Object[]} txtList
+   * @param {string} txtList[].txt
+   * @param {?number} txtList[].size
+   * @param {?number} txtList[].weight
+   * @param {string} id
+   * @returns {SVGDimensions} dimensions
+   */
+  function measureSVGText(txtList, id) {
     const txtId = `bb_${id}`, // (bb for 'BoundingBox')
-      txtElement = scratchRoot
+      firstEl = txtList[0],
+      initialSize = firstEl.size ?? cfg.labelname_size,
+      initialWeight = firstEl.weight ?? cfg.labelname_weight,
+      laterSpans = txtList.slice(1),
+      textEl = scratchRoot
         .append('text')
         .attr('id', txtId)
         .attr('x', cfg.size_w / 2)
         .attr('y', cfg.size_h / 2)
-        .text(txt),
-      bb = txtElement.node().getBBox();
-    return { w: bb.width, h: bb.height };
+        .attr('font-weight', initialWeight)
+        .attr('font-size', `${ep(initialSize)}px`)
+        .text(firstEl.txt);
+
+    // Add any remaining pieces so we can get the real size:
+    if (laterSpans.length) {
+      addTSpans(textEl, laterSpans);
+    }
+
+    const totalBB = textEl.node().getBBox();
+    return { w: totalBB.width, h: totalBB.height };
   }
 
   // setUpTextDimensions():
@@ -771,12 +813,12 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     }
 
     // First, how big are an em and an ex in the current font, roughly?
-    const emSize = measureText('m', 'em'),
+    const emSize = measureSVGText([{ txt: 'm' }], 'em'),
       boundingBoxH = emSize.h, // (same for all characters)
       emW = emSize.w,
       // The WIDTH of an 'x' is a crude estimate of the x-HEIGHT, but
       // it's what we have for now:
-      exH = measureText('x', 'ex').w,
+      exH = measureSVGText([{ txt: 'x' }], 'ex').w,
       // Firefox has unique SVG measurements in 2022, so we look for it:
       browserKey = isFirefox() ? 'firefox' : '*',
       metrics
@@ -827,7 +869,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     glob.resetMaxBreakpoint(newMax);
     // If the stage count has become lower than the breakpoint value, OR
     // if the stage count has increased but the old 'never' value was chosen,
-    // let's adjust the slider's value to be the new 'never' value:
+    // we also need to adjust the slider's value to be the new 'never' value:
     if (cfg.labelposition_breakpoint > newMax
       || cfg.labelposition_breakpoint === oldMax) {
       el(breakpointField).value = newMax;
@@ -847,23 +889,48 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     return !i.isAShadow || cfg.internal_revealshadows;
   }
 
-  if (cfg.labelname_appears) {
-    // Set up 'labelText' for all the Nodes. (This is done earlier than
-    // it used to be, but we need to know now for the sake of layout):
+  // Make the list of all the label pieces we'll need to display:
+  function getLabelPieces(n) {
+    const overallSize = cfg.labelname_size,
+      nameObj = {
+        txt: n.name,
+        weight: cfg.labelname_weight,
+        size: overallSize,
+      },
+      valObj = {
+        txt: withUnits(n.value),
+        weight: cfg.labelvalue_weight,
+        size: overallSize,
+      };
+    if (!cfg.labelvalue_appears) { return [nameObj]; }
+    if (!cfg.labelname_appears) { return [valObj]; }
+    nameObj.txt += ': ';
+    return [nameObj, valObj];
+  }
+
+  /**
+   * Derives the SVG anchor string for a label
+   * @param {object} n - a Node object.
+   * @returns {string} 'start' or 'end'
+   */
+  function labelAnchor(n) {
+    const bp = cfg.labelposition_breakpoint - 1,
+      anchorAtEnd
+        = cfg.labelposition_first === 'before' ? n.stage < bp : n.stage >= bp;
+    return anchorAtEnd ? 'end' : 'start';
+  }
+
+  // Set up label information for each Node:
+  if (cfg.labelname_appears || cfg.labelvalue_appears) {
     allNodes.filter(shadowFilter)
       .filter((n) => !n.hideLabel)
       .forEach((n) => {
-        n.labelText = cfg.labelvalue_appears
-            ? `${n.name}: ${withUnits(n.value)}` : n.name;
-
-        // Which side of the node will the label be on?
-        const labelBefore
-          = cfg.labelposition_first === 'before'
-            ? n.stage < cfg.labelposition_breakpoint - 1
-            : n.stage >= cfg.labelposition_breakpoint - 1;
+        const id = `label${n.index}`; // label0, label1..
+        n.labelList = getLabelPieces(n);
         n.label = {
-          dom_id: `label${n.index}`, // label0, label1..
-          anchor: labelBefore ? 'end' : 'start',
+          dom_id: id,
+          anchor: labelAnchor(n),
+          bb: measureSVGText(n.labelList, id),
         };
       });
   }
@@ -872,13 +939,13 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   //   Compute the total space required by the widest label in a stage
   function maxLabelWidth(stageArr, labelsBefore) {
     let maxWidth = 0;
-    stageArr.filter((n) => n.labelText)
+    stageArr.filter((n) => n.labelList?.length)
       .forEach((n) => {
-        const labelW
-          = measureText(n.labelText, n.dom_id).w
+        const labelTotalW
+            = n.label.bb.w
             + (labelsBefore ? pad.lblMarginBefore : pad.lblMarginAfter)
             + pad.outer;
-        maxWidth = Math.max(maxWidth, labelW);
+        maxWidth = Math.max(maxWidth, labelTotalW);
       });
     return maxWidth;
   }
@@ -1016,7 +1083,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       = darkBg ? d3.rgb(n.color).brighter(2) : d3.rgb(n.color).darker(2);
 
     // Set up label presentation values:
-    if (cfg.labelname_appears && !n.hideLabel) {
+    if (n.labelList?.length && !n.hideLabel) {
       // Which side of the node will the label be on?
       const labelBefore = n.label.anchor === 'end';
       n.label.x
@@ -1435,7 +1502,6 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // These font spec defaults apply to all labels within
     .attr('font-family', cfg.labels_fontface)
     .attr('font-size', `${cfg.labelname_size}px`)
-    .attr('font-weight', cfg.labelname_weight)
     .attr('fill', cfg.labels_color);
   if (cfg.meta_mentionsankeymatic) {
     diagLabels.append('text')
@@ -1452,22 +1518,28 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       .text('Made with SankeyMATIC');
   }
 
-  if (cfg.labelname_appears) {
+  if (cfg.labelname_appears || cfg.labelvalue_appears) {
     // Add labels in a distinct layer on the top (so nodes can't block them)
     diagLabels.selectAll()
       .data(allNodes.filter(shadowFilter))
       .enter()
       .filter((n) => !n.hideLabel)
       .append('text')
-      .attr('id', (n) => n.label.dom_id)
-      // Associate this label with its Node using the CSS class:
-      .attr('class', (n) => n.css_class)
-      .attr('text-anchor', (n) => n.label.anchor)
-      .attr('x', (n) => ep(n.label.x))
-      .attr('y', (n) => ep(n.label.y))
-      // Nudge letters down to be vertically centered:
-      .attr('dy', (n) => n.label.dy)
-      .text((n) => n.labelText);
+        .attr('id', (n) => n.label.dom_id)
+        // Associate this label with its Node using the CSS class:
+        .attr('class', (n) => n.css_class)
+        .attr('text-anchor', (n) => n.label.anchor)
+        .attr('x', (n) => ep(n.label.x))
+        .attr('y', (n) => ep(n.label.y))
+        .attr('font-weight', (n) => n.labelList[0].weight)
+        .attr('font-size', (n) => `${ep(n.labelList[0].size)}px`)
+        // Nudge the text to be vertically centered:
+        .attr('dy', (n) => ep(n.label.dy))
+        .text((n) => n.labelList[0].txt)
+      .filter((n) => n.labelList.length > 1)
+      .each(function handleSpans(n) {
+          addTSpans(d3.select(this), n.labelList.slice(1));
+        });
 
     // For any nodes with a label highlight defined, render it:
     allNodes.filter(shadowFilter)

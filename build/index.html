@@ -146,20 +146,40 @@ Budget [160] Other Necessities #0F0
 Labels<span id="label_options_hint">...</span></h2>
 
 <div id="label_options" class="form_chunk" style="display: none;">
-<p class="form_elements1">
+
+<div class="vs b-pad indented">
+
+<div class="hs align-baseline gap-medium">
 <span><input type="checkbox" id="labelname_appears" value="1" onchange="process_sankey();" checked="checked">
-<label for="labelname_appears" class="ropt">Show labels</label> <small class="rnote">(hide to apply your own text to the graph)</small></span>
-<br />
+<label for="labelname_appears" class="ropt">Show <strong>Names</strong></label></span>
 
-&nbsp;&nbsp;<span><input type="checkbox" id="labelvalue_appears" value="1" onchange="process_sankey();" checked="checked">
-<label for="labelvalue_appears" class="ropt">Show Node totals as part of labels</label></span>
-<br />
-</p>
+<span class="no_wrap" onmouseover="revealVal('labelname_weight');" onmouseout="fadeVal('labelname_weight');"><label for="labelname_weight" class="sr-only">Style for Node Names</label>
+<span class="smalllabel font_light">Light</span><span class="output_container"><input id="labelname_weight" class="slider_xsmall" type="range" min="100" max="700" step="300" value="400" list="tick400" onfocus="revealVal('labelname_weight');" onblur="fadeVal('labelname_weight');" oninput="updateOutput('labelname_weight'); process_sankey();" onchange="process_sankey();"><output id="labelname_weight_val" for="labelname_weight" class="fade-init output_6">-</output></span><span class="smalllabel font_bolder">Bold</span></span>
+</div>
 
-<p class="form_elements2">
+<div class="hs align-baseline gap-medium">
+<span><input type="checkbox" id="labelvalue_appears" value="1" onchange="process_sankey();" checked="checked">
+<label for="labelvalue_appears" class="ropt">Show <strong>Values</strong></label></span>
+
+<span class="no_wrap" onmouseover="revealVal('labelvalue_weight');" onmouseout="fadeVal('labelvalue_weight');"><label for="labelvalue_weight" class="sr-only">Style for Node Values</label>
+<span class="smalllabel font_light">Light</span><span class="output_container"><input id="labelvalue_weight" class="slider_xsmall" type="range" min="100" max="700" step="300" value="400" list="tick400" onfocus="revealVal('labelvalue_weight');" onblur="fadeVal('labelvalue_weight');" oninput="updateOutput('labelvalue_weight'); process_sankey();" onchange="process_sankey();"><output id="labelvalue_weight_val" for="labelvalue_weight" class="fade-init output_6">-</output></span><span class="smalllabel font_bolder">Bold</span></span>
+</div>
+</div>
+
+<div class="hs gap-medium indented align-baseline b-pad">
+<span>
+<strong>Font:</strong>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
+<span class="no_wrap"><input name="labels_fontface" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
+</span>
+<span><label for="labels_color"><strong>Color:</strong></label> <input type="color" id="labels_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();"></span>
+</div>
+
+<p class="form_elements2 text_center">
 <label for="labelname_size"><strong>Size:</strong></label>
 <span class="no_wrap"><input id="labelname_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span>
-<input type="color" id="labels_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();">
+
 
 <span class="no_wrap spaced_label" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
 <label for="labels_highlight" class="highlight_fld_label"><strong>Highlights:</strong></label>
@@ -187,19 +207,6 @@ Labels<span id="label_options_hint">...</span></h2>
 </div>
 </div>
 </fieldset>
-
-<p class="form_elements2">
-<strong>Font:</strong>
-<span class="no_wrap"><input name="labels_fontface" type="radio" id="sans_serif" value="sans-serif" checked="checked" onchange="process_sankey();" /><label for="sans_serif" class="ropt font_sans">sans</label></span>
-<span class="no_wrap"><input name="labels_fontface" type="radio" id="serif" value="serif" onchange="process_sankey();" /><label for="serif" class="ropt font_serif">serif</label></span>
-<span class="no_wrap"><input name="labels_fontface" type="radio" id="monospace" value="monospace" onchange="process_sankey();" /><label for="monospace" class="ropt font_mono">mono</label></span>
-
-&nbsp;
-
-<span class="no_wrap" onmouseover="revealVal('labelname_weight');" onmouseout="fadeVal('labelname_weight');"><label for="labelname_weight"><strong>Style:</strong></label>
-<span class="smalllabel font_light">Light</span><span class="output_container"><input id="labelname_weight" class="slider_xsmall" type="range" min="100" max="700" step="300" value="400" list="tick400" onfocus="revealVal('labelname_weight');" onblur="fadeVal('labelname_weight');" oninput="updateOutput('labelname_weight'); process_sankey();" onchange="process_sankey();"><output id="labelname_weight_val" for="labelname_weight" class="fade-init output_6">-</output></span><span class="smalllabel font_bolder">Bold</span>
-</span>
-</p>
 
 <details><summary><strong>Number Format</strong></summary>
 <div class="hs align-center gap-small space-around">
