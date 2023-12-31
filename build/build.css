@@ -102,6 +102,16 @@ output {
   font-variant-numeric: tabular-nums;
 }
 
+code {
+  padding: 0.15em 0.25em;
+  border: var(--border-dotted);
+  background-color: var(--pale-blue-1);
+}
+
+details code {
+  background-color: var(--bg-palest);
+}
+
 /* If there are tick (list) marks, they move the hint text down.
    This adjusts it back upward. */
 span > span + span.output_container > input[list] + output { top: -2.2em; }
@@ -226,6 +236,21 @@ input[type="range"]:active::-webkit-slider-runnable-track {
 .b-pad { padding-bottom: 0.5em; }
 .t-pad { padding-top: 0.5em; }
 .l-pad { padding-left: 0.5em; }
+
+.rrect {
+  border-radius: 0.6em;
+  background-color: var(--bg-pale);
+  border: var(--border-gray);
+}
+
+.arr-option {
+  padding: 0.2em 0.4em;
+  background-color: var(--bg-palest);
+}
+
+.arr-option > input[type="radio"] {
+  margin: 3px;
+}
 
 a {
   color: var(--medium-blue);
@@ -742,6 +767,8 @@ button#save_as_svg:hover {
   padding: 0.25em 0.3em;
   border-radius: 0.5em;
 }
+
+.bg-darker { background-color: var(--bg-medium); }
 
 /* Customize checkable things (radio & checkbox labels):
    Mnemonic: "ropt" = "radio option" */

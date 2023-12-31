@@ -176,15 +176,23 @@ Labels<span id="label_options_hint">...</span></h2>
 <span><label for="labels_color"><strong>Color:</strong></label> <input type="color" id="labels_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();"></span>
 </div>
 
-<p class="form_elements2 text_center">
-<label for="labelname_size"><strong>Size:</strong></label>
-<span class="no_wrap"><input id="labelname_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span>
+<div class="form_elements2 vs gap-small">
+<div class="hs gap-medium align-baseline">
+<div><label for="labelname_size"><strong>Size:</strong></label>
+<span class="no_wrap"><input id="labelname_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span></div>
+<div class="hs gap-small" onmouseover="revealVal('labels_linespacing');" onmouseout="fadeVal('labels_linespacing');">
+<label for="labels_linespacing" id="spacing_fld_label"><strong>Line Spacing:</strong></label>
+<span class="nowrap">
+<span class="smalllabel">Min</span>
+<span class="output_container"><input id="labels_linespacing" class="slider_small" type="range" min="0.0" max="1.0" step="0.05" value="0.2" onfocus="revealVal('labels_linespacing');" onblur="fadeVal('labels_linespacing');" oninput="updateOutput('labels_linespacing'); process_sankey();" onchange="process_sankey();"><output id="labels_linespacing_val" for="labels_linespacing" class="fade-init output_3">-</output></span>
+<span class="smalllabel">Max</span>
+</span>
+</div>
+</div>
 
+<div class="text_center">Add line breaks inside labels using <code>\n</code></div>
+</div>
 
-<span class="no_wrap spaced_label" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
-<label for="labels_highlight" class="highlight_fld_label"><strong>Highlights:</strong></label>
-<span class="smalllabel">0</span><span class="output_container"><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><output id="labels_highlight_val" for="labels_highlight" class="fade-init output_3">-</output></span><span class="smalllabel highlight_fld_label">Max</span></span>
-</p>
 
 <fieldset class="form_elements1">
 <legend>Position:</legend>
@@ -207,6 +215,38 @@ Labels<span id="label_options_hint">...</span></h2>
 </div>
 </div>
 </fieldset>
+
+<details><summary><strong>Arrange Names &amp; Values</strong></summary>
+<div class="vs justify-center align-center gap-small">
+<div class="hs justify-center align-center gap-small b-pad">
+
+<div class="hs align-center gap-small">
+<div class="vs gap-small">
+<div class="hs align-center">
+<input name="labelvalue_position" type="radio" id="labelvalue_after" value="after" onchange="process_sankey();" /><label for="labelvalue_after" class="ropt rrect arr-option">Examples:&nbsp;100</label>
+</div>
+<div class="hs align-center">
+<input name="labelvalue_position" type="radio" id="labelvalue_below" value="below" onchange="process_sankey();" checked="checked" /><label for="labelvalue_below" class="ropt rrect arr-option">Examples<br />100</label>
+</div>
+</div>
+<div class="vs gap-small">
+<div class="hs align-center">
+<input name="labelvalue_position" type="radio" id="labelvalue_before" value="before" onchange="process_sankey();" /><label for="labelvalue_before" class="ropt rrect arr-option">100&nbsp;Examples</label>
+</div>
+<div class="hs align-center">
+<input name="labelvalue_position" type="radio" id="labelvalue_above" value="above" onchange="process_sankey();" /><label for="labelvalue_above" class="ropt rrect arr-option">100<br />Examples</label>
+</div>
+</div>
+</div>
+</div>
+
+<div class="hs gap-medium space-around align-center bg-darker pad-medium" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
+<label for="labels_highlight" class="highlight_fld_label"><strong>Highlights:</strong></label>
+<div><span class="smalllabel">0</span><span class="output_container"><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><output id="labels_highlight_val" for="labels_highlight" class="fade-init output_3">-</output></span><span class="smalllabel highlight_fld_label">Max</span>
+</div>
+</div>
+</div>
+</details> <!-- End Arrange Names & Values -->
 
 <details><summary><strong>Number Format</strong></summary>
 <div class="hs align-center gap-small space-around">

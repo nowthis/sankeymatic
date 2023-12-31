@@ -82,6 +82,7 @@ glob.updateOutput = (fld) => {
       flow_opacity: '.2',
       labelname_weight: 'font',
       labels_highlight: '.2',
+      labels_linespacing: '.2',
       labelposition_breakpoint: 'breakpoint',
       labelvalue_weight: 'font',
     },
@@ -740,59 +741,116 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   scratchRoot.selectAll('*').remove(); // Clear out any past items
 
   /**
-   * Add <tspan> elements to an existing SVG <text> node
-   * @param {*} d3selection
-   * @param {Object[]} textObjs
-   * @param {string} textObjs[].txt
-   * @param {number} textObjs[].size
-   * @param {number} textObjs[].weight
+   * @typedef {(100|400|700)} fontWeight
+   *
+   * All the data needed to render a text span:
+   * @typedef {Object} textFragment
+   * @property {string} txt
+   * @property {number} size - font size
+   * @property {fontWeight} weight
+   * @property {boolean} newLine - Should there be a line break
+   *    preceding this item?
    */
-  function addTSpans(d3selection, textObjs) {
+
+  /**
+   * Add <tspan> elements to an existing SVG <text> node.
+   * Put line breaks of reasonable size between them if needed.
+   * @param {*} d3selection
+   * @param {textFragment[]} textObjs
+   * @param {number} origSize - the size of the text item we are appending to
+   * @param {number} origX - the text item's original X coordinate
+   */
+  function addTSpans(d3selection, textObjs, origSize, origX) {
+    let prevLineMaxSize = origSize;
     textObjs.forEach((tspan) => {
-      d3selection.append('tspan')
-        .attr('font-weight', tspan.weight)
-        .attr('font-size', `${ep(tspan.size)}px`)
-        .text(tspan.txt);
-      });
+      // Each span may or may not want a line break before it:
+      if (tspan.newLine) {
+        // Set up a reasonable spacing given the prior line's maximum font size
+        // compared to the new line's:
+        const lineSpacing
+          = (0.95 + cfg.labels_linespacing)
+            * ((prevLineMaxSize + tspan.size * 3) / 4);
+        d3selection.append('tspan')
+          .attr('x', origX)
+          .attr('dy', ep(lineSpacing))
+          .attr('font-weight', tspan.weight)
+          .attr('font-size', `${tspan.size}px`)
+          .text(tspan.txt);
+        prevLineMaxSize = tspan.size; // reset to the new line's initial size
+      } else {
+        // No new line; just add the new piece in series:
+        d3selection.append('tspan')
+          .attr('font-weight', tspan.weight)
+          .attr('font-size', `${ep(tspan.size)}px`)
+          .text(tspan.txt);
+        prevLineMaxSize = Math.max(prevLineMaxSize, tspan.size);
+      }
+    });
   }
 
   /**
    * @typedef {Object} SVGDimensions
    * @property {number} w - width
    * @property {number} h - height
+   * @property {number} line1h - height of the entire first displayed line of text
    */
+
   /**
    * Set up and measure an SVG <text> element, placed at the hidden canvas'
    * midpoint. The text element may be assembled from multiple spans.
-   * @param {Object[]} txtList
-   * @param {string} txtList[].txt
-   * @param {?number} txtList[].size
-   * @param {?number} txtList[].weight
+   * @param {textFragment[]} txtList
    * @param {string} id
    * @returns {SVGDimensions} dimensions
    */
   function measureSVGText(txtList, id) {
-    const txtId = `bb_${id}`, // (bb for 'BoundingBox')
-      firstEl = txtList[0],
-      initialSize = firstEl.size ?? cfg.labelname_size,
-      initialWeight = firstEl.weight ?? cfg.labelname_weight,
+    const firstEl = txtList[0],
       laterSpans = txtList.slice(1),
+      firstNewLineIndex = laterSpans.findIndex((tspan) => tspan.newLine),
+      line1Weight = firstEl.weight ?? cfg.labelname_weight;
+
+    // A bit of complicated measuring to deal with here.
+    // Note: Either list here may be empty!
+    /** @type {textFragment[]} */
+    let line1Suffixes = [],
+      laterLines = [],
+      /** @type {number} */
+      line1Size = firstEl.size ?? cfg.labelname_size;
+    if (firstNewLineIndex === -1) { // No newlines, only suffixes
+      line1Suffixes = laterSpans;
+    } else { // firstNewLineIndex >= 0
+      line1Suffixes = laterSpans.slice(0, firstNewLineIndex);
+      laterLines = laterSpans.slice(firstNewLineIndex);
+    }
+
+    // Set up the first element:
+    const txtId = `bb_${id}`, // (bb for 'BoundingBox')
+      [xC, yC] = [cfg.size_w / 2, cfg.size_h / 2], // centers
       textEl = scratchRoot
         .append('text')
         .attr('id', txtId)
-        .attr('x', cfg.size_w / 2)
-        .attr('y', cfg.size_h / 2)
-        .attr('font-weight', initialWeight)
-        .attr('font-size', `${ep(initialSize)}px`)
+        .attr('x', xC)
+        .attr('y', yC)
+        .attr('font-weight', line1Weight)
+        .attr('font-size', `${ep(line1Size)}px`)
         .text(firstEl.txt);
 
-    // Add any remaining pieces so we can get the real size:
-    if (laterSpans.length) {
-      addTSpans(textEl, laterSpans);
+    // Add any remaining line1 pieces so we can know line 1's real height:
+    if (line1Suffixes.length) {
+      addTSpans(textEl, line1Suffixes, line1Size, xC);
+      // Update line1Size IF any suffixes were larger:
+      line1Size = Math.max(line1Size, ...line1Suffixes.map((s) => s.size));
     }
+    // Measure this height before we add more lines:
+    const line1height = textEl.node().getBBox().height;
 
-    const totalBB = textEl.node().getBBox();
-    return { w: totalBB.width, h: totalBB.height };
+    if (laterLines.length) { addTSpans(textEl, laterLines, line1Size, xC); }
+    const totalBB = textEl.node().getBBox(); // size after all pieces are added
+
+    return {
+      h: totalBB.height,
+      w: totalBB.width,
+      line1h: line1height,
+    };
   }
 
   // setUpTextDimensions():
@@ -830,6 +888,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         bot: metrics.bot * exH,
         inner: metrics.inner * emW,
         outer: metrics.outer * emW,
+        dyFactor: metrics.dy,
         };
     // Compute the remaining values (which depend on values above).
     // lblMarginAfter = total margin to give a label when it is after a node
@@ -889,23 +948,38 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     return !i.isAShadow || cfg.internal_revealshadows;
   }
 
-  // Make the list of all the label pieces we'll need to display:
+  /**
+   * Given a Node, list all the label pieces we'll need to display.
+   * @param {*} n - Node
+   * @returns {textFragment[]} List of text items
+   */
   function getLabelPieces(n) {
     const overallSize = cfg.labelname_size,
-      nameObj = {
-        txt: n.name,
+      nameParts = String(n.name).split('\\n'), // Use \n for multiline labels
+      nameObjs = nameParts.map((part, i) => ({
+        txt: part,
         weight: cfg.labelname_weight,
         size: overallSize,
-      },
+        newLine: i > 0
+          || (cfg.labelvalue_appears && cfg.labelvalue_position === 'above'),
+      })),
       valObj = {
         txt: withUnits(n.value),
         weight: cfg.labelvalue_weight,
         size: overallSize,
+        newLine: (cfg.labelname_appears && cfg.labelvalue_position === 'below'),
       };
-    if (!cfg.labelvalue_appears) { return [nameObj]; }
+    if (!cfg.labelvalue_appears) { return nameObjs; }
     if (!cfg.labelname_appears) { return [valObj]; }
-    nameObj.txt += ': ';
-    return [nameObj, valObj];
+    switch (cfg.labelvalue_position) {
+      case 'before': // separate the value from the name with 1 space
+        valObj.txt += ' '; // FALLS THROUGH to 'above'
+      case 'above': return [valObj, ...nameObjs];
+      case 'after': // Add a colon just before the value
+        nameObjs[nameObjs.length - 1].txt += ': '; // FALLS THROUGH to 'below'
+      case 'below': return [...nameObjs, valObj];
+      default: return [];
+    }
   }
 
   /**
@@ -942,7 +1016,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     stageArr.filter((n) => n.labelList?.length)
       .forEach((n) => {
         const labelTotalW
-            = n.label.bb.w
+          = n.label.bb.w
             + (labelsBefore ? pad.lblMarginBefore : pad.lblMarginAfter)
             + pad.outer;
         maxWidth = Math.max(maxWidth, labelTotalW);
@@ -1089,7 +1163,9 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       n.label.x
         = n.x + (labelBefore ? -pad.lblMarginBefore : n.dx + pad.lblMarginAfter);
       n.label.y = n.y + n.dy / 2;
-      n.label.dy = pad.dy;
+      n.label.dy
+        = pad.dyFactor * n.label.bb.line1h
+          - (n.label.bb.h - n.label.bb.line1h) / 2;
 
       // Will there be any highlights? If not, n.label.bg will be null:
       if (hlStyle.orig.fill_opacity > 0) {
@@ -1538,7 +1614,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         .text((n) => n.labelList[0].txt)
       .filter((n) => n.labelList.length > 1)
       .each(function handleSpans(n) {
-          addTSpans(d3.select(this), n.labelList.slice(1));
+          addTSpans(d3.select(this), n.labelList.slice(1), n.labelList[0].size, n.label.x);
         });
 
     // For any nodes with a label highlight defined, render it:
