@@ -128,6 +128,9 @@ div > span.output_container > input[list] + output { top: -1.3em; }
 .number_100s { width: 3em; }
 .number_10000s { width: 4.25em; }
 
+/* sometimes we need invisible 0s: */
+.invis { color: var(--bg-pale); }
+
 /* Sizes for various controls: */
 .slider_xxsmall { width: 3em; }
 .slider_xsmall { width: 4.5em; }
@@ -219,6 +222,7 @@ input[type="range"]:active::-webkit-slider-runnable-track {
 
 .gap-small { gap: 0.5em; }
 .gap-medium { gap: 1em; }
+.gap-large { gap: 2em; }
 
 .align-start { align-items: start; }
 .align-center { align-items: center; }
@@ -226,7 +230,6 @@ input[type="range"]:active::-webkit-slider-runnable-track {
 .space-between { justify-content: space-between; }
 .space-around { justify-content: space-around; }
 .justify-center { justify-content: center; }
-
 
 .b-divider {
   padding-bottom: 0.5em;

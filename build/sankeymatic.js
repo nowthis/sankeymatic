@@ -71,10 +71,35 @@ glob.resetMaxBreakpoint = (newMax) => {
 // updateOutput: Called directly from the page.
 // Given a field's name, update the visible value shown to the user.
 glob.updateOutput = (fld) => {
+  /**
+   * Given a whole number from 50-150, add '%' and pad it if needed.
+   * @param {number} pct - number to display as a percentage
+   * @returns {string} formatted string, padded with invisible 0s if needed
+   */
+  function padPercent(pct) {
+    const pctS = String(pct);
+    if (pctS.length === 3) { return `${pctS}%`; }
+    return `<span class="invis">${'0'.repeat(3 - pctS.length)}</span>${pctS}%`;
+  }
+
   const fldVal = elV(fld),
     fldValAsNum = Number(fldVal),
-    oEl = outputFieldEl(fld),
-    formats = {
+    oEl = outputFieldEl(fld);
+
+  // Special handling for relative % ranges. To keep the numbers from jumping
+  // around as you move the slider, we always show 3 digits for each value,
+  // even if one is an invisible 0.
+  if (['labels_magnify', 'labels_relativesize'].includes(fld)) {
+    if (fldValAsNum === 100) {
+      oEl.textContent = 'Same size';
+    } else {
+      oEl.innerHTML
+        = `${padPercent(200 - fldValAsNum)} — ${padPercent(fldValAsNum)}`;
+    }
+    return null;
+  }
+
+  const formats = {
       node_h: '%',
       node_spacing: '%',
       node_opacity: '.2',
@@ -528,6 +553,7 @@ function settingHtoC(hVal, dataType) {
   switch (dataType) {
     case 'whole':
     case 'decimal':
+    case 'integer':
     case 'contained':
     case 'breakpoint':
       return Number(hVal);
@@ -764,6 +790,11 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   /**
    * Add <tspan> elements to an existing SVG <text> node.
    * Put line breaks of reasonable size between them if needed.
+   *
+   * ISSUE (rare, minor): If a later line has a larger font size which occurs
+   *   *after* its first span, we don't catch that here. So the line spacing
+   *   *can* look too small in that case.  However, spacing that according to
+   *   the biggest size can also look awkward. Leaving this as-is for now.
    * @param {*} d3selection
    * @param {textFragment[]} textObjs
    * @param {number} origSize - the size of the text item we are appending to
@@ -809,7 +840,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
    * midpoint. The text element may be assembled from multiple spans.
    * @param {textFragment[]} txtList
    * @param {string} id
-   * @returns {SVGDimensions} dimensions
+   * @returns {SVGDimensions} dimensions - width, height, and line 1's height
    */
   function measureSVGText(txtList, id) {
     const firstEl = txtList[0],
@@ -959,23 +990,29 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 
   /**
    * Given a Node, list all the label pieces we'll need to display.
-   * @param {*} n - Node
+   * Also, scale their sizes according to the user's instructions.
+   * @param {object} n - Node we are making the label for
+   * @param {number} magnification - amount to scale this entire label
    * @returns {textFragment[]} List of text items
    */
-  function getLabelPieces(n) {
-    const overallSize = cfg.labelname_size,
+  function getLabelPieces(n, magnification) {
+    const overallSize = cfg.labelname_size * magnification,
+      // The relative-size values 50 to 150 become -.5 to .5:
+      relativeSizeAdjustment = (cfg.labels_relativesize - 100) / 100,
+      nameSize = overallSize * (1 - relativeSizeAdjustment),
+      valueSize = overallSize * (1 + relativeSizeAdjustment),
       nameParts = String(n.name).split('\\n'), // Use \n for multiline labels
       nameObjs = nameParts.map((part, i) => ({
         txt: part,
         weight: cfg.labelname_weight,
-        size: overallSize,
+        size: nameSize,
         newLine: i > 0
           || (cfg.labelvalue_appears && cfg.labelvalue_position === 'above'),
       })),
       valObj = {
         txt: withUnits(n.value),
         weight: cfg.labelvalue_weight,
-        size: overallSize,
+        size: valueSize,
         newLine: (cfg.labelname_appears && cfg.labelvalue_position === 'below'),
       };
     if (!cfg.labelvalue_appears) { return nameObjs; }
@@ -985,9 +1022,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         valObj.txt += ' '; // FALLS THROUGH to 'above'
       case 'above': return [valObj, ...nameObjs];
       case 'after': // Add a colon just before the value
-        nameObjs[nameObjs.length - 1].txt += ': '; // FALLS THROUGH to 'below'
-      case 'below': return [...nameObjs, valObj];
-      default: return [];
+        nameObjs[nameObjs.length - 1].txt += ': '; // FALLS THROUGH
+      default: return [...nameObjs, valObj]; // 'below'
     }
   }
 
@@ -1018,13 +1054,27 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     }
   }
 
+  // Make a function to easily find a value's place in the overall range of
+  // Node sizes:
+  const [minVal, maxVal] = d3.extent(allNodes, (n) => n.value),
+    nodeScaleFn // returns a Number from 0 to 1:
+      = (v) => (minVal === maxVal ? 1 : (v - minVal) / (maxVal - minVal));
+
   // Set up label information for each Node:
   if (cfg.labelname_appears || cfg.labelvalue_appears) {
     allNodes.filter(shadowFilter)
       .filter((n) => !n.hideLabel)
       .forEach((n) => {
-        const id = `label${n.index}`; // label0, label1..
-        n.labelList = getLabelPieces(n);
+        const totalRange = (Math.abs(cfg.labels_magnify - 100) * 2) / 100,
+          nFactor = nodeScaleFn(n.value),
+          nAbsolutePos = cfg.labels_magnify >= 100 ? nFactor : 1 - nFactor,
+          // Locate this value in the overall range of sizes, then
+          // scoot that range to be centered on 0:
+          nodePositionInRange = nAbsolutePos * totalRange - totalRange / 2,
+          magnifyLabel
+            = cfg.labels_magnify === 100 ? 1 : 1 + nodePositionInRange,
+          id = `label${n.index}`; // label0, label1..
+        n.labelList = getLabelPieces(n, magnifyLabel);
         n.label = {
           dom_id: id,
           anchor: labelAnchor(n),
@@ -1188,7 +1238,9 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         case 'end': n.label.x = n.x - pad.lblMarginBefore; break;
         default: n.label.x = n.x + n.dx / 2;
       }
-      n.label.y = n.y + n.dy / 2;
+      n.label.y = n.y + n.dy / 2; // This is the vcenter of the node
+      // To set the text element's baseline, we have to work with the height
+      // of the first text line in the label:
       n.label.dy
         = pad.dyFactor * n.label.bb.line1h
           - (n.label.bb.h - n.label.bb.line1h) / 2;

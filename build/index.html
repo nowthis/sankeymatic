@@ -130,6 +130,7 @@ Budget [160] Other Necessities #0F0
 
 <!-- LABELS -->
 
+<datalist id="tick100"><option value="100"></option></datalist>
 <datalist id="tick400"><option value="400"></option></datalist>
 <datalist id="tick-align">
 <option value="-1">Before</option>
@@ -181,22 +182,43 @@ Labels<span id="label_options_hint">...</span></h2>
 <span><label for="labels_color"><strong>Color:</strong></label> <input type="color" id="labels_color" size="7" maxlength="7" value="#000000" onchange="process_sankey();"></span>
 </div>
 
-<div class="form_elements2 vs gap-small">
-<div class="hs gap-medium align-baseline">
-<div><label for="labelname_size"><strong>Size:</strong></label>
-<span class="no_wrap"><input id="labelname_size" type="number" class="wholenumber number_100s" min="6" step="1" value="16" onchange="process_sankey();"></span></div>
+<details open><summary><strong>Sizes</strong></summary>
+<div class="vs gap-small align-center">
+<div class="hs align-center justify-center gap-large b-divider">
+<div class="vs align-center">
+<label for="labelname_size"><strong>Base Size:</strong></label>
+<input id="labelname_size" type="number" class="wholenumber number_10s" min="6" step="1" value="16" onchange="process_sankey();"></div>
+
+<div class="vs align-center text_center" onmouseover="revealVal('labels_relativesize');" onmouseout="fadeVal('labels_relativesize');">
+<label for="labels_relativesize" title="Set relative size of Names and Values">Magnify:</label>
+<div class="hs align-center gap-small no_wrap">
+    <div class="align-center"><strong>Names</strong></div>
+    <span class="output_container"><input id="labels_relativesize" class="slider_small" type="range" min="50" max="150" value="110" list="tick100" onfocus="revealVal('labels_relativesize');" onblur="fadeVal('labels_relativesize');" oninput="updateOutput('labels_relativesize'); process_sankey();" onchange="process_sankey();"><output id="labels_relativesize_val" for="labels_relativesize" class="fade-init output_12">-</output></span>
+    <div class="align-center"><strong>Values</strong></div>
+</div>
+</div>
+</div>
+
+<div class="vs align-center justify-center text_center b-divider" onmouseover="revealVal('labels_magnify');" onmouseout="fadeVal('labels_magnify');">
+    <label for="labels_magnify">Show larger labels for:</label>
+    <div class="hs justify-center gap-small no_wrap">
+        <div class="align-center"><strong>Small</strong><br />Amounts</div>
+        <span class="output_container"><input id="labels_magnify" class="slider_medium" type="range" min="50" max="150" value="100" list="tick100" onfocus="revealVal('labels_magnify');" onblur="fadeVal('labels_magnify');" oninput="updateOutput('labels_magnify'); process_sankey();" onchange="process_sankey();"><output id="labels_magnify_val" for="labels_magnify" class="fade-init output_12">-</output></span>
+        <div class="align-center"><strong>Large</strong><br />Amounts</div>
+    </div>
+</div>
+
 <div class="hs gap-small" onmouseover="revealVal('labels_linespacing');" onmouseout="fadeVal('labels_linespacing');">
 <label for="labels_linespacing" id="spacing_fld_label"><strong>Line Spacing:</strong></label>
 <span class="nowrap">
 <span class="smalllabel">Min</span>
-<span class="output_container"><input id="labels_linespacing" class="slider_small" type="range" min="0.0" max="1.0" step="0.05" value="0.2" onfocus="revealVal('labels_linespacing');" onblur="fadeVal('labels_linespacing');" oninput="updateOutput('labels_linespacing'); process_sankey();" onchange="process_sankey();"><output id="labels_linespacing_val" for="labels_linespacing" class="fade-init output_3">-</output></span>
+<span class="output_container"><input id="labels_linespacing" class="slider_medium" type="range" min="0.0" max="1.0" step="0.05" value="0.2" onfocus="revealVal('labels_linespacing');" onblur="fadeVal('labels_linespacing');" oninput="updateOutput('labels_linespacing'); process_sankey();" onchange="process_sankey();"><output id="labels_linespacing_val" for="labels_linespacing" class="fade-init output_3">-</output></span>
 <span class="smalllabel">Max</span>
 </span>
 </div>
-</div>
-
 <div class="text_center">Add line breaks inside labels using <code>\n</code></div>
 </div>
+</details><!-- End Sizes -->
 
 <details><summary><strong>Placement</strong></summary>
 <div>
