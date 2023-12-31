@@ -131,6 +131,11 @@ Budget [160] Other Necessities #0F0
 <!-- LABELS -->
 
 <datalist id="tick400"><option value="400"></option></datalist>
+<datalist id="tick-align">
+<option value="-1">Before</option>
+<option value="0">Centered</option>
+<option value="1">After</option>
+</datalist>
 <datalist id="tick-stages">
 <option value="2"></option><option value="3"></option>
 <option value="4"></option><option value="5"></option>
@@ -193,28 +198,51 @@ Labels<span id="label_options_hint">...</span></h2>
 <div class="text_center">Add line breaks inside labels using <code>\n</code></div>
 </div>
 
+<details><summary><strong>Placement</strong></summary>
+<div>
+<div class="vs align-center">
+<div class="vs gap-small">
+<fieldset class="simple">
+<span class="no_wrap"><input name="labelposition_scheme" type="radio" id="label_scheme_auto" value="auto" onchange="process_sankey();" checked="checked" /><label for="label_scheme_auto" class="ropt"><strong>Automatic</strong></label></span>
+<div class="hs align-center justify-center gap-small l-pad">
+<div class="indented l-pad" style="max-width: 20em;">
+When a Node has an <strong>empty side</strong>, place its label there.
 
-<fieldset class="form_elements1">
-<legend>Position:</legend>
-<div class="fieldset_contents">
+<div class="vs align-center justify-center text_center" onmouseover="revealVal('labelposition_autoalign');" onmouseout="fadeVal('labelposition_autoalign');">
+<label for="labelposition_autoalign" style="line-height: 2;">When neither side is empty, place labels:</label>
+<div class="hs align-center justify-center gap-small">
+<div class="align-center no_wrap"><strong>Before</strong><br />the Node</div>
+<span class="output_container"><input id="labelposition_autoalign" class="slider_medium" type="range" min="-1" max="1" step="1" value="0" onfocus="revealVal('labelposition_autoalign');" onblur="fadeVal('labelposition_autoalign');" oninput="updateOutput('labelposition_autoalign'); checkRadio('label_scheme_auto'); process_sankey();" onchange="checkRadio('label_scheme_auto'); process_sankey();" list="tick-align"><output id="labelposition_autoalign_val" for="labelposition_autoalign" class="fade-init output_6">-</output></span>
+<div class="align-center no_wrap"><strong>After</strong><br />the Node</div>
+</div>
+</div>
+
+</div>
+</div>
+</fieldset>
+<fieldset class="simple">
+<span class="no_wrap"><input name="labelposition_scheme" type="radio" id="label_scheme_perstage" value="per_stage" onchange="process_sankey();" /><label for="label_scheme_perstage" class="ropt"><strong>Per Stage</strong></label></span>
 
 <div class="hs align-center justify-center gap-small t-pad b-divider">
 <span class="text_right">Place labels for<br /> the <strong>first stage</strong>:</span>
 <div class="vs">
-<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_before" value="before" onchange="process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the Nodes</label></span>
+<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_before" value="before" onchange="checkRadio('label_scheme_perstage'); process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the Nodes</label></span>
 
-<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_after" value="after" onchange="process_sankey();" /><label for="label_first_after" class="ropt">After the Nodes</label></span>
+<span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_after" value="after" onchange="checkRadio('label_scheme_perstage'); process_sankey();" /><label for="label_first_after" class="ropt">After the Nodes</label></span>
 </div>
 </div>
 
 <div class="vs align-center justify-center text_center" onmouseover="revealVal('labelposition_breakpoint');" onmouseout="fadeVal('labelposition_breakpoint');">
 <label for="labelposition_breakpoint" style="line-height: 2;">Place labels on the <strong>opposite side</strong> starting at:</label>
 <div class="hs align-center justify-center gap-small">
-<span class="no_wrap">Stage <strong>2</strong></span><span class="output_container"><input id="labelposition_breakpoint" class="slider_medium" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); process_sankey();" onchange="process_sankey();" list="tick-stages"><output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_12">-</output></span><span>(Never)</span>
-</div>
+<span class="no_wrap">Stage <strong>2</strong></span><span class="output_container"><input id="labelposition_breakpoint" class="slider_medium" type="range" min="2" max="4" step="1" value="4" onfocus="revealVal('labelposition_breakpoint');" onblur="fadeVal('labelposition_breakpoint');" oninput="updateOutput('labelposition_breakpoint'); checkRadio('label_scheme_perstage'); process_sankey();" onchange="checkRadio('label_scheme_perstage'); process_sankey();" list="tick-stages"><output id="labelposition_breakpoint_val" for="labelposition_breakpoint" class="fade-init output_12">-</output></span><span>(Never)</span>
 </div>
 </div>
 </fieldset>
+</div>
+</div>
+</div>
+</details> <!-- End Placement -->
 
 <details><summary><strong>Arrange Names &amp; Values</strong></summary>
 <div class="vs justify-center align-center gap-small">
@@ -242,7 +270,7 @@ Labels<span id="label_options_hint">...</span></h2>
 
 <div class="hs gap-medium space-around align-center bg-darker pad-medium" onmouseover="revealVal('labels_highlight');" onmouseout="fadeVal('labels_highlight');">
 <label for="labels_highlight" class="highlight_fld_label"><strong>Highlights:</strong></label>
-<div><span class="smalllabel">0</span><span class="output_container"><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.55" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><output id="labels_highlight_val" for="labels_highlight" class="fade-init output_3">-</output></span><span class="smalllabel highlight_fld_label">Max</span>
+<div><span class="smalllabel">0</span><span class="output_container"><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.75" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><output id="labels_highlight_val" for="labels_highlight" class="fade-init output_3">-</output></span><span class="smalllabel highlight_fld_label">Max</span>
 </div>
 </div>
 </div>
@@ -288,12 +316,12 @@ Nodes<span id="node_options_hint">:</span></h2>
 
 <span class="no_wrap" onmouseover="revealVal('node_spacing');" onmouseout="fadeVal('node_spacing');">
 <label for="node_spacing" class="spaced_label"><strong>Spacing:</strong></label>
-<span class="smalllabel">0</span><span class="output_container"><input id="node_spacing" class="slider_small" type="range" min="0" max="100" step="1" value="85" onfocus="revealVal('node_spacing');" onblur="fadeVal('node_spacing');" oninput="updateOutput('node_spacing'); process_sankey();" onchange="process_sankey();"><output id="node_spacing_val" for="node_spacing" class="fade-init output_4">-</output></span><span class="smalllabel">Max</span></span>
+<span class="smalllabel">0</span><span class="output_container"><input id="node_spacing" class="slider_small" type="range" min="0" max="100" step="1" value="75" onfocus="revealVal('node_spacing');" onblur="fadeVal('node_spacing');" oninput="updateOutput('node_spacing'); process_sankey();" onchange="process_sankey();"><output id="node_spacing_val" for="node_spacing" class="fade-init output_4">-</output></span><span class="smalllabel">Max</span></span>
 </p>
 
 <p class="form_elements2">
 <span class="no_wrap"><label for="node_w"><strong>Width:</strong></label>
-<input id="node_w" type="number" class="wholenumber number_100s" min="0" value="9" step="1" onchange="process_sankey();"></span>
+<input id="node_w" type="number" class="wholenumber number_100s" min="0" value="12" step="1" onchange="process_sankey();"></span>
 
 <span class="no_wrap"><label for="node_border" class="spaced_label"><strong>Border:</strong></label>
 <input id="node_border" type="number" class="wholenumber number_10s" min="0" value="0" step="1" onchange="process_sankey();"></span>

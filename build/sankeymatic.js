@@ -83,9 +83,11 @@ glob.updateOutput = (fld) => {
       labelname_weight: 'font',
       labels_highlight: '.2',
       labels_linespacing: '.2',
+      labelposition_autoalign: 'align',
       labelposition_breakpoint: 'breakpoint',
       labelvalue_weight: 'font',
     },
+    alignLabels = new Map([[-1, 'Before'], [0, 'Centered'], [1, 'After']]),
     fontWeights = { 100: 'Light', 400: 'Normal', 700: 'Bold' };
   switch (formats[fld]) {
     case '|':
@@ -101,6 +103,8 @@ glob.updateOutput = (fld) => {
       break;
     case 'font':
       oEl.textContent = fontWeights[fldValAsNum] ?? fldVal; break;
+    case 'align':
+      oEl.textContent = alignLabels.get(fldValAsNum) ?? fldVal; break;
     default: oEl.textContent = fldVal;
   }
   return null;
@@ -459,6 +463,11 @@ function settingIsValid(sData, hVal, cfg) {
   if (dataType === 'decimal'
       && reDecimal.test(hVal)
       && valueInBounds(valAsNum, [0, 1.0])) {
+    return [true, valAsNum];
+  }
+  if (dataType === 'integer'
+      && reInteger.test(hVal)
+      && valueInBounds(valAsNum, allowList)) {
     return [true, valAsNum];
   }
   if (['whole', 'contained', 'breakpoint'].includes(dataType)
@@ -983,15 +992,30 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   }
 
   /**
-   * Derives the SVG anchor string for a label
+   * @typedef {('start'|'middle'|'end')} SVGAnchorString
+   */
+
+  /**
+   * Derives the SVG anchor string for a label based on the diagram's
+   * labelposition_scheme (which can be 'per_stage' or 'auto').
    * @param {object} n - a Node object.
-   * @returns {string} 'start' or 'end'
+   * @returns {SVGAnchorString}
    */
   function labelAnchor(n) {
-    const bp = cfg.labelposition_breakpoint - 1,
-      anchorAtEnd
-        = cfg.labelposition_first === 'before' ? n.stage < bp : n.stage >= bp;
-    return anchorAtEnd ? 'end' : 'start';
+    if (cfg.labelposition_scheme === 'per_stage') {
+      const bp = cfg.labelposition_breakpoint - 1,
+        anchorAtEnd
+          = cfg.labelposition_first === 'before' ? n.stage < bp : n.stage >= bp;
+      return anchorAtEnd ? 'end' : 'start';
+    }
+    // scheme = 'auto' here. Put the label on the empty side if there is one:
+    if (n.total[IN] === 0) { return 'end'; }
+    if (n.total[OUT] === 0) { return 'start'; }
+    switch (cfg.labelposition_autoalign) {
+      case -1: return 'end';
+      case 1: return 'start';
+      default: return 'middle';
+    }
   }
 
   // Set up label information for each Node:
@@ -1159,9 +1183,11 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // Set up label presentation values:
     if (n.labelList?.length && !n.hideLabel) {
       // Which side of the node will the label be on?
-      const labelBefore = n.label.anchor === 'end';
-      n.label.x
-        = n.x + (labelBefore ? -pad.lblMarginBefore : n.dx + pad.lblMarginAfter);
+      switch (n.label.anchor) {
+        case 'start': n.label.x = n.x + n.dx + pad.lblMarginAfter; break;
+        case 'end': n.label.x = n.x - pad.lblMarginBefore; break;
+        default: n.label.x = n.x + n.dx / 2;
+      }
       n.label.y = n.y + n.dy / 2;
       n.label.dy
         = pad.dyFactor * n.label.bb.line1h
@@ -1172,7 +1198,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         n.label.bg = {
           dom_id: `${n.label.dom_id}_bg`, // label0_bg, label1_bg..
           offset: {
-            x: labelBefore ? -pad.outer : -pad.inner,
+            x: n.label.anchor === 'end' ? -pad.outer : -pad.inner,
             y: -pad.top,
             w: pad.inner + pad.outer,
             h: pad.top + pad.bot,
@@ -2476,7 +2502,7 @@ glob.process_sankey();
  settingsMarker settingsAppliedPrefix
  userDataMarker sourceHeaderPrefix sourceURLLine
  skmSettings colorGray60 userInputsField breakpointField
- reWholeNumber reDecimal reYesNo reYes
+ reWholeNumber reInteger reDecimal reYesNo reYes
  reCommentLine reSettingsValue reSettingsText reNodeLine reFlowLine
  reMoveLine movesMarker
  reFlowTargetWithSuffix reColorPlusOpacity

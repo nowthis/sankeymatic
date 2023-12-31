@@ -1006,6 +1006,11 @@ details > div {
   border-top: none;
 }
 
+fieldset.simple {
+  padding: 0.5em;
+  background-color: var(--bg-palest);
+}
+
 .form_chunk details,
 .form_chunk details > summary,
 .form_elements1 details,
