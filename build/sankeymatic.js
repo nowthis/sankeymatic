@@ -177,7 +177,9 @@ glob.newInputsImportedFrom = null;
  * @param {string} dataSource - where the tool should say the data came from
  */
 function setUpNewInputs(newData, dataSource) {
-  el(userInputsField).value = newData;
+  // Add in settings which the source might lack, to preserve the
+  // original look of older diagrams:
+  el(userInputsField).value = settingsToBackfill + newData;
   // Reset breakpoint values to allow a high one in any imported diagram:
   glob.resetMaxBreakpoint(MAXBREAKPOINT);
   glob.newInputsImportedFrom = dataSource;
@@ -2551,7 +2553,7 @@ glob.process_sankey();
 /* global
  d3 canvg global IN OUT BEFORE AFTER MAXBREAKPOINT
  sampleDiagramRecipes fontMetrics highlightStyles
- settingsMarker settingsAppliedPrefix
+ settingsMarker settingsAppliedPrefix settingsToBackfill
  userDataMarker sourceHeaderPrefix sourceURLLine
  skmSettings colorGray60 userInputsField breakpointField
  reWholeNumber reInteger reDecimal reYesNo reYes

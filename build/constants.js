@@ -108,6 +108,19 @@ const MAXBREAKPOINT = 9999,
   settingsMarker = '// === Settings ===',
   settingsAppliedPrefix = '// \u2713 ', // u2713 = a little check mark
 
+  // If someone is importing/linking a diagram which was made *BEFORE*
+  // the newest settings existed, prefix the incoming source with these
+  // lines so that their diagram will still look like it did when they
+  // made it.
+  // (The trick here is that if their diagram was made AFTER the new
+  // settings appeared, then values for these settings will be present
+  // later in the incoming source data and will override these lines.)
+  settingsToBackfill = `labelvalue position after
+labelposition scheme per_stage
+labels relativesize 100
+ magnify 100
+`,
+
   reNodeLine = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
   reFlowLine = /^(.+)\[([\d\s.+-]+)\](.+)$/,
   reFlowTargetWithSuffix = /^(.+)\s+(#\S+)$/,
