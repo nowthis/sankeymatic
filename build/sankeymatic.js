@@ -36,6 +36,22 @@ glob.togglePanel = (panel) => {
   return null;
 };
 
+/**
+ * Kick off a function after a certain period has passed.
+ * Used to trigger live updates when the user stops typing.
+ * @param {function} callbackFn
+ * @param {number} [waitMilliseconds = 500] Default is 500.
+ * @returns {function}
+ */
+function debounce(callbackFn, waitMilliseconds = 500) {
+  let timeoutID;
+  const delayedFn = function (...params) {
+    if (timeoutID !== undefined) { clearTimeout(timeoutID); }
+    timeoutID = setTimeout(() => callbackFn(...params), waitMilliseconds);
+  };
+  return delayedFn;
+}
+
 function outputFieldEl(fld) { return el(`${fld}_val`); }
 
 // We store the breakpoint which means 'never' here for easy reference.
@@ -55,28 +71,65 @@ glob.resetMaxBreakpoint = (newMax) => {
 // updateOutput: Called directly from the page.
 // Given a field's name, update the visible value shown to the user.
 glob.updateOutput = (fld) => {
+  /**
+   * Given a whole number from 50-150, add '%' and pad it if needed.
+   * @param {number} pct - number to display as a percentage
+   * @returns {string} formatted string, padded with invisible 0s if needed
+   */
+  function padPercent(pct) {
+    const pctS = String(pct);
+    if (pctS.length === 3) { return `${pctS}%`; }
+    return `<span class="invis">${'0'.repeat(3 - pctS.length)}</span>${pctS}%`;
+  }
+
   const fldVal = elV(fld),
-    oEl = outputFieldEl(fld),
-    formats = {
+    fldValAsNum = Number(fldVal),
+    oEl = outputFieldEl(fld);
+
+  // Special handling for relative % ranges. To keep the numbers from jumping
+  // around as you move the slider, we always show 3 digits for each value,
+  // even if one is an invisible 0.
+  if (['labels_magnify', 'labels_relativesize'].includes(fld)) {
+    if (fldValAsNum === 100) {
+      oEl.textContent = 'Same size';
+    } else {
+      oEl.innerHTML
+        = `${padPercent(200 - fldValAsNum)} — ${padPercent(fldValAsNum)}`;
+    }
+    return null;
+  }
+
+  const formats = {
       node_h: '%',
       node_spacing: '%',
       node_opacity: '.2',
       flow_curvature: '|',
       flow_opacity: '.2',
+      labelname_weight: 'font',
       labels_highlight: '.2',
-      labelposition_breakpoint: 'never',
-    };
+      labels_linespacing: '.2',
+      labelposition_autoalign: 'align',
+      labelposition_breakpoint: 'breakpoint',
+      labelvalue_weight: 'font',
+    },
+    alignLabels = new Map([[-1, 'Before'], [0, 'Centered'], [1, 'After']]),
+    fontWeights = { 100: 'Light', 400: 'Normal', 700: 'Bold' };
   switch (formats[fld]) {
     case '|':
       // 0.1 is treated as 0 for curvature. Display that:
-      if (fldVal <= 0.1) { oEl.textContent = '0.00'; break; }
-      // FALLS THROUGH to '.2' format when fldVal > 0.1:
-    case '.2': oEl.textContent = d3.format('.2f')(fldVal); break;
+      if (fldValAsNum <= 0.1) { oEl.textContent = '0.00'; break; }
+      // FALLS THROUGH to '.2' format when fldValAsNum > 0.1:
+    case '.2': oEl.textContent = d3.format('.2f')(fldValAsNum); break;
     case '%': oEl.textContent = `${fldVal}%`; break;
-    case 'never':
-      oEl.textContent
-        = (Number(fldVal) === glob.labelNeverBreakpoint ? '∅' : fldVal);
+    case 'breakpoint':
+      oEl.textContent = fldValAsNum === glob.labelNeverBreakpoint
+            ? 'Never'
+            : `Stage ${fldVal}`;
       break;
+    case 'font':
+      oEl.textContent = fontWeights[fldValAsNum] ?? fldVal; break;
+    case 'align':
+      oEl.textContent = alignLabels.get(fldValAsNum) ?? fldVal; break;
     default: oEl.textContent = fldVal;
   }
   return null;
@@ -101,10 +154,10 @@ glob.fadeVal = (fld) => {
 // isNumeric: borrowed from jQuery/Angular
 function isNumeric(n) { return !Number.isNaN(n - parseFloat(n)); }
 
-// clamp: Ensure a numeric value n is between min and max.
+// clamp: Ensure a value n (if numeric) is between min and max.
 // Default to min if not numeric.
 function clamp(n, min, max) {
-  return isNumeric(n) ? Math.min(Math.max(n, min), max) : min;
+  return isNumeric(n) ? Math.min(Math.max(Number(n), min), max) : min;
 }
 
 // radioRef: get the object which lets you get/set a radio input value:
@@ -124,7 +177,9 @@ glob.newInputsImportedFrom = null;
  * @param {string} dataSource - where the tool should say the data came from
  */
 function setUpNewInputs(newData, dataSource) {
-  el(userInputsField).value = newData;
+  // Add in settings which the source might lack, to preserve the
+  // original look of older diagrams:
+  el(userInputsField).value = settingsToBackfill + newData;
   // Reset breakpoint values to allow a high one in any imported diagram:
   glob.resetMaxBreakpoint(MAXBREAKPOINT);
   glob.newInputsImportedFrom = dataSource;
@@ -437,9 +492,14 @@ function settingIsValid(sData, hVal, cfg) {
       && valueInBounds(valAsNum, [0, 1.0])) {
     return [true, valAsNum];
   }
+  if (dataType === 'integer'
+      && reInteger.test(hVal)
+      && valueInBounds(valAsNum, allowList)) {
+    return [true, valAsNum];
+  }
   if (['whole', 'contained', 'breakpoint'].includes(dataType)
       && reWholeNumber.test(hVal)) {
-    let [minV, maxV] = [0];
+    let [minV, maxV] = [0, 0];
     switch (dataType) {
       case 'whole': [minV, maxV] = allowList; break;
       // Dynamic values (like margins) should be processed after the
@@ -495,6 +555,7 @@ function settingHtoC(hVal, dataType) {
   switch (dataType) {
     case 'whole':
     case 'decimal':
+    case 'integer':
     case 'contained':
     case 'breakpoint':
       return Number(hVal);
@@ -714,22 +775,125 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .attr('text-anchor', 'middle')
     .attr('opacity', '0') // Keep all this invisible...
     .attr('font-family', cfg.labels_fontface)
-    .attr('font-size', `${cfg.labelname_size}px`)
-    .attr('font-weight', cfg.labelname_weight);
+    .attr('font-size', `${cfg.labelname_size}px`);
   scratchRoot.selectAll('*').remove(); // Clear out any past items
 
-  // measureText(string, id):
-  //   Measure an SVG text element, placed at the hidden canvas' midpoint
-  function measureText(txt, id) {
+  /**
+   * @typedef {(100|400|700)} fontWeight
+   *
+   * All the data needed to render a text span:
+   * @typedef {Object} textFragment
+   * @property {string} txt
+   * @property {number} size - font size
+   * @property {fontWeight} weight
+   * @property {boolean} newLine - Should there be a line break
+   *    preceding this item?
+   */
+
+  /**
+   * Add <tspan> elements to an existing SVG <text> node.
+   * Put line breaks of reasonable size between them if needed.
+   *
+   * ISSUE (rare, minor): If a later line has a larger font size which occurs
+   *   *after* its first span, we don't catch that here. So the line spacing
+   *   *can* look too small in that case.  However, spacing that according to
+   *   the biggest size can also look awkward. Leaving this as-is for now.
+   * @param {*} d3selection
+   * @param {textFragment[]} textObjs
+   * @param {number} origSize - the size of the text item we are appending to
+   * @param {number} origX - the text item's original X coordinate
+   */
+  function addTSpans(d3selection, textObjs, origSize, origX) {
+    let prevLineMaxSize = origSize;
+    textObjs.forEach((tspan) => {
+      // Each span may or may not want a line break before it:
+      if (tspan.newLine) {
+        // Set up a reasonable spacing given the prior line's maximum font size
+        // compared to the new line's:
+        const lineSpacing
+          = (0.95 + cfg.labels_linespacing)
+            * ((prevLineMaxSize + tspan.size * 3) / 4);
+        d3selection.append('tspan')
+          .attr('x', origX)
+          .attr('dy', ep(lineSpacing))
+          .attr('font-weight', tspan.weight)
+          .attr('font-size', `${tspan.size}px`)
+          .text(tspan.txt);
+        prevLineMaxSize = tspan.size; // reset to the new line's initial size
+      } else {
+        // No new line; just add the new piece in series:
+        d3selection.append('tspan')
+          .attr('font-weight', tspan.weight)
+          .attr('font-size', `${ep(tspan.size)}px`)
+          .text(tspan.txt);
+        prevLineMaxSize = Math.max(prevLineMaxSize, tspan.size);
+      }
+    });
+  }
+
+  /**
+   * @typedef {Object} SVGDimensions
+   * @property {number} w - width
+   * @property {number} h - height
+   * @property {number} line1h - height of the entire first displayed line of text
+   */
+
+  /**
+   * Set up and measure an SVG <text> element, placed at the hidden canvas'
+   * midpoint. The text element may be assembled from multiple spans.
+   * @param {textFragment[]} txtList
+   * @param {string} id
+   * @returns {SVGDimensions} dimensions - width, height, and line 1's height
+   */
+  function measureSVGText(txtList, id) {
+    const firstEl = txtList[0],
+      laterSpans = txtList.slice(1),
+      firstNewLineIndex = laterSpans.findIndex((tspan) => tspan.newLine),
+      line1Weight = firstEl.weight ?? cfg.labelname_weight;
+
+    // A bit of complicated measuring to deal with here.
+    // Note: Either list here may be empty!
+    /** @type {textFragment[]} */
+    let line1Suffixes = [],
+      laterLines = [],
+      /** @type {number} */
+      line1Size = firstEl.size ?? cfg.labelname_size;
+    if (firstNewLineIndex === -1) { // No newlines, only suffixes
+      line1Suffixes = laterSpans;
+    } else { // firstNewLineIndex >= 0
+      line1Suffixes = laterSpans.slice(0, firstNewLineIndex);
+      laterLines = laterSpans.slice(firstNewLineIndex);
+    }
+
+    // Set up the first element:
     const txtId = `bb_${id}`, // (bb for 'BoundingBox')
-      txtElement = scratchRoot
+      [xC, yC] = [cfg.size_w / 2, cfg.size_h / 2], // centers
+      textEl = scratchRoot
         .append('text')
         .attr('id', txtId)
-        .attr('x', cfg.size_w / 2)
-        .attr('y', cfg.size_h / 2)
-        .text(txt),
-      bb = txtElement.node().getBBox();
-    return { w: bb.width, h: bb.height };
+        .attr('x', xC)
+        .attr('y', yC)
+        .attr('font-weight', line1Weight)
+        .attr('font-size', `${ep(line1Size)}px`)
+        .text(firstEl.txt);
+
+    // Add any remaining line1 pieces so we can know line 1's real height:
+    if (line1Suffixes.length) {
+      addTSpans(textEl, line1Suffixes, line1Size, xC);
+      // Update line1Size IF any suffixes were larger:
+      line1Size = Math.max(line1Size, ...line1Suffixes.map((s) => s.size));
+    }
+    // Measure this height before we add more lines:
+    const line1height = textEl.node().getBBox().height;
+
+    if (laterLines.length) { addTSpans(textEl, laterLines, line1Size, xC); }
+    const totalBB = textEl.node().getBBox(); // size after all pieces are added
+
+    return {
+      h: totalBB.height,
+      w: totalBB.width,
+      line1h: line1height,
+    };
   }
 
   // setUpTextDimensions():
@@ -750,12 +914,12 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     }
 
     // First, how big are an em and an ex in the current font, roughly?
-    const emSize = measureText('m', 'em'),
+    const emSize = measureSVGText([{ txt: 'm' }], 'em'),
       boundingBoxH = emSize.h, // (same for all characters)
       emW = emSize.w,
       // The WIDTH of an 'x' is a crude estimate of the x-HEIGHT, but
       // it's what we have for now:
-      exH = measureText('x', 'ex').w,
+      exH = measureSVGText([{ txt: 'x' }], 'ex').w,
       // Firefox has unique SVG measurements in 2022, so we look for it:
       browserKey = isFirefox() ? 'firefox' : '*',
       metrics
@@ -767,6 +931,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         bot: metrics.bot * exH,
         inner: metrics.inner * emW,
         outer: metrics.outer * emW,
+        dyFactor: metrics.dy,
         };
     // Compute the remaining values (which depend on values above).
     // lblMarginAfter = total margin to give a label when it is after a node
@@ -806,7 +971,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     glob.resetMaxBreakpoint(newMax);
     // If the stage count has become lower than the breakpoint value, OR
     // if the stage count has increased but the old 'never' value was chosen,
-    // let's adjust the slider's value to be the new 'never' value:
+    // we also need to adjust the slider's value to be the new 'never' value:
     if (cfg.labelposition_breakpoint > newMax
       || cfg.labelposition_breakpoint === oldMax) {
       el(breakpointField).value = newMax;
@@ -826,23 +991,97 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     return !i.isAShadow || cfg.internal_revealshadows;
   }
 
-  if (cfg.labelname_appears) {
-    // Set up 'labelText' for all the Nodes. (This is done earlier than
-    // it used to be, but we need to know now for the sake of layout):
+  /**
+   * Given a Node, list all the label pieces we'll need to display.
+   * Also, scale their sizes according to the user's instructions.
+   * @param {object} n - Node we are making the label for
+   * @param {number} magnification - amount to scale this entire label
+   * @returns {textFragment[]} List of text items
+   */
+  function getLabelPieces(n, magnification) {
+    const overallSize = cfg.labelname_size * magnification,
+      // The relative-size values 50 to 150 become -.5 to .5:
+      relativeSizeAdjustment = (cfg.labels_relativesize - 100) / 100,
+      nameSize = overallSize * (1 - relativeSizeAdjustment),
+      valueSize = overallSize * (1 + relativeSizeAdjustment),
+      nameParts = String(n.name).split('\\n'), // Use \n for multiline labels
+      nameObjs = nameParts.map((part, i) => ({
+        txt: part,
+        weight: cfg.labelname_weight,
+        size: nameSize,
+        newLine: i > 0
+          || (cfg.labelvalue_appears && cfg.labelvalue_position === 'above'),
+      })),
+      valObj = {
+        txt: withUnits(n.value),
+        weight: cfg.labelvalue_weight,
+        size: valueSize,
+        newLine: (cfg.labelname_appears && cfg.labelvalue_position === 'below'),
+      };
+    if (!cfg.labelvalue_appears) { return nameObjs; }
+    if (!cfg.labelname_appears) { return [valObj]; }
+    switch (cfg.labelvalue_position) {
+      case 'before': // separate the value from the name with 1 space
+        valObj.txt += ' '; // FALLS THROUGH to 'above'
+      case 'above': return [valObj, ...nameObjs];
+      case 'after': // Add a colon just before the value
+        nameObjs[nameObjs.length - 1].txt += ': '; // FALLS THROUGH
+      default: return [...nameObjs, valObj]; // 'below'
+    }
+  }
+
+  /**
+   * @typedef {('start'|'middle'|'end')} SVGAnchorString
+   */
+
+  /**
+   * Derives the SVG anchor string for a label based on the diagram's
+   * labelposition_scheme (which can be 'per_stage' or 'auto').
+   * @param {object} n - a Node object.
+   * @returns {SVGAnchorString}
+   */
+  function labelAnchor(n) {
+    if (cfg.labelposition_scheme === 'per_stage') {
+      const bp = cfg.labelposition_breakpoint - 1,
+        anchorAtEnd
+          = cfg.labelposition_first === 'before' ? n.stage < bp : n.stage >= bp;
+      return anchorAtEnd ? 'end' : 'start';
+    }
+    // scheme = 'auto' here. Put the label on the empty side if there is one:
+    if (n.total[IN] === 0) { return 'end'; }
+    if (n.total[OUT] === 0) { return 'start'; }
+    switch (cfg.labelposition_autoalign) {
+      case -1: return 'end';
+      case 1: return 'start';
+      default: return 'middle';
+    }
+  }
+
+  // Make a function to easily find a value's place in the overall range of
+  // Node sizes:
+  const [minVal, maxVal] = d3.extent(allNodes, (n) => n.value),
+    nodeScaleFn // returns a Number from 0 to 1:
+      = (v) => (minVal === maxVal ? 1 : (v - minVal) / (maxVal - minVal));
+
+  // Set up label information for each Node:
+  if (cfg.labelname_appears || cfg.labelvalue_appears) {
     allNodes.filter(shadowFilter)
       .filter((n) => !n.hideLabel)
       .forEach((n) => {
-        n.labelText = cfg.labelvalue_appears
-            ? `${n.name}: ${withUnits(n.value)}` : n.name;
-
-        // Which side of the node will the label be on?
-        const labelBefore
-          = cfg.labelposition_first === 'before'
-            ? n.stage < cfg.labelposition_breakpoint - 1
-            : n.stage >= cfg.labelposition_breakpoint - 1;
+        const totalRange = (Math.abs(cfg.labels_magnify - 100) * 2) / 100,
+          nFactor = nodeScaleFn(n.value),
+          nAbsolutePos = cfg.labels_magnify >= 100 ? nFactor : 1 - nFactor,
+          // Locate this value in the overall range of sizes, then
+          // scoot that range to be centered on 0:
+          nodePositionInRange = nAbsolutePos * totalRange - totalRange / 2,
+          magnifyLabel
+            = cfg.labels_magnify === 100 ? 1 : 1 + nodePositionInRange,
+          id = `label${n.index}`; // label0, label1..
+        n.labelList = getLabelPieces(n, magnifyLabel);
         n.label = {
-          dom_id: `label${n.index}`, // label0, label1..
-          anchor: labelBefore ? 'end' : 'start',
+          dom_id: id,
+          anchor: labelAnchor(n),
+          bb: measureSVGText(n.labelList, id),
         };
       });
   }
@@ -851,13 +1090,13 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   //   Compute the total space required by the widest label in a stage
   function maxLabelWidth(stageArr, labelsBefore) {
     let maxWidth = 0;
-    stageArr.filter((n) => n.labelText)
+    stageArr.filter((n) => n.labelList?.length)
       .forEach((n) => {
-        const labelW
-          = measureText(n.labelText, n.dom_id).w
+        const labelTotalW
+          = n.label.bb.w
             + (labelsBefore ? pad.lblMarginBefore : pad.lblMarginAfter)
             + pad.outer;
-        maxWidth = Math.max(maxWidth, labelW);
+        maxWidth = Math.max(maxWidth, labelTotalW);
       });
     return maxWidth;
   }
@@ -995,20 +1234,26 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       = darkBg ? d3.rgb(n.color).brighter(2) : d3.rgb(n.color).darker(2);
 
     // Set up label presentation values:
-    if (cfg.labelname_appears && !n.hideLabel) {
+    if (n.labelList?.length && !n.hideLabel) {
       // Which side of the node will the label be on?
-      const labelBefore = n.label.anchor === 'end';
-      n.label.x
-        = n.x + (labelBefore ? -pad.lblMarginBefore : n.dx + pad.lblMarginAfter);
-      n.label.y = n.y + n.dy / 2;
-      n.label.dy = pad.dy;
+      switch (n.label.anchor) {
+        case 'start': n.label.x = n.x + n.dx + pad.lblMarginAfter; break;
+        case 'end': n.label.x = n.x - pad.lblMarginBefore; break;
+        default: n.label.x = n.x + n.dx / 2;
+      }
+      n.label.y = n.y + n.dy / 2; // This is the vcenter of the node
+      // To set the text element's baseline, we have to work with the height
+      // of the first text line in the label:
+      n.label.dy
+        = pad.dyFactor * n.label.bb.line1h
+          - (n.label.bb.h - n.label.bb.line1h) / 2;
 
       // Will there be any highlights? If not, n.label.bg will be null:
       if (hlStyle.orig.fill_opacity > 0) {
         n.label.bg = {
           dom_id: `${n.label.dom_id}_bg`, // label0_bg, label1_bg..
           offset: {
-            x: labelBefore ? -pad.outer : -pad.inner,
+            x: n.label.anchor === 'end' ? -pad.outer : -pad.inner,
             y: -pad.top,
             w: pad.inner + pad.outer,
             h: pad.top + pad.bot,
@@ -1414,7 +1659,6 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // These font spec defaults apply to all labels within
     .attr('font-family', cfg.labels_fontface)
     .attr('font-size', `${cfg.labelname_size}px`)
-    .attr('font-weight', cfg.labelname_weight)
     .attr('fill', cfg.labels_color);
   if (cfg.meta_mentionsankeymatic) {
     diagLabels.append('text')
@@ -1431,22 +1675,28 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       .text('Made with SankeyMATIC');
   }
 
-  if (cfg.labelname_appears) {
+  if (cfg.labelname_appears || cfg.labelvalue_appears) {
     // Add labels in a distinct layer on the top (so nodes can't block them)
     diagLabels.selectAll()
       .data(allNodes.filter(shadowFilter))
       .enter()
       .filter((n) => !n.hideLabel)
       .append('text')
-      .attr('id', (n) => n.label.dom_id)
-      // Associate this label with its Node using the CSS class:
-      .attr('class', (n) => n.css_class)
-      .attr('text-anchor', (n) => n.label.anchor)
-      .attr('x', (n) => ep(n.label.x))
-      .attr('y', (n) => ep(n.label.y))
-      // Nudge letters down to be vertically centered:
-      .attr('dy', (n) => n.label.dy)
-      .text((n) => n.labelText);
+        .attr('id', (n) => n.label.dom_id)
+        // Associate this label with its Node using the CSS class:
+        .attr('class', (n) => n.css_class)
+        .attr('text-anchor', (n) => n.label.anchor)
+        .attr('x', (n) => ep(n.label.x))
+        .attr('y', (n) => ep(n.label.y))
+        .attr('font-weight', (n) => n.labelList[0].weight)
+        .attr('font-size', (n) => `${ep(n.labelList[0].size)}px`)
+        // Nudge the text to be vertically centered:
+        .attr('dy', (n) => ep(n.label.dy))
+        .text((n) => n.labelList[0].txt)
+      .filter((n) => n.labelList.length > 1)
+      .each(function handleSpans(n) {
+          addTSpans(d3.select(this), n.labelList.slice(1), n.labelList[0].size, n.label.x);
+        });
 
     // For any nodes with a label highlight defined, render it:
     allNodes.filter(shadowFilter)
@@ -1460,7 +1710,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // Put the highlight rectangle just before each text:
       diagLabels.insert('rect', labelTextSelector)
         .attr('id', bg.dom_id)
-        // Make sure a Node drag will affect this as well:
+        // Attach a class to make a drag operation affect a Node's label too:
         .attr('class', n.css_class)
         .attr('x', ep(labelBB.x + bg.offset.x))
         .attr('y', ep(labelBB.y + bg.offset.y))
@@ -1577,7 +1827,7 @@ function getDiagramDefinition(verbose) {
   if (glob.rememberedMoves.size) {
     addIfV('', movesMarker, '');
     glob.rememberedMoves.forEach((move, nodeName) => {
-      add(`move ${nodeName} ${ep(move[0], 8)}, ${ep(move[1], 8)}`);
+      add(`move ${nodeName} ${ep(move[0])}, ${ep(move[1])}`);
     });
   }
 
@@ -1594,7 +1844,7 @@ const urlInputsParam = 'i',
 function generateLink() {
   const minDiagramDef = getDiagramDefinition(false),
     compressed = LZString.compressToEncodedURIComponent(minDiagramDef),
-    currentUrl = new URL(window.location.href);
+    currentUrl = new URL(glob.location.href);
   // Set the new parameter, encoded to keep it from wrapping strangely:
   currentUrl.search
     = `${urlInputsParam}=${
@@ -1997,7 +2247,7 @@ glob.process_sankey = () => {
         return;
       }
       // Diagrams don't currently support negative numbers or 0:
-      if (amountIn <= 0) {
+      if (Number(amountIn) <= 0) {
         warnAbout(lineIn, 'Amounts must be greater than 0');
         return;
       }
@@ -2284,7 +2534,7 @@ glob.process_sankey = () => {
      });
   el('imbalances_area').setAttribute(
     'aria-disabled',
-    disableDifferenceControls
+    disableDifferenceControls.toString()
   );
 
   // Were there any differences, and does the user want to know?
@@ -2352,20 +2602,23 @@ glob.process_sankey = () => {
   return null;
 };
 
+// Debounced version of process_sankey as event handler for keystrokes:
+glob.debounced_process_sankey = debounce(glob.process_sankey);
+
 // Load a diagram definition from the URL if there was one:
 loadFromQueryString();
 // Render the present inputs:
 glob.process_sankey();
-}(window === 'undefined' ? global : window));
+}(typeof window === 'undefined' ? global : window));
 
 // Make the linter happy about imported objects:
 /* global
  d3 canvg global IN OUT BEFORE AFTER MAXBREAKPOINT
  sampleDiagramRecipes fontMetrics highlightStyles
- settingsMarker settingsAppliedPrefix
+ settingsMarker settingsAppliedPrefix settingsToBackfill
  userDataMarker sourceHeaderPrefix sourceURLLine
  skmSettings colorGray60 userInputsField breakpointField
- reWholeNumber reDecimal reYesNo reYes
+ reWholeNumber reInteger reDecimal reYesNo reYes
  reCommentLine reSettingsValue reSettingsText reNodeLine reFlowLine
  reMoveLine movesMarker
  reFlowTargetWithSuffix reColorPlusOpacity
