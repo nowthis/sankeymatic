@@ -237,7 +237,7 @@ labels relativesize 100
     // Ranked-choice election:
     ['election', {
       name: 'Ranked Election',
-      flows: '// Sample Ranked Election diagram\n\nGH - Round 1 [300000] GH - Round 2\nEF - Round 1 [220000] EF - Round 2\nCD - Round 1 [200000] CD - Round 2\nAB - Round 1 [10000] GH - Round 2\nAB - Round 1 [25000] EF - Round 2\nAB - Round 1 [20000] CD - Round 2\n\nGH - Round 2 [310000] GH - Round 3\\nProjected Winner\nEF - Round 2 [245000] EF - Round 3\nCD - Round 2 [50000] GH - Round 3\\nProjected Winner\nCD - Round 2 [95000] EF - Round 3\n\n// This line sets a custom gray color:\n:No further votes #555 <<\nAB - Round 1 [20000] No further votes\nCD - Round 2 [75000] No further votes',
+      flows: '// Sample Ranked Election diagram\n\nGH\\nRound 1 [300000] GH\\nRound 2\nEF\\nRound 1 [220000] EF\\nRound 2\nCD\\nRound 1 [200000] CD\\nRound 2\nAB\\nRound 1 [10000] GH\\nRound 2\nAB\\nRound 1 [25000] EF\\nRound 2\nAB\\nRound 1 [20000] CD\\nRound 2\n\nGH\\nRound 2 [310000] GH\\nRound 3\\nProjected Winner\nEF\\nRound 2 [245000] EF\\nRound 3\nCD\\nRound 2 [50000] GH\\nRound 3\\nProjected Winner\nCD\\nRound 2 [95000] EF\\nRound 3\n\n// This line sets a custom gray color:\n:No further votes #555 <<\nAB\\nRound 1 [20000] No further votes\nCD\\nRound 2 [75000] No further votes',
       settings: {
         size_w: 700,
         node_w: 10,
