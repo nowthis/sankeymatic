@@ -1660,18 +1660,24 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .attr('font-size', `${cfg.labelname_size}px`)
     .attr('fill', cfg.labels_color);
   if (cfg.meta_mentionsankeymatic) {
+    // Style the mention appropriately given the size of the canvas/text:
+    const mSize = Math.max(12, cfg.labelname_size / 2, Math.cbrt(graph.h) + 3),
+      mMargin = Math.round(mSize / 2) - 1,
+      mColor
+       = cfg.bg_color === '#ffffff' ? '#336781'
+          : contrasting_gray_color(cfg.bg_color);
     diagLabels.append('text')
       // Anchor the text to the midpoint of the canvas (not the graph):
       .attr('text-anchor', 'middle')
       // x = graphW/2 is wrong when the L/R margins are uneven.. We
       // have to use the whole width & adjust for the graph's transform:
       .attr('x', cfg.size_w / 2 - graph.final_margin_l)
-      .attr('y', graph.h + cfg.margin_b - 5)
+      .attr('y', graph.h + cfg.margin_b - mMargin)
       // Keep the current font, but make this small & grey:
-      .attr('font-size', '11px')
+      .attr('font-size', `${mSize}px`)
       .attr('font-weight', '400')
-      .attr('fill', contrasting_gray_color(cfg.bg_color))
-      .text('Made with SankeyMATIC');
+      .attr('fill', mColor)
+      .text('Made at SankeyMATIC.com');
   }
 
   if (cfg.labelname_appears || cfg.labelvalue_appears) {

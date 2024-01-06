@@ -58,7 +58,7 @@ body {
   white-space: nowrap;
 }
 
-.smalllabel { font-size: smaller; }
+.smalllabel { font-size: 90%; }
 
 .grid_entire_row {
   grid-column: 1 / -1;
