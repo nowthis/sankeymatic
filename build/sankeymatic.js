@@ -774,7 +774,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .attr('text-anchor', 'middle')
     .attr('opacity', '0') // Keep all this invisible...
     .attr('font-family', cfg.labels_fontface)
-    .attr('font-size', `${cfg.labelname_size}px`);
+    .attr('font-size', `${ep(cfg.labelname_size)}px`);
   scratchRoot.selectAll('*').remove(); // Clear out any past items
 
   /**
@@ -813,10 +813,10 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
           = (0.95 + cfg.labels_linespacing)
             * ((prevLineMaxSize + tspan.size * 3) / 4);
         d3selection.append('tspan')
-          .attr('x', origX)
+          .attr('x', ep(origX))
           .attr('dy', ep(lineSpacing))
           .attr('font-weight', tspan.weight)
-          .attr('font-size', `${tspan.size}px`)
+          .attr('font-size', `${ep(tspan.size)}px`)
           .text(tspan.txt);
         prevLineMaxSize = tspan.size; // reset to the new line's initial size
       } else {
@@ -870,8 +870,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       textEl = scratchRoot
         .append('text')
         .attr('id', txtId)
-        .attr('x', xC)
-        .attr('y', yC)
+        .attr('x', ep(xC))
+        .attr('y', ep(yC))
         .attr('font-weight', line1Weight)
         .attr('font-size', `${ep(line1Size)}px`)
         .text(firstEl.txt);
@@ -1338,7 +1338,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Add a [g]roup translating the remaining elements 'inward' by the margins:
   const diagMain
     = diagramRoot.append('g')
-      .attr('transform', `translate(${graph.final_margin_l},${cfg.margin_t})`);
+      .attr('transform', `translate(${ep(graph.final_margin_l)},${ep(cfg.margin_t)})`);
 
   // MARK Functions for Flow hover effects
   // applyFlowEffects(flow, opacity, styles):
@@ -1657,7 +1657,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .attr('id', 'sankey_labels')
     // These font spec defaults apply to all labels within
     .attr('font-family', cfg.labels_fontface)
-    .attr('font-size', `${cfg.labelname_size}px`)
+    .attr('font-size', `${ep(cfg.labelname_size)}px`)
     .attr('fill', cfg.labels_color);
   if (cfg.meta_mentionsankeymatic) {
     // Style the mention appropriately given the size of the canvas/text:
@@ -1671,10 +1671,10 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       .attr('text-anchor', 'middle')
       // x = graphW/2 is wrong when the L/R margins are uneven.. We
       // have to use the whole width & adjust for the graph's transform:
-      .attr('x', cfg.size_w / 2 - graph.final_margin_l)
-      .attr('y', graph.h + cfg.margin_b - mMargin)
+      .attr('x', ep(cfg.size_w / 2 - graph.final_margin_l))
+      .attr('y', ep(graph.h + cfg.margin_b - mMargin))
       // Keep the current font, but make this small & grey:
-      .attr('font-size', `${mSize}px`)
+      .attr('font-size', `${ep(mSize)}px`)
       .attr('font-weight', '400')
       .attr('fill', mColor)
       .text('Made at SankeyMATIC.com');
