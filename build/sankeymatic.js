@@ -1213,7 +1213,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // Everything with this class value will move with the Node when it is
     // dragged:
     n.css_class = `for_${n.dom_id}`; // for_r0, for_r1...
-    n.tooltip = `${n.name}:\n${withUnits(n.value)}`;
+    n.tooltip = `${n.tipname}:\n${withUnits(n.value)}`;
     n.opacity = n.opacity || cfg.node_opacity;
 
     // Fill in any missing Node colors. (Flows may inherit from these.)
@@ -1224,7 +1224,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // If there are no non-blank strings in the node name, substitute
       // a word-ish value (rather than crash):
       const colorKeyString
-        = (n.name.match(/^\s*(\S+)/) || [null, 'name-is-blank'])[1];
+        = (n.tipname.match(/^\s*(\S+)/) || [null, 'name-is-blank'])[1];
       // Don't use up colors on shadow nodes:
       n.color = n.isAShadow ? colorGray60 : colorScaleFn(colorKeyString);
     }
@@ -1268,7 +1268,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .forEach((f) => {
     f.dom_id = `flow${f.index}`; // flow0, flow1...
     f.tooltip
-      = `${f.source.name} → ${f.target.name}: ${withUnits(f.value)}`;
+      = `${f.source.tipname} → ${f.target.tipname}: ${withUnits(f.value)}`;
     // Fill in any missing opacity values and the 'hover' counterparts:
     f.opacity = f.opacity || cfg.flow_opacity;
     // Hover opacity = halfway between the user's opacity and 1.0:
@@ -1999,6 +1999,7 @@ glob.process_sankey = () => {
       // Set up the node's raw object, keyed to the name:
       uniqueNodes.set(nameInfo.trueName, {
         name: nameInfo.trueName,
+        tipname: nameInfo.trueName.replaceAll('\\n', ' '),
         hideLabel: nameInfo.hideLabel,
         sourceRow: row,
         paintInputs: [],
