@@ -125,7 +125,7 @@ div > span.output_container > input[list] + output { top: -1.3em; }
 }
 
 .number_10s { width: 2.5em; }
-.number_100s { width: 3em; }
+.number_100s { width: 3.1em; }
 .number_10000s { width: 4.25em; }
 
 /* sometimes we need invisible 0s: */
@@ -151,6 +151,7 @@ be shown, not the size of the slider. */
 .slider_xsmall + .output_6 { left: -0.2em; }
 .slider_small + .output_3 { left: 1.9em; }
 .slider_small + .output_4 { left: 1.4em; }
+.slider_small + .output_6 { left: 0.6em; }
 .slider_small + .output_12 { left: -0.45em; }
 .slider_medium + .output_3 { left: 3.7em; }
 .slider_medium + .output_6 { left: 2.5em; }

@@ -120,7 +120,7 @@ glob.updateOutput = (fld) => {
       if (fldValAsNum <= 0.1) { oEl.textContent = '0.00'; break; }
       // FALLS THROUGH to '.2' format when fldValAsNum > 0.1:
     case '.2': oEl.textContent = d3.format('.2f')(fldValAsNum); break;
-    case '%': oEl.textContent = `${fldVal}%`; break;
+    case '%': oEl.textContent = `${d3.format('.1f')(fldValAsNum)}%`; break;
     case 'breakpoint':
       oEl.textContent = fldValAsNum === glob.labelNeverBreakpoint
             ? 'Never'
@@ -497,6 +497,11 @@ function settingIsValid(sData, hVal, cfg) {
       && valueInBounds(valAsNum, allowList)) {
     return [true, valAsNum];
   }
+  if (dataType === 'half'
+      && reHalfNumber.test(hVal)
+      && valueInBounds(valAsNum, allowList)) {
+    return [true, valAsNum];
+  }
   if (['whole', 'contained', 'breakpoint'].includes(dataType)
       && reWholeNumber.test(hVal)) {
     let [minV, maxV] = [0, 0];
@@ -554,6 +559,7 @@ function getHumanValueFromPage(fName, dataType) {
 function settingHtoC(hVal, dataType) {
   switch (dataType) {
     case 'whole':
+    case 'half':
     case 'decimal':
     case 'integer':
     case 'contained':
@@ -2533,9 +2539,9 @@ glob.process_sankey = () => {
   // Scale & make that available to the user:
   const tallestNodeHeight
     = parseFloat(el(`r${maxNodeIndex}`).getAttributeNS(null, 'height')),
-    // Use <=2 decimal places to describe the tallest node's height:
+    // Use 1 decimal place to describe the tallest node's height:
     formattedPixelCount = updateMarks(
-      d3.format(',.2~f')(tallestNodeHeight),
+      d3.format(',.1f')(tallestNodeHeight),
       numberStyle.marks
     ),
     // Show this value using the user's units, but override the number of
@@ -2570,7 +2576,7 @@ glob.process_sankey();
  settingsMarker settingsAppliedPrefix settingsToBackfill
  userDataMarker sourceHeaderPrefix sourceURLLine
  skmSettings colorGray60 userInputsField breakpointField
- reWholeNumber reInteger reDecimal reYesNo reYes
+ reWholeNumber reHalfNumber reInteger reDecimal reYesNo reYes
  reCommentLine reSettingsValue reSettingsText reNodeLine reFlowLine
  reMoveLine movesMarker
  reFlowTargetWithSuffix reColorPlusOpacity

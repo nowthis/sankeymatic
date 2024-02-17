@@ -185,7 +185,7 @@ Labels<span id="label_options_hint">...</span></h2>
 <div class="hs align-center justify-center gap-large b-divider">
 <div class="vs align-center">
 <label for="labelname_size"><strong>Base Size:</strong></label>
-<input id="labelname_size" type="number" class="wholenumber number_10s" min="6" step="1" value="16" onchange="process_sankey();"></div>
+<input id="labelname_size" type="number" class="number_100s" min="6" step="0.5" value="16" onchange="process_sankey();"></div>
 
 <div class="vs align-center text_center" onmouseover="revealVal('labels_relativesize');" onmouseout="fadeVal('labels_relativesize');">
 <label for="labels_relativesize" title="Set relative size of Names and Values">Magnify:</label>
@@ -331,20 +331,20 @@ Nodes<span id="node_options_hint">:</span></h2>
 <p class="form_elements1">
 <span class="no_wrap" onmouseover="revealVal('node_h');" onmouseout="fadeVal('node_h');">
 <label for="node_h"><strong>Height:</strong></label>
-.<span class="output_container"><input id="node_h" class="slider_small" type="range" min="0" max="100" step="1" value="50" onfocus="revealVal('node_h');" onblur="fadeVal('node_h');" oninput="updateOutput('node_h'); process_sankey();" onchange="process_sankey();"><output id="node_h_val" for="node_h" class="fade-init output_4">-</output></span>|</span>
+.<span class="output_container"><input id="node_h" class="slider_small" type="range" min="0" max="100" step="0.5" value="50" onfocus="revealVal('node_h');" onblur="fadeVal('node_h');" oninput="updateOutput('node_h'); process_sankey();" onchange="process_sankey();"><output id="node_h_val" for="node_h" class="fade-init output_6">-</output></span>|</span>
 
 
 <span class="no_wrap" onmouseover="revealVal('node_spacing');" onmouseout="fadeVal('node_spacing');">
 <label for="node_spacing" class="spaced_label"><strong>Spacing:</strong></label>
-<span class="smalllabel">0</span><span class="output_container"><input id="node_spacing" class="slider_small" type="range" min="0" max="100" step="1" value="75" onfocus="revealVal('node_spacing');" onblur="fadeVal('node_spacing');" oninput="updateOutput('node_spacing'); process_sankey();" onchange="process_sankey();"><output id="node_spacing_val" for="node_spacing" class="fade-init output_4">-</output></span><span class="smalllabel">Max</span></span>
+<span class="smalllabel">0</span><span class="output_container"><input id="node_spacing" class="slider_small" type="range" min="0" max="100" step="0.5" value="75" onfocus="revealVal('node_spacing');" onblur="fadeVal('node_spacing');" oninput="updateOutput('node_spacing'); process_sankey();" onchange="process_sankey();"><output id="node_spacing_val" for="node_spacing" class="fade-init output_6">-</output></span><span class="smalllabel">Max</span></span>
 </p>
 
 <p class="form_elements2">
 <span class="no_wrap"><label for="node_w"><strong>Width:</strong></label>
-<input id="node_w" type="number" class="wholenumber number_100s" min="0" value="12" step="1" onchange="process_sankey();"></span>
+<input id="node_w" type="number" class="number_100s" min="0" value="12" step="1" onchange="process_sankey();"></span>
 
 <span class="no_wrap"><label for="node_border" class="spaced_label"><strong>Border:</strong></label>
-<input id="node_border" type="number" class="wholenumber number_10s" min="0" value="0" step="1" onchange="process_sankey();"></span>
+<input id="node_border" type="number" class="number_10s" min="0" value="0" step="1" onchange="process_sankey();"></span>
 
 <span class="no_wrap" onmouseover="revealVal('node_opacity');" onmouseout="fadeVal('node_opacity');">
 <label for="node_opacity" class="spaced_label"><strong>Opacity:</strong></label>
@@ -574,9 +574,9 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 <div id="diagram_options" class="form_chunk">
 <p class="form_elements1">
 <span class="no_wrap"><label for="size_w" title="Diagram Width in pixels"><strong>Width:</strong></label>
-<input id="size_w" type="number" class="wholenumber number_10000s" min="40" value="600" step="2" onchange="process_sankey();"></span>
+<input id="size_w" type="number" class="number_10000s" min="40" value="600" step="2" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="size_h" class="spaced_label" title="Diagram Height in pixels"><strong>Height:</strong></label>
-<input id="size_h" type="number" class="wholenumber number_10000s" min="40" value="600" step="2" onchange="process_sankey();"></span>
+<input id="size_h" type="number" class="number_10000s" min="40" value="600" step="2" onchange="process_sankey();"></span>
 
 <label for="bg_color" class="spaced_label"><strong>Background Color:</strong></label>
 <input type="color" id="bg_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
@@ -586,13 +586,13 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 <p class="form_elements2">
 <strong>Margins:</strong>
 <span class="no_wrap"><label for="margin_l" class="spaced_label">Left</label>
-<input id="margin_l" type="number" class="wholenumber number_100s" min="0" value="12" step="1" onchange="process_sankey();">
+<input id="margin_l" type="number" class="number_100s" min="0" value="12" step="1" onchange="process_sankey();">
 <label for="margin_r">Right</label>
-<input id="margin_r" type="number" class="wholenumber number_100s" min="0" value="12" step="1" onchange="process_sankey();"></span>
+<input id="margin_r" type="number" class="number_100s" min="0" value="12" step="1" onchange="process_sankey();"></span>
 <span class="no_wrap"><label for="margin_t" class="spaced_label">Top</label>
-<input id="margin_t" type="number" class="wholenumber number_100s" min="0" value="18" step="1" onchange="process_sankey();">
+<input id="margin_t" type="number" class="number_100s" min="0" value="18" step="1" onchange="process_sankey();">
 <label for="margin_b">Bot</label>
-<input id="margin_b" type="number" class="wholenumber number_100s" min="0" value="20" step="1" onchange="process_sankey();"></span>
+<input id="margin_b" type="number" class="number_100s" min="0" value="20" step="1" onchange="process_sankey();"></span>
 </p>
 </div>
 </div>
