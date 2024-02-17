@@ -978,10 +978,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     }
   }
 
-  // MARK Label-measuring time
-  // Depending on where labels are meant to be placed, we measure their
-  // sizes and calculate how much room has to be reserved for them (and
-  // subtracted from the graph area):
+  // MARK Shadow logic
 
   // shadowFilter(i): true/false value indicating whether to display an item.
   // Normally shadows are hidden, but the revealshadows flag can override.
@@ -989,6 +986,17 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   function shadowFilter(i) {
     return !i.isAShadow || cfg.internal_revealshadows;
   }
+
+  if (cfg.internal_revealshadows) {
+    // Add a usable tipname since they'll be used (i.e. avoid 'undefined'):
+    allNodes
+      .filter((n) => n.isAShadow)
+      .forEach((n) => { n.tipname = '(shadow)'; });
+  }
+  // MARK Label-measuring time
+  // Depending on where labels are meant to be placed, we measure their
+  // sizes and calculate how much room has to be reserved for them (and
+  // subtracted from the graph area):
 
   /**
    * Given a Node, list all the label pieces we'll need to display.
@@ -1224,7 +1232,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // If there are no non-blank strings in the node name, substitute
       // a word-ish value (rather than crash):
       const colorKeyString
-        = (n.tipname.match(/^\s*(\S+)/) || [null, 'name-is-blank'])[1];
+        = (n.tipname?.match(/^\s*(\S+)/) || [null, 'name-is-blank'])[1];
       // Don't use up colors on shadow nodes:
       n.color = n.isAShadow ? colorGray60 : colorScaleFn(colorKeyString);
     }
@@ -1389,10 +1397,9 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       .on('mouseover', turnOnFlowHoverEffects)
       .on('mouseout', turnOffFlowHoverEffects)
       // Sort flows to be rendered:
-      // first from non-Shadows to Shadows,
-      // then from largest to smallest (so if flows cross, the
-      // smaller ones are drawn on top):
-      .sort((a, b) => a.isAShadow - b.isAShadow || b.dy - a.dy);
+      // Shadows first (i.e. at the back), then largest-to-smallest
+      // (so if flows cross, the smaller ones are drawn on top):
+      .sort((a, b) => b.isAShadow - a.isAShadow || b.dy - a.dy);
 
   // Add a tooltip for each flow:
   diagFlows.append('title').text((f) => f.tooltip);
