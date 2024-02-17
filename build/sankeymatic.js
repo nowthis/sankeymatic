@@ -1693,7 +1693,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       .text('Made at SankeyMATIC.com');
   }
 
-  if (cfg.labelname_appears || cfg.labelvalue_appears) {
+  if (!cfg.labels_hide && (cfg.labelname_appears || cfg.labelvalue_appears)) {
     // Add labels in a distinct layer on the top (so nodes can't block them)
     diagLabels.selectAll()
       .data(allNodes.filter(shadowFilter))

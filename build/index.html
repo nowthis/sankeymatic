@@ -293,6 +293,8 @@ When a Node has an <strong>empty side</strong>, place its label there.
 <div><span class="smalllabel">0</span><span class="output_container"><input id="labels_highlight" class="slider_small" type="range" min="0" max="0.9" step="0.05" value="0.75" onfocus="revealVal('labels_highlight');" onblur="fadeVal('labels_highlight');" oninput="updateOutput('labels_highlight'); process_sankey();" onchange="process_sankey();"><output id="labels_highlight_val" for="labels_highlight" class="fade-init output_3">-</output></span><span class="smalllabel highlight_fld_label">Max</span>
 </div>
 </div>
+
+<span><input type="checkbox" id="labels_hide" value="1" onchange="process_sankey();"><label for="labels_hide" class="ropt">Temporarily Hide Labels</label></span>
 </div>
 </details> <!-- End Arrange Names & Values -->
 
