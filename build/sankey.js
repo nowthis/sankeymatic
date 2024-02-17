@@ -298,15 +298,16 @@ d3.sankey = () => {
             // Exclude flows with shadows; they'll get their position
             // assigned when their shadow gets placed:
             .filter((i) => !flows[i].hasAShadow)
-            // Sort flows by the right slopes in the correct order (asc/desc):
-            .sort(
-              (a, b) => slopeData[sKey].dir * (slopeOf(flows[a]) - slopeOf(flows[b]))
-                // If there's a tie, sort by x-distance (ascending):
-                || flows[a].dx - flows[b].dx
-                // If there is still a tie, sort by sourceRow (which has been
-                // artificially set for shadow flows):
-                || flows[a].sourceRow - flows[b].sourceRow
-            )[0];
+            .sort((a, b) => (
+              // For autolayout, use the right slopes in the correct order (asc/dsc):
+              autoLayout
+                ? (slopeData[sKey].dir * (slopeOf(flows[a]) - slopeOf(flows[b]))
+                  // If there is a tie, sort by x-distance (ascending):
+                  || flows[a].dx - flows[b].dx)
+                : 0)
+              // If we are using exact order (OR if there is still a tie),
+              // sort by sourceRow (which is also set for shadow flows)
+              || flows[a].sourceRow - flows[b].sourceRow)[0];
         // If we found a flow, place it at the correct edge:
         if (flowIndex !== undefined) { placeFlowAt(edge, flowIndex); }
       }
@@ -319,7 +320,8 @@ d3.sankey = () => {
         // Place the least fortunate flows, then subtract their size from
         // the available range:
         placeUnhappiestFlowAt(TOP);
-        placeUnhappiestFlowAt(BOTTOM);
+        if (autoLayout) { placeUnhappiestFlowAt(BOTTOM); }
+        // (If using exact order, we want to place top->bottom, NOT alternate.)
       }
 
       // After that loop, we have 0-1 flows. If there is one, place it:
