@@ -1,0 +1,54 @@
+name: "Deploy to GitHub Pages"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/configure-pages@v4
+
+      - uses: actions/checkout@v4
+
+      - name: Vendor "d3.min.js"
+        run: |
+          DEPENDENCY="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"
+          DIST_FILE="js/d3.min.js"
+          # Ensure the dependency exists
+          grep "${DEPENDENCY}" build/index.html
+          # Vendor the dependency
+          mkdir -p build/js
+          wget "${DEPENDENCY}" -O build/${DIST_FILE}
+          # Use the vendored dependency
+          sed -i "s;${DEPENDENCY};${DIST_FILE};" build/index.html
+
+      - name: Vendor "umd.js"
+        run: |
+          DEPENDENCY="https://cdn.jsdelivr.net/npm/canvg@3/lib/umd.js"
+          DIST_FILE="js/canvg.umd.js"
+          # Ensure the dependency exists
+          grep "${DEPENDENCY}" build/index.html
+          # Vendor the dependency
+          mkdir -p build/js
+          wget "${DEPENDENCY}" -O build/${DIST_FILE}
+          # Use the vendored dependency
+          sed -i "s;${DEPENDENCY};${DIST_FILE};" build/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'build'
+
+      - uses: actions/deploy-pages@v4
