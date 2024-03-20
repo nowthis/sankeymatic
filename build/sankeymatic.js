@@ -2202,7 +2202,7 @@ glob.process_sankey = () => {
       // The Amount looked trivially like a number; reject the line
       // if it really isn't:
       const amountIn = matches[2].replace(/\s/g, '');
-      if (!isNumeric(amountIn)) {
+      if (!(isNumeric(amountIn) || amountIn == ">" || amountIn == "<")) {
         warnAbout(lineIn, 'The Amount is not a valid decimal number');
         return;
       }
@@ -2280,6 +2280,33 @@ glob.process_sankey = () => {
     addNodeName(flow.target, flow.sourceRow + 0.5);
 
     // Add the updated flow to the list of approved flows:
+
+    if (flow.amount == "<") {
+      var parentTotal = 0;
+      goodFlows
+        .filter(f => f.target == flow.source)
+        .forEach(f => {
+          parentTotal += parseInt(f.amount);
+        });
+
+      var siblingTotal = 0;
+      goodFlows
+        .filter(f => f.source == flow.source && f.target != flow.target)
+        .forEach(f => {
+          siblingTotal += parseInt(f.amount);
+        });
+
+      flow.amount = parentTotal - siblingTotal;
+    } else if (flow.amount == ">") {
+      var total = 0;
+      goodFlows
+        .filter(f => f.source == flow.target)
+        .forEach(f => {
+          total += parseInt(f.amount);
+        });
+      flow.amount = total;
+    }
+
     const f = {
       index: approvedFlows.length,
       source: getUniqueNode(flow.source),
