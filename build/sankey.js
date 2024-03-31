@@ -22,7 +22,7 @@ d3.sankey = () => {
       stagesArr = [],
       maximumNodeSpacing = 0,
       actualNodeSpacing = 0,
-      furthestStage = 0;
+      maxStage = -1;
 
   // ACCESSORS //
   /* eslint-disable func-names */
@@ -364,56 +364,52 @@ d3.sankey = () => {
   }
 
   // assignNodesToStages: Iteratively assign the stage (x-group) for each node.
-  // Nodes are assigned the maximum stage of their incoming neighbors + 1.
-  // Nodes with no incoming flows are assigned stage 0, while
-  // Nodes with no outgoing flows are assigned the maximum stage.
+  // Nodes are assigned the maximum stage of their incoming neighbors + 1,
+  // then any nodes which can be nudged forward are.
   function assignNodesToStages() {
-    let remainingNodes = nodes,
-        nextNodes = [];
-
-    // This node needs a stage assigned/updated.
+    const nodesToCheckAgain = new Set();
+    // updateNode: Set a node's stage & make sure its targets get another look.
     function updateNode(n) {
-        n.stage = furthestStage;
-        // Make sure its targets will be seen again:
-        // (Only add it to the nextNodes list if it is not already present)
-        n.flows[OUT].filter((f) => !nextNodes.includes(f.target))
-          .forEach((f) => { nextNodes.push(f.target); });
-    }
-
-    function moveOriginsRight() {
-      // If this node is not the target of any others, then it's an origin.
-      // If it has at least 1 target (the common case), then move it as far
-      // right as it can go without bumping into any of its targets:
-      nodes.filter((n) => !n.flows[IN].length && n.flows[OUT].length)
-        .forEach((n) => {
-          n.stage = d3.min(n.flows[OUT], (d) => d.target.stage) - 1;
-        });
-    }
-
-    function moveSinksRight() {
-      // If any node is not the source for any others, then it's a dead-end;
-      // move it all the way to the right of the diagram:
-      nodes.filter((n) => !n.flows[OUT].length)
-        .forEach((n) => { n.stage = furthestStage - 1; });
+      n.stage = maxStage;
+      n.flows[OUT].forEach((f) => { nodesToCheckAgain.add(f.target); });
     }
 
     // Work from left to right.
-    // Keep updating the stage (x-position) of nodes that are targets of
-    // recently-updated nodes.
-    while (remainingNodes.length && furthestStage < nodes.length) {
-      nextNodes = [];
-      remainingNodes.forEach((n) => updateNode(n));
-      remainingNodes = nextNodes;
-      furthestStage += 1;
+    // Assign every node to stage 0, then keep updating the stage of every node
+    // that was a target of a known node. Repeat and fade.
+    let nodesToPlace = nodes;
+    // The maxStage check is to avoid an infinite loop when there is a cycle:
+    while (nodesToPlace.length && maxStage < nodes.length - 1) {
+      maxStage += 1;
+      nodesToPlace.forEach((n) => updateNode(n));
+      nodesToPlace = Array.from(nodesToCheckAgain);
+      nodesToCheckAgain.clear();
     }
 
-    // Force origins to appear immediately before their first target node?
-    // (In this case, we have to do extra work to UN-justify these nodes.)
-    if (!leftJustifyOrigins) { moveOriginsRight(); }
+    // Pull any source nodes to the right which have room to move.
+    // First, get a COPY of the list of all nodes with targets:
+    nodes
+      .filter((n) => n.flows[OUT].length).slice()
+      .sort((a, b) => b.stage - a.stage) // Sort that by stage, descending
+      .forEach((n) => {
+        // Find n's minimum target stage and use the one right before that:
+        const maxNewStage = d3.min(n.flows[OUT], (f) => f.target.stage) - 1;
+        if (n.stage < maxNewStage) { n.stage = maxNewStage; }
+      });
 
-    // Force endpoint nodes all the way to the right?
-    // Note: furthestStage at this point is 1 beyond the last actual stage:
-    if (rightJustifyEndpoints) { moveSinksRight(); }
+    // Handle layout checkboxes:
+    function setStageWhenNoFlows(direction, newStage) {
+      // For nodes with no flows going {direction}...
+      nodes.filter((n) => !n.flows[direction].length)
+        // ...set their stages to newStage:
+        .forEach((n) => { n.stage = newStage; });
+    }
+
+    // Force origins to appear all the way to the left?
+    if (leftJustifyOrigins) { setStageWhenNoFlows(IN, 0); }
+
+    // Force endpoints all the way to the right?
+    if (rightJustifyEndpoints) { setStageWhenNoFlows(OUT, maxStage); }
 
     // Now that the main nodes and flows are in place, we also fill in
     // SHADOW nodes & flows to occupy space whenever stages are skipped.
@@ -576,7 +572,7 @@ d3.sankey = () => {
       // Also: Ensure each node is at least 1 pixel tall:
       nodes.forEach((n) => { n.dy = Math.max(1, n.value * ky); });
 
-      // Set the initial positions of all nodes.
+      // Set the initial positions of all nodes within each stage.
       // The initial stage will start with all nodes centered vertically,
       // separated by the actualNodeSpacing.
       // Each stage afterwards will center on its combined source nodes.
@@ -617,10 +613,7 @@ d3.sankey = () => {
 
       // Set up x-values too.
       // Apply a scaling factor based on width per stage:
-      const widthPerStage
-        = furthestStage > 1
-          ? (size.w - nodeWidth) / (furthestStage - 1)
-          : 0;
+      const widthPerStage = maxStage > 0 ? (size.w - nodeWidth) / maxStage : 0;
       nodes.forEach((n) => {
         n.x = widthPerStage * n.stage;
         n.dx = nodeWidth;
