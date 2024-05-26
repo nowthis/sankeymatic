@@ -2171,7 +2171,22 @@ glob.process_sankey = () => {
   //  Parse inputs into: approvedNodes, approvedFlows
   const goodFlows = [],
     approvedNodes = [],
-    approvedFlows = [];
+    approvedFlows = [],
+    SYM_USE_REMAINDER = '*',
+    SYM_FILL_MISSING = '?',
+    reFlowLine = new RegExp(
+      '^(?<sourceNode>.+)'
+      + `\\[(?<amount>[\\d\\s.+-]+|\\${SYM_USE_REMAINDER}|\\${SYM_FILL_MISSING}|)\\]`
+      + '(?<targetNodePlus>.+)$'
+    );
+
+  /**
+   * @param {string} fv - a flow's value.
+   * @returns {boolean} true if the value is a special symbol
+   */
+  function flowIsCalculated(fv) {
+    return [SYM_USE_REMAINDER, SYM_FILL_MISSING].includes(fv);
+  }
 
   // Loop through all the non-setting input lines:
   sourceLines.filter((l, i) => !linesWithSettings.has(i))
@@ -2201,9 +2216,13 @@ glob.process_sankey = () => {
     if (matches !== null) {
       // The Amount looked trivially like a number; reject the line
       // if it really isn't:
-      const amountIn = matches[2].replace(/\s/g, '');
-      if (!(isNumeric(amountIn) || amountIn == ">" || amountIn == "<")) {
-        warnAbout(lineIn, 'The Amount is not a valid decimal number');
+      const amountIn = matches[2].replace(/\s/g, ''),
+        isCalculated = flowIsCalculated(amountIn);
+      if (!isNumeric(amountIn) && !isCalculated) {
+        warnAbout(
+          lineIn,
+          `The [Amount] must be a number in the form #.# or a wildcard ("${SYM_USE_REMAINDER}" or "${SYM_FILL_MISSING}").`
+        );
         return;
       }
       // Diagrams don't currently support negative numbers or 0:
@@ -2248,7 +2267,7 @@ glob.process_sankey = () => {
     );
   });
 
-  // Make the final list of Flows:
+  // Make the final list of Flows, including calculating what-if amounts:
   const graphIsReversed = el('layout_reversegraph').checked;
   goodFlows.forEach((flow) => {
     // Look for extra content about this flow on the target-node end of the
@@ -2279,34 +2298,31 @@ glob.process_sankey = () => {
     addNodeName(flow.source, flow.sourceRow);
     addNodeName(flow.target, flow.sourceRow + 0.5);
 
-    // Add the updated flow to the list of approved flows:
-
-    if (flow.amount == "<") {
-      var parentTotal = 0;
+    // Do we need to calculate this amount?
+    if (flow.amount === SYM_USE_REMAINDER) {
+      let [parentTotal, siblingTotal] = [0, 0];
       goodFlows
-        .filter(f => f.target == flow.source)
-        .forEach(f => {
-          parentTotal += parseInt(f.amount);
+        .filter((f) => f.target === flow.source)
+        .forEach((f) => {
+          parentTotal += Number(f.amount);
         });
-
-      var siblingTotal = 0;
       goodFlows
-        .filter(f => f.source == flow.source && f.target != flow.target)
-        .forEach(f => {
-          siblingTotal += parseInt(f.amount);
+        .filter((f) => f.source === flow.source && f.target !== flow.target)
+        .forEach((f) => {
+          siblingTotal += Number(f.amount);
         });
-
       flow.amount = parentTotal - siblingTotal;
-    } else if (flow.amount == ">") {
-      var total = 0;
+    } else if (flow.amount === SYM_FILL_MISSING) {
+      let parentTotal = 0;
       goodFlows
-        .filter(f => f.source == flow.target)
-        .forEach(f => {
-          total += parseInt(f.amount);
+        .filter((f) => f.source === flow.target)
+        .forEach((f) => {
+          parentTotal += Number(f.amount);
         });
-      flow.amount = total;
+      flow.amount = parentTotal;
     }
 
+    // Add the updated flow to the list of approved flows:
     const f = {
       index: approvedFlows.length,
       source: getUniqueNode(flow.source),
@@ -2604,7 +2620,7 @@ glob.process_sankey();
  userDataMarker sourceHeaderPrefix sourceURLLine
  skmSettings colorGray60 userInputsField breakpointField
  reWholeNumber reHalfNumber reInteger reDecimal reYesNo reYes
- reCommentLine reSettingsValue reSettingsText reNodeLine reFlowLine
+ reCommentLine reSettingsValue reSettingsText reNodeLine
  reMoveLine movesMarker
  reFlowTargetWithSuffix reColorPlusOpacity
  reBareColor reRGBColor LZString */

@@ -124,7 +124,6 @@ labels relativesize 100
 `,
 
   reNodeLine = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
-  reFlowLine = /^(.+)\[([\d\s.+-]+|>|<)\](.+)$/,
   reFlowTargetWithSuffix = /^(.+)\s+(#\S+)$/,
 
   reColorPlusOpacity = /^#([a-f0-9]{3,6})?(\.\d{1,4})?$/i,
