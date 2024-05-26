@@ -2299,37 +2299,36 @@ glob.process_sankey = () => {
     addNodeName(flow.target, flow.sourceRow + 0.5);
 
     // Do we need to calculate this amount?
-    if (flow.amount === SYM_USE_REMAINDER) {
-      // Adopt any unused amount from this flow's SOURCE.
+    if (flowIsCalculated(flow.amount)) {
       let [parentTotal, siblingTotal] = [0, 0];
-      goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
-        .forEach((gf) => {
-          // Look for amounts arriving at the parent node from the other side:
-          if (gf.target === flow.source) {
-            parentTotal += Number(gf.amount);
-          } else if (gf.source === flow.source) {
-            // Add up any amounts leaving the parent on our side
-            // (even if they are flowing to the same target):
-            siblingTotal += Number(gf.amount);
-          }
-          // (Any flows which DON'T touch the parent just get skipped.)
-        });
-      flow.amount = parentTotal - siblingTotal;
-    } else if (flow.amount === SYM_FILL_MISSING) {
-      // Adopt any unused amount from this flow's TARGET.
-      // (Same logic as above, but reversing all the relations.)
-      let [parentTotal, siblingTotal] = [0, 0];
-      goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
-        .forEach((gf) => {
-        // Look for amounts arriving at the parent node from the other side:
-        if (gf.source === flow.target) {
-          parentTotal += Number(gf.amount);
-        } else if (gf.target === flow.target) {
-          // Add up any amounts leaving the parent on our side
-          // (even if they are flowing to the same target):
-          siblingTotal += Number(gf.amount);
-        }
-      });
+      if (flow.amount === SYM_USE_REMAINDER) {
+        // Adopt any unused amount from this flow's SOURCE.
+        goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
+          .forEach((gf) => {
+            if (gf.target === flow.source) {
+              // Add up amounts arriving at the parent from the other side:
+              parentTotal += Number(gf.amount);
+            } else if (gf.source === flow.source) {
+              // Add up amounts leaving the parent on our side:
+              siblingTotal += Number(gf.amount);
+            }
+            // (Any flows which DON'T touch the parent just get skipped.)
+          });
+      } else {
+        // SYM_FILL_MISSING: Adopt any unused amount from this flow's TARGET.
+        // (Same logic as above, but reversing all the relations.)
+        goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
+          .forEach((gf) => {
+            if (gf.source === flow.target) {
+              // Add up amounts arriving at the parent from the other side:
+              parentTotal += Number(gf.amount);
+            } else if (gf.target === flow.target) {
+              // Add up amounts leaving the parent on our side:
+              siblingTotal += Number(gf.amount);
+            }
+          });
+      }
+      // Update this flow with the calculated amount:
       flow.amount = parentTotal - siblingTotal;
     }
 
