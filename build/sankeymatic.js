@@ -1987,43 +1987,56 @@ glob.process_sankey = () => {
 
   // NODE-handling functions:
 
-  // getTrueNodeName: Parse cases where the node name is in strike-through
-  //   format (e.g. '-hidden label-') and return:
-  //   - trueName: the real node name (without minuses, if present)
-  //   - hideLabel: true if the name was struck through
-  function getTrueNodeName(rawName) {
+  /**
+   * Parse the node name to find out if it is in strike-through format
+   * (e.g. '-hidden label-').
+   * @param {string} rawName a node name from the input data
+   * @returns {object} nameInfo
+   * @returns {string} nameInfo.trueName The real node name (without dashes)
+   * @returns {boolean} nameInfo.hideLabel True if the name was struck through
+   */
+  function parseNodeName(rawName) {
     const hiddenNameMatches = rawName.match(/^-(.*)-$/),
       hideThisLabel = hiddenNameMatches !== null,
       trueName = hideThisLabel ? hiddenNameMatches[1] : rawName;
     return { trueName: trueName, hideLabel: hideThisLabel };
   }
 
-  // addNodeName: Make sure a node's name is present in the 'unique' list
-  // with the lowest row number the node has appeared on:
-  function addNodeName(nodeName, row) {
-    const nameInfo = getTrueNodeName(nodeName);
-    // Have we seen this node before?
-    if (uniqueNodes.has(nameInfo.trueName)) {
-      const thisNode = uniqueNodes.get(nameInfo.trueName);
+  /**
+   * @param {string} n A raw node name from the source data
+   * @returns {string} The name without any extra markings
+   */
+  function trueNodeName(n) { return parseNodeName(n).trueName; }
+
+  /**
+   * Make sure a node's name is present in the main list, with the lowest row
+   * number the node has appeared on.
+   * @param {string} nodeName A raw node name from the input data
+   * @param {number} row The number of the input row the node appeared on.
+   *  (This can be a non-integer; Target node names have 0.5 added to their
+   *  row number.)
+   * @returns {object} The node's object (from uniqueNodes)
+   */
+  function setUpNode(nodeName, row) {
+    const { trueName, hideLabel } = parseNodeName(nodeName),
+      thisNode = uniqueNodes.get(trueName); // Does this node exist?
+    if (thisNode) {
       // If so, should the new row # replace the stored row #?:
       if (thisNode.sourceRow > row) { thisNode.sourceRow = row; }
-      // If ANY instance of the name was struck through, then set hideLabel:
-      thisNode.hideLabel ||= nameInfo.hideLabel;
-    } else {
-      // Set up the node's raw object, keyed to the name:
-      uniqueNodes.set(nameInfo.trueName, {
-        name: nameInfo.trueName,
-        tipname: nameInfo.trueName.replaceAll('\\n', ' '),
-        hideLabel: nameInfo.hideLabel,
-        sourceRow: row,
-        paintInputs: [],
-      });
+      // Update hideLabel if this instance of the name was struck through:
+      thisNode.hideLabel ||= hideLabel;
+      return thisNode;
     }
-  }
-
-  // getUniqueNode: return node 'foo' even when referenced as '-foo-':
-  function getUniqueNode(nodeName) {
-    return uniqueNodes.get(getTrueNodeName(nodeName).trueName);
+    // This is a new Node. Set up its object, keyed to its trueName:
+    const newNode = {
+      name: trueName,
+      tipname: trueName.replaceAll('\\n', ' '),
+      hideLabel: hideLabel,
+      sourceRow: row,
+      paintInputs: [],
+    };
+    uniqueNodes.set(trueName, newNode);
+    return newNode;
   }
 
   // updateNodeAttrs: Update an existing node's attributes.
@@ -2033,7 +2046,8 @@ glob.process_sankey = () => {
     // Just in case this is the first appearance of the name (or we've
     // encountered an earlier row than the node declaration), add it to
     // the big list:
-    addNodeName(nodeParams.name, nodeParams.sourceRow);
+    const thisNode = setUpNode(nodeParams.name, nodeParams.sourceRow);
+
     // We've already used the 'sourceRow' value and don't want it to
     // overwrite anything, so take it out of the params object:
     delete nodeParams.sourceRow;
@@ -2044,13 +2058,12 @@ glob.process_sankey = () => {
       nodeParams.color = `#${nodeParams.color}`;
     }
 
-    // Allow for special name syntaxes (like strike-through):
-    const targetNode = getUniqueNode(nodeParams.name);
     // Don't overwrite the 'name' value here, it can mess up tooltips:
     delete nodeParams.name;
+
     Object.entries(nodeParams).forEach(([pName, pVal]) => {
       if (typeof pVal !== 'undefined' && pVal !== null && pVal !== '') {
-        targetNode[pName] = pVal;
+        thisNode[pName] = pVal;
       }
     });
   }
@@ -2296,8 +2309,8 @@ glob.process_sankey = () => {
       // Otherwise just treat it as part of the nodename, e.g. "Team #1"
     }
     // Make sure the node names get saved; it may be their only appearance:
-    addNodeName(flow.source, flow.sourceRow);
-    addNodeName(flow.target, flow.sourceRow + 0.5);
+    const sNode = setUpNode(flow.source, flow.sourceRow),
+      tNode = setUpNode(flow.target, flow.sourceRow + 0.5);
 
     // Do we need to calculate this amount?
     if (flowIsCalculated(flow.amount)) {
@@ -2306,10 +2319,10 @@ glob.process_sankey = () => {
         // Adopt any unused amount from this flow's SOURCE.
         goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
           .forEach((gf) => {
-            if (gf.target === flow.source) {
+            if (sNode.name === trueNodeName(gf.target)) {
               // Add up amounts arriving at the parent from the other side:
               parentTotal += Number(gf.amount);
-            } else if (gf.source === flow.source) {
+            } else if (sNode.name === trueNodeName(gf.source)) {
               // Add up amounts leaving the parent on our side:
               siblingTotal += Number(gf.amount);
             }
@@ -2320,10 +2333,10 @@ glob.process_sankey = () => {
         // (Same logic as above, but reversing all the relations.)
         goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
           .forEach((gf) => {
-            if (gf.source === flow.target) {
+            if (tNode.name === trueNodeName(gf.source)) {
               // Add up amounts arriving at the parent from the other side:
               parentTotal += Number(gf.amount);
-            } else if (gf.target === flow.target) {
+            } else if (tNode.name === trueNodeName(gf.target)) {
               // Add up amounts leaving the parent on our side:
               siblingTotal += Number(gf.amount);
             }
@@ -2336,8 +2349,8 @@ glob.process_sankey = () => {
     // Add the updated flow to the list of approved flows:
     const f = {
       index: approvedFlows.length,
-      source: getUniqueNode(flow.source),
-      target: getUniqueNode(flow.target),
+      source: sNode,
+      target: tNode,
       value: flow.amount,
       color: flowColor,
       opacity: opacity,
