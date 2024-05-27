@@ -1060,9 +1060,10 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
           = cfg.labelposition_first === 'before' ? n.stage < bp : n.stage >= bp;
       return anchorAtEnd ? 'end' : 'start';
     }
-    // scheme = 'auto' here. Put the label on the empty side if there is one:
-    if (n.total[IN] === 0) { return 'end'; }
-    if (n.total[OUT] === 0) { return 'start'; }
+    // Scheme = 'auto' here. Put the label on the empty side if there is one.
+    // We check the *count* of flows in/out, because their sum might be 0:
+    if (!n.flows[IN].length) { return 'end'; }
+    if (!n.flows[OUT].length) { return 'start'; }
     switch (cfg.labelposition_autoalign) {
       case -1: return 'end';
       case 1: return 'start';
