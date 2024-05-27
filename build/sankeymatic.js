@@ -2238,6 +2238,13 @@ glob.process_sankey = () => {
     if (matches !== null) {
       const amountIn = matches[2].replace(/\s/g, ''),
         isCalculated = flowIsCalculated(amountIn);
+
+      // Is the Amount actually blank? Treat that like a comment (but log it):
+      if (amountIn === '') {
+        msg.log(`<span class="info_text">Skipped empty flow:</span> ${escapeHTML(lineIn)}`);
+        return;
+      }
+
       // Is Amount a number or a special operation?
       // Reject the line if it's neither:
       if (!isNumeric(amountIn) && !isCalculated) {
