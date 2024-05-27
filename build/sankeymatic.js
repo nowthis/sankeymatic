@@ -2328,8 +2328,8 @@ glob.process_sankey = () => {
             }
           });
       }
-      // Update this flow with the calculated amount:
-      flow.amount = parentTotal - siblingTotal;
+      // Update this flow with the calculated amount, preventing negatives:
+      flow.amount = Math.max(0, parentTotal - siblingTotal);
     }
 
     // Add the updated flow to the list of approved flows:
