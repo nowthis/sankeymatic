@@ -17,12 +17,15 @@
   --bg-palest: #fbfeff;
   --bg-pale-warning: #fffff8;
   --bg-attention: #e3ff9f;
+  --bg-plain-primary: #e6e6e6;
+  --bg-plain-secondary: #f8f8f8;
 
   --selected-option: #00557f;
   --warning: darkred;
 
   --gray60: #999;
   --lighter-gray: #f1f5f9;
+  --text-plain: #333;
 
   --border-base: 1px solid var(--medium-blue);
   --border-dark: 1px solid var(--deep-blue);
@@ -494,6 +497,35 @@ span.toggleable:hover {
   text-decoration: underline;
 }
 
+#console_area {
+  color: var(--text-plain);
+  border: var(--border-gray);
+}
+
+#console_area details > summary {
+  background-color: var(--bg-plain-primary);
+  border: none;
+}
+
+#console_area details {
+  margin: 0;
+  border: none;
+  background-color: var(--bg-plain-secondary)
+}
+
+#console_area div {
+  border: none;
+}
+
+.info_text {
+  color: var(--dark-blue);
+}
+
+.calced {
+  color: var(--light-blue);
+  font-weight: bold;
+}
+
 span.underline {
   border-bottom: var(--border-dark);
   display: inline-block;
@@ -832,7 +864,7 @@ input:checked ~ label.ropt,
 }
 
 #getLinkDialog footer {
-  background-color: #eee;
+  background-color: var(--bg-plain-primary);
   padding: 1em;
 }
 

@@ -584,6 +584,7 @@ const msg = {
     ['difference', { id: 'imbalance_messages', class: 'differencemessage' }],
     ['total', { id: 'totals_area', class: '' }],
     ['info', { id: 'info_messages', class: 'okmessage' }],
+    ['console', { id: 'console_lines', class: '' }],
   ]),
   add: (msgHTML, msgArea = 'info') => {
     const msgData = msg.areas.get(msgArea) || msg.areas.get('info'),
@@ -594,6 +595,12 @@ const msg = {
 
     el(msgData.id).append(msgDiv);
   },
+  consoleContainer: el('console_area'),
+  log: (msgHTML) => {
+    // Reveal the console if it's hidden:
+    msg.consoleContainer.style.display = '';
+    msg.add(msgHTML, 'console');
+  },
   queue: [],
   addToQueue: (msgHTML, msgArea) => { msg.queue.push([msgHTML, msgArea]); },
   // Clear out any old messages:
@@ -603,6 +610,7 @@ const msg = {
       .forEach((id) => {
         el(id).replaceChildren();
       });
+    msg.consoleContainer.style.display = 'none';
   },
   // If any pending messages have been queued, show them:
   showQueued: () => {
@@ -2195,8 +2203,8 @@ glob.process_sankey = () => {
     );
 
   /**
-   * @param {string} fv - a flow's value.
-   * @returns {boolean} true if the value is a special symbol
+   * @param {string} fv A flow's value.
+   * @returns {boolean} True if the value is a special calculation symbol
    */
   function flowIsCalculated(fv) {
     return [SYM_USE_REMAINDER, SYM_FILL_MISSING].includes(fv);
@@ -2228,10 +2236,10 @@ glob.process_sankey = () => {
     // Does this line look like a Flow?
     matches = lineIn.match(reFlowLine);
     if (matches !== null) {
-      // The Amount looked trivially like a number; reject the line
-      // if it really isn't:
       const amountIn = matches[2].replace(/\s/g, ''),
         isCalculated = flowIsCalculated(amountIn);
+      // Is Amount a number or a special operation?
+      // Reject the line if it's neither:
       if (!isNumeric(amountIn) && !isCalculated) {
         warnAbout(
           lineIn,
@@ -2251,6 +2259,8 @@ glob.process_sankey = () => {
         target: matches[3].trim(),
         amount: amountIn,
         sourceRow: row,
+        // Remember any symbol even after the amount is known:
+        operation: isCalculated ? amountIn : null,
       });
 
       // We need to know the maximum precision of the inputs (greatest
@@ -2312,11 +2322,13 @@ glob.process_sankey = () => {
     const sNode = setUpNode(flow.source, flow.sourceRow),
       tNode = setUpNode(flow.target, flow.sourceRow + 0.5);
 
-    // Do we need to calculate this amount?
-    if (flowIsCalculated(flow.amount)) {
+    // Do we need to calculate this flow's amount?
+    if (flow.operation) {
       let [parentTotal, siblingTotal] = [0, 0];
-      if (flow.amount === SYM_USE_REMAINDER) {
+      if (flow.operation === SYM_USE_REMAINDER) {
         // Adopt any unused amount from this flow's SOURCE.
+        // We check gf.amount here, not .operation, because if a calculation
+        // has been completed, we want to know about that end result:
         goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
           .forEach((gf) => {
             if (sNode.name === trueNodeName(gf.target)) {
@@ -2344,6 +2356,11 @@ glob.process_sankey = () => {
       }
       // Update this flow with the calculated amount, preventing negatives:
       flow.amount = Math.max(0, parentTotal - siblingTotal);
+      msg.log(
+        `<span class="info_text">Calculated:</span> ${escapeHTML(
+          `${sNode.tipname} [${flow.operation}] ${tNode.tipname}`
+        )} = <span class="calced">${ep(flow.amount)}</span>`
+      );
     }
 
     // Add the updated flow to the list of approved flows:
