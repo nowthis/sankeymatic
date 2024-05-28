@@ -2254,9 +2254,9 @@ glob.process_sankey = () => {
         );
         return;
       }
-      // Diagrams don't currently support negative numbers or 0:
-      if (Number(amountIn) <= 0) {
-        warnAbout(lineIn, 'Amounts must be greater than 0');
+      // Diagrams don't currently support negative numbers:
+      if (Number(amountIn) < 0) {
+        warnAbout(lineIn, 'Amounts must not be negative');
         return;
       }
 
@@ -2547,7 +2547,7 @@ glob.process_sankey = () => {
     // including 'total' and 'value'.
     // Skip checking any nodes with 0 as the From or To amount; those are
     // the origins & endpoints for the whole graph and don't qualify:
-    if (n.total[IN] > 0 && n.total[OUT] > 0) {
+    if (n.total[IN] > epsilonDifference && n.total[OUT] > epsilonDifference) {
       const difference = n.total[IN] - n.total[OUT];
       // Is there a difference big enough to matter? (i.e. > epsilon)
       // We'll always calculate this, even if not shown to the user.

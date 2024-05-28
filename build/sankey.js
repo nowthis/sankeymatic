@@ -92,6 +92,9 @@ d3.sankey = () => {
   // valueSum: Add up all the 'value' keys from a list of objects:
   function valueSum(list) { return d3.sum(list, (d) => d.value); }
 
+  // divide: Substitute MIN_VALUE if a denominator would be 0:
+  function divide(a, b) { return a / (b || Number.MIN_VALUE); }
+
   // yCenter & yBottom: Y-position of the middle and end of a node.
   function yCenter(n) { return n.y + n.dy / 2; }
   function yBottom(n) { return n.y + n.dy; }
@@ -146,8 +149,9 @@ d3.sankey = () => {
     nodes.forEach((n) => {
       // Remember the totals in & out:
       n.total = { [IN]: valueSum(n.flows[IN]), [OUT]: valueSum(n.flows[OUT]) };
-      // Each node's value will be the greater of the two:
-      n.value = Math.max(n.total[IN], n.total[OUT]);
+      // Each node's value will be the greater of the two (or else the
+      // smallest positive value):
+      n.value = Math.max(n.total[IN], n.total[OUT], Number.MIN_VALUE);
     });
   }
 
@@ -221,7 +225,7 @@ d3.sankey = () => {
           = totalFlowValue < n.value
             && (attachIncompletesTo === BOTTOM
                 || (attachIncompletesTo === NEAREST
-                    && totalFlowWeight / totalFlowValue > yCenter(n)))
+                    && divide(totalFlowWeight, totalFlowValue) > yCenter(n)))
               ? BOTTOM
               : TOP,
         // upper/lower bounds = the range where flows may attach
@@ -335,7 +339,7 @@ d3.sankey = () => {
     // 1) We use the *absolute* value of the x-distance, so even when a node
     //    is dragged to the opposite side of a connected node, the ordering
     //    will remain stable.
-    // 2) Denominator dx can't be 0, so MIN_VALUE is substituted if needed.
+    // 2) Denominator dx must not be 0, so MIN_VALUE is substituted if needed.
     flows.forEach((f) => {
       f.dx = Math.abs(f.target.x - f.source.x) || Number.MIN_VALUE;
     });
@@ -522,7 +526,7 @@ d3.sankey = () => {
         stage: nodeList[0].stage,
         weight: weight,
         value: value,
-        center: weight / value,
+        center: divide(weight, value),
       };
     }
 
@@ -537,8 +541,8 @@ d3.sankey = () => {
       // That calculation is very different:
       if (greatestNodeCount === 1) {
         [maximumNodeSpacing, actualNodeSpacing] = [0, 0];
-        ky
-          = d3.min(stagesArr, (s) => size.h / valueSum(s)) * nodeHeightFactor;
+        ky = nodeHeightFactor
+          * d3.min(stagesArr, (s) => divide(size.h, valueSum(s)));
       } else {
         // What if each node in the busiest stage got 1 pixel?
         // Figure out how many pixels would be left over.
@@ -555,13 +559,12 @@ d3.sankey = () => {
         actualNodeSpacing = maximumNodeSpacing * nodeSpacingFactor;
         // Finally, calculate the vertical scaling factor for all
         // nodes, given maximumNodeSpacing & the diagram's height:
-        ky
-          = d3.min(
-            stagesArr,
-            (s) => (size.h - (s.length - 1) * maximumNodeSpacing)
-              / valueSum(s)
-          );
+        ky = d3.min(
+          stagesArr,
+          (s) => divide(size.h - (s.length - 1) * maximumNodeSpacing, valueSum(s))
+        );
       }
+      if (ky === Infinity) { ky = 1; } // This happens if all Node values are 0
 
       // Compute all the dy & weighted values using the now-known scale
       // of the graph:
@@ -569,8 +572,10 @@ d3.sankey = () => {
         f.dy = f.value * ky;
         f.weightedValue = f.hasAShadow ? 0 : f.value;
       });
-      // Also: Ensure each node is at least 1 pixel tall:
-      nodes.forEach((n) => { n.dy = Math.max(1, n.value * ky); });
+      // Also: Ensure each node has a nonzero height:
+      nodes.forEach((n) => {
+        n.dy = Math.max(n.value * ky, Number.MIN_VALUE);
+      });
 
       // Set the initial positions of all nodes within each stage.
       // The initial stage will start with all nodes centered vertically,
@@ -667,16 +672,18 @@ d3.sankey = () => {
         // Thought exercise:
         // If 100% of the value of the Node group is flowing in, then this is
         // exactly equivalent to: *the weighted center of all sources*.
-        projectedSourceCenter
-          = (nStats.weight - fStats[IN].targets.weight + fStats[IN].sources.weight)
-            / nStats.value,
+        projectedSourceCenter = divide(
+          nStats.weight - fStats[IN].targets.weight + fStats[IN].sources.weight,
+          nStats.value
+        ),
         // projectedTargetCenter = the same idea in the other direction:
         //   current Node group's weighted center
         //     - outgoing weights' center
         //     + final center of those weights
-        projectedTargetCenter
-          = (nStats.weight - fStats[OUT].sources.weight + fStats[OUT].targets.weight)
-            / nStats.value;
+        projectedTargetCenter = divide(
+          nStats.weight - fStats[OUT].sources.weight + fStats[OUT].targets.weight,
+          nStats.value
+        );
 
       // Time to do the positioning calculations.
       let goalY = 0;
