@@ -2545,9 +2545,9 @@ glob.process_sankey = () => {
   approvedNodes.forEach((n, i) => {
     // Note: After rendering, there are now more keys in the node records,
     // including 'total' and 'value'.
-    // Skip checking any nodes with 0 as the From or To amount; those are
-    // the origins & endpoints for the whole graph and don't qualify:
-    if (n.total[IN] > epsilonDifference && n.total[OUT] > epsilonDifference) {
+    // Skip checking any nodes which don't have flows on both sides -- those
+    // are the origins & endpoints for the whole graph and don't qualify:
+    if (n.flows[IN].length && n.flows[OUT].length) {
       const difference = n.total[IN] - n.total[OUT];
       // Is there a difference big enough to matter? (i.e. > epsilon)
       // We'll always calculate this, even if not shown to the user.
@@ -2559,10 +2559,14 @@ glob.process_sankey = () => {
         });
       }
     } else {
-      // Accumulate totals in & out of the graph
-      // (On this path, one of these values will be 0 every time.)
-      grandTotal[IN] += n.total[IN];
-      grandTotal[OUT] += n.total[OUT];
+      // Accumulate the grand totals in & out of the graph.
+      // (Note: In this clause, at least one of these sides will have 0 flows
+      // every time.)
+      // This logic looks counterintuitive, but:
+      //   The grand total OUT = the sum of all *endpoint* nodes, which means:
+      //     the sum of all IN values for nodes with no OUT flows & vice versa
+      grandTotal[OUT] += n.total[IN];
+      grandTotal[IN] += n.total[OUT];
     }
 
     // Btw, check if this is a new maximum node:
@@ -2638,7 +2642,7 @@ glob.process_sankey = () => {
     // Show this value using the user's units, but override the number of
     // decimal places to show 4 digits of precision:
     unitsPerPixel = formatUserData(
-      maxNodeVal / tallestNodeHeight,
+      maxNodeVal / (tallestNodeHeight || Number.MIN_VALUE),
       { ...numberStyle, decimalPlaces: 4 }
     );
   el('scale_figures').innerHTML
