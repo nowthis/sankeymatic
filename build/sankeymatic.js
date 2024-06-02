@@ -2011,12 +2011,6 @@ glob.process_sankey = () => {
   }
 
   /**
-   * @param {string} n A raw node name from the source data
-   * @returns {string} The name without any extra markings
-   */
-  function trueNodeName(n) { return parseNodeName(n).trueName; }
-
-  /**
    * Make sure a node's name is present in the main list, with the lowest row
    * number the node has appeared on.
    * @param {string} nodeName A raw node name from the input data
@@ -2266,7 +2260,7 @@ glob.process_sankey = () => {
         target: matches[3].trim(),
         amount: amountIn,
         sourceRow: row,
-        // Remember any symbol even after the amount is known:
+        // Remember any special symbol even after the amount will be known:
         operation: isCalculated ? amountIn : null,
       });
 
@@ -2298,17 +2292,23 @@ glob.process_sankey = () => {
     );
   });
 
-  // Make the final list of Flows, including calculating what-if amounts:
+  // Make the final list of Flows, linked to their Node objects:
   const graphIsReversed = el('layout_reversegraph').checked;
   goodFlows.forEach((flow) => {
-    // Look for extra content about this flow on the target-node end of the
-    // string:
-    let [flowColor, opacity] = ['', ''];
-      // Try to parse; there may be extra info that isn't actually the name:
-    // Format of the Target node can be: Target node [#color[.opacity]]
-    //   e.g. 'x [...] y #99aa00' or 'x [...] y #99aa00.25'
-    // Look for a candidate string starting with # for color info:
-    const flowTargetPlus = flow.target.match(reFlowTargetWithSuffix);
+    const thisFlow = {
+        hovering: false,
+        index: approvedFlows.length,
+        sourceRow: flow.sourceRow,
+        operation: flow.operation,
+        value: flow.amount,
+        color: '', // may be overwritten below
+        opacity: '', // ""
+      },
+      // Try to parse any extra info that isn't actually the target's name.
+      // The format of the Target string can be: "Name [#color[.opacity]]"
+      //   e.g. 'x [...] y #99aa00' or 'x [...] y #99aa00.25'
+      // Look for a candidate string starting with # for color info:
+      flowTargetPlus = flow.target.match(reFlowTargetWithSuffix);
     if (flowTargetPlus !== null) {
       // IFF the # string matches a stricter pattern, separate the target
       // string into parts:
@@ -2319,63 +2319,63 @@ glob.process_sankey = () => {
         // Update the target's name with the trimmed string:
         flow.target = possibleNodeName;
         // If there was a color, adopt it:
-        if (colorOpacity[1]) { flowColor = `#${colorOpacity[1]}`; }
+        if (colorOpacity[1]) { thisFlow.color = `#${colorOpacity[1]}`; }
         // If there was an opacity, adopt it:
-        if (colorOpacity[2]) { opacity = colorOpacity[2]; }
+        if (colorOpacity[2]) { thisFlow.opacity = colorOpacity[2]; }
       }
-      // Otherwise just treat it as part of the nodename, e.g. "Team #1"
+      // Otherwise we will treat it as part of the nodename, e.g. "Team #1"
     }
-    // Make sure the node names get saved; it may be their only appearance:
-    const sNode = setUpNode(flow.source, flow.sourceRow),
-      tNode = setUpNode(flow.target, flow.sourceRow + 0.5);
 
-    // Do we need to calculate this flow's amount?
-    if (flow.operation) {
+    // Make sure the node names get saved; it may be their only appearance:
+    thisFlow.source = setUpNode(flow.source, flow.sourceRow);
+    thisFlow.target = setUpNode(flow.target, flow.sourceRow + 0.5);
+
+    if (graphIsReversed) {
+      [thisFlow.source, thisFlow.target] = [thisFlow.target, thisFlow.source];
+    }
+
+    approvedFlows.push(thisFlow);
+  });
+
+  // Now that all names are resolved, we can calculate any dependent amounts:
+  approvedFlows
+    .filter((flow) => flow.operation)
+    .forEach((flow) => {
       // SYM_USE_REMAINDER = Adopt any remainder from this flow's SOURCE
       // SYM_FILL_MISSING = Adopt any unused amount from this flow's TARGET
-      const [parentName, arrivingKey, leavingKey]
+      const [arrivingKey, leavingKey]
         = flow.operation === SYM_USE_REMAINDER
-          ? [sNode.name, 'target', 'source']
-          : [tNode.name, 'source', 'target'];
+          ? ['target', 'source']
+          : ['source', 'target'],
+        parentName = flow[leavingKey].name;
       let [parentTotal, siblingTotal] = [0, 0];
-      // We check gf.amount here, not .operation, because if a calculation
-      // has been completed, we want to know about that end result:
-      goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
-        .forEach((gf) => {
-          if (parentName === trueNodeName(gf[arrivingKey])) {
+      // Find any other flows which touch the 'parent' (i.e. data source).
+      // We check af.value here, *not* .operation, because if a calculation
+      //   has been completed, we want to know about that resulting amount.
+      // (Note: We won't re-process the current flow in this inner loop --
+      //   the first filter will exclude our unresolved .value)
+      approvedFlows
+        .filter(
+          (af) => !flowIsCalculated(af.value)
+            && [af[arrivingKey].name, af[leavingKey].name].includes(parentName)
+        )
+        .forEach((af) => {
+          if (parentName === af[arrivingKey].name) {
             // Add up amounts arriving at the parent from the other side:
-            parentTotal += Number(gf.amount);
-          } else if (parentName === trueNodeName(gf[leavingKey])) {
-            // Add up amounts leaving the parent on our side:
-            siblingTotal += Number(gf.amount);
+            parentTotal += Number(af.value);
+          } else {
+            // Add up sibling amounts (flows leaving the parent on our side):
+            siblingTotal += Number(af.value);
           }
-          // (Any flows which DON'T touch the parent node are just skipped.)
         });
-      // Update this flow with the calculated amount, preventing negatives:
-      flow.amount = Math.max(0, parentTotal - siblingTotal);
+      // Update this flow with the calculated amount (preventing negatives):
+      flow.value = Math.max(0, parentTotal - siblingTotal);
       msg.log(
         `<span class="info_text">Calculated:</span> ${escapeHTML(
-          `${sNode.tipname} [${flow.operation}] ${tNode.tipname}`
-        )} = <span class="calced">${ep(flow.amount)}</span>`
+          `${flow.source.tipname} [${flow.operation}] ${flow.target.tipname}`
+        )} = <span class="calced">${ep(flow.value)}</span>`
       );
-    }
-
-    // Add the updated flow to the list of approved flows:
-    const f = {
-      index: approvedFlows.length,
-      source: sNode,
-      target: tNode,
-      value: flow.amount,
-      color: flowColor,
-      opacity: opacity,
-      hovering: false,
-      sourceRow: flow.sourceRow,
-    };
-    if (graphIsReversed) {
-      [f.source, f.target] = [f.target, f.source];
-    }
-    approvedFlows.push(f);
-  });
+    });
 
   // Construct the final list of approved_nodes, sorted by their order of
   // appearance in the source:
