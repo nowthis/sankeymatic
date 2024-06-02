@@ -2332,6 +2332,13 @@ glob.process_sankey = () => {
 
     if (graphIsReversed) {
       [thisFlow.source, thisFlow.target] = [thisFlow.target, thisFlow.source];
+      // Calculations must also flow in the opposite direction:
+      if (thisFlow.operation) {
+        thisFlow.operation
+          = thisFlow.operation === SYM_USE_REMAINDER
+            ? SYM_FILL_MISSING
+            : SYM_USE_REMAINDER;
+      }
     }
 
     approvedFlows.push(thisFlow);
