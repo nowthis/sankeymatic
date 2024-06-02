@@ -2331,36 +2331,26 @@ glob.process_sankey = () => {
 
     // Do we need to calculate this flow's amount?
     if (flow.operation) {
+      // SYM_USE_REMAINDER = Adopt any remainder from this flow's SOURCE
+      // SYM_FILL_MISSING = Adopt any unused amount from this flow's TARGET
+      const [parentName, arrivingKey, leavingKey]
+        = flow.operation === SYM_USE_REMAINDER
+          ? [sNode.name, 'target', 'source']
+          : [tNode.name, 'source', 'target'];
       let [parentTotal, siblingTotal] = [0, 0];
-      if (flow.operation === SYM_USE_REMAINDER) {
-        // Adopt any unused amount from this flow's SOURCE.
-        // We check gf.amount here, not .operation, because if a calculation
-        // has been completed, we want to know about that end result:
-        goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
-          .forEach((gf) => {
-            if (sNode.name === trueNodeName(gf.target)) {
-              // Add up amounts arriving at the parent from the other side:
-              parentTotal += Number(gf.amount);
-            } else if (sNode.name === trueNodeName(gf.source)) {
-              // Add up amounts leaving the parent on our side:
-              siblingTotal += Number(gf.amount);
-            }
-            // (Any flows which DON'T touch the parent just get skipped.)
-          });
-      } else {
-        // SYM_FILL_MISSING: Adopt any unused amount from this flow's TARGET.
-        // (Same logic as above, but reversing all the relations.)
-        goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
-          .forEach((gf) => {
-            if (tNode.name === trueNodeName(gf.source)) {
-              // Add up amounts arriving at the parent from the other side:
-              parentTotal += Number(gf.amount);
-            } else if (tNode.name === trueNodeName(gf.target)) {
-              // Add up amounts leaving the parent on our side:
-              siblingTotal += Number(gf.amount);
-            }
-          });
-      }
+      // We check gf.amount here, not .operation, because if a calculation
+      // has been completed, we want to know about that end result:
+      goodFlows.filter((gf) => !flowIsCalculated(gf.amount))
+        .forEach((gf) => {
+          if (parentName === trueNodeName(gf[arrivingKey])) {
+            // Add up amounts arriving at the parent from the other side:
+            parentTotal += Number(gf.amount);
+          } else if (parentName === trueNodeName(gf[leavingKey])) {
+            // Add up amounts leaving the parent on our side:
+            siblingTotal += Number(gf.amount);
+          }
+          // (Any flows which DON'T touch the parent node are just skipped.)
+        });
       // Update this flow with the calculated amount, preventing negatives:
       flow.amount = Math.max(0, parentTotal - siblingTotal);
       msg.log(
