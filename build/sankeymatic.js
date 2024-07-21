@@ -2036,6 +2036,7 @@ glob.process_sankey = () => {
       hideLabel: hideLabel,
       sourceRow: row,
       paintInputs: [],
+      unknowns: { [IN]: new Set(), [OUT]: new Set() },
     };
     uniqueNodes.set(trueName, newNode);
     return newNode;
@@ -2344,45 +2345,145 @@ glob.process_sankey = () => {
     approvedFlows.push(thisFlow);
   });
 
-  // Now that all names are resolved, we can calculate any dependent amounts:
-  approvedFlows
-    .filter((flow) => flow.operation)
-    .forEach((flow) => {
-      // SYM_USE_REMAINDER = Adopt any remainder from this flow's SOURCE
-      // SYM_FILL_MISSING = Adopt any unused amount from this flow's TARGET
-      const [arrivingKey, leavingKey]
-        = flow.operation === SYM_USE_REMAINDER
-          ? ['target', 'source']
-          : ['source', 'target'],
-        parentName = flow[leavingKey].name;
-      let [parentTotal, siblingTotal] = [0, 0];
-      // Find any other flows which touch the 'parent' (i.e. data source).
-      // We check af.value here, *not* .operation, because if a calculation
-      //   has been completed, we want to know about that resulting amount.
-      // (Note: We won't re-process the current flow in this inner loop --
-      //   the first filter will exclude our unresolved .value)
-      approvedFlows
-        .filter(
-          (af) => !flowIsCalculated(af.value)
-            && [af[arrivingKey].name, af[leavingKey].name].includes(parentName)
-        )
-        .forEach((af) => {
-          if (parentName === af[arrivingKey].name) {
-            // Add up amounts arriving at the parent from the other side:
-            parentTotal += Number(af.value);
-          } else {
-            // Add up sibling amounts (flows leaving the parent on our side):
-            siblingTotal += Number(af.value);
-          }
-        });
-      // Update this flow with the calculated amount (preventing negatives):
-      flow.value = Math.max(0, parentTotal - siblingTotal);
-      msg.log(
-        `<span class="info_text">Calculated:</span> ${escapeHTML(
-          `${flow.source.tipname} [${flow.operation}] ${flow.target.tipname}`
-        )} = <span class="calced">${ep(flow.value)}</span>`
+  // Calculate computed (unknown) values
+
+  // The algorithm is to look at each node that has exactly one unknown
+  // input or output flow, compute that value, and add the node
+  // connected by the formerly unknown flow to the list to look at.
+
+  // Set up constants we will need:
+  // SYM_USE_REMAINDER = Adopt any remainder from this flow's SOURCE
+  // SYM_FILL_MISSING = Adopt any unused amount from this flow's TARGET
+  const outOfSource = { node: 'source', dir: OUT },
+    intoTarget = { node: 'target', dir: IN },
+    calculationKeys = {
+      [SYM_USE_REMAINDER]: { leaving: outOfSource, arriving: intoTarget },
+      [SYM_FILL_MISSING]: { leaving: intoTarget, arriving: outOfSource },
+    },
+    // Make a handy set containing all calculating flows:
+    queueOfFlows = new Set(approvedFlows.filter((flow) => flow.operation)),
+    // Track each Node touched by a calculated flow:
+    involvedNodes = new Set();
+  // Now, store in each Node references to each unknown Flow touching it.
+  // Later we'll use the counts of unkonwns.
+  queueOfFlows.forEach((f) => {
+    const k = calculationKeys[f.operation];
+    // Add references to the unknowns to their related Nodes.
+    f[k.leaving.node].unknowns[k.leaving.dir].add(f);
+    involvedNodes.add(f[k.leaving.node].name);
+    f[k.arriving.node].unknowns[k.arriving.dir].add(f);
+    involvedNodes.add(f[k.arriving.node].name);
+  });
+  // For each involvedNode: is it an endpoint or origin?
+  // (Terminal nodes have an implicit additional unknown side.)
+  // We'd rather check with n.flows[].length, but that's not set up yet.
+  approvedFlows.forEach((f) => {
+    // Define the struct if it's not there yet. Begin with both = true.
+    f.source.terminates ??= { [IN]: true, [OUT]: true };
+    f.target.terminates ??= { [IN]: true, [OUT]: true };
+    // If terminates = true BUT a flow is leaving that side: set it false!
+    f.source.terminates[OUT] &&= !involvedNodes.has(f.source.name);
+    f.target.terminates[IN] &&= !involvedNodes.has(f.target.name);
+  });
+
+  // Make a place to keep the unknown count for each calculated flow's parent.
+  // (It is cleared & re-built each time through the loop.)
+  const parentUnknowns = new Map();
+
+  function resolveEligibleFlow(ef) {
+    const k = calculationKeys[ef.operation],
+      parentName = ef[k.leaving.node].name;
+    // Find any flows which touch the 'parent' (i.e. data source).
+    // We check af.value here, *not* .operation. If a calculation has been
+    //   completed, we want to know that resulting amount.
+    // (Note: We won't re-process flow 'ef' in this inner loop --
+    //   the 'flowIsCalculated' filter excludes its unresolved .value)
+    let [parentTotal, siblingTotal] = [0, 0];
+    approvedFlows
+      .filter(
+        (af) => !flowIsCalculated(af.value)
+          && [af[k.arriving.node].name, af[k.leaving.node].name]
+            .includes(parentName)
+      )
+      .forEach((af) => {
+        if (parentName === af[k.arriving.node].name) {
+          // Add up amounts arriving at the parent from the other side:
+          parentTotal += Number(af.value);
+        } else {
+          // Add up sibling amounts (flows leaving the parent on our side):
+          siblingTotal += Number(af.value);
+        }
+      });
+    // Update this flow with the calculated amount (preventing negatives):
+    ef.value = Math.max(0, parentTotal - siblingTotal);
+    // Remove this flow from the 'unknowns' lists & from the queue:
+    ef[k.leaving.node].unknowns[k.leaving.dir].delete(ef);
+    ef[k.arriving.node].unknowns[k.arriving.dir].delete(ef);
+    queueOfFlows.delete(ef);
+    msg.log(
+      `<span class="info_text">Calculated:</span> ${escapeHTML(
+        `${ef.source.tipname} [${ef.operation}] ${ef.target.tipname}`
+      )} = <span class="calced">${ep(ef.value)}</span>`
+    );
+  }
+
+  /**
+   * Test whether a flow's parent has only 1 unknown value left.
+   * @param {object} flow - the specific flow to test
+   * @returns true when the unknown count for the flow's parent is exactly 1
+   */
+  function has_one_unknown(flow) { return parentUnknowns.get(flow) === 1; }
+
+  // Now, resolve the flows in order from most certain to least certain:
+  while (queueOfFlows.size) {
+    // First, (re)calculate every flow's count of unknowns on its parent:
+    parentUnknowns.clear();
+    queueOfFlows.forEach((f) => {
+      const k = calculationKeys[f.operation],
+        parentN = f[k.leaving.node];
+      // If an unknown flow connects to a terminating node, it should be ranked
+      // lower. All internal singletons should solidify first.
+      // After we have resolved all other singletons, only then should we
+      // resolve flows with terminating nodes before proceeding to the
+      // indeterminate flows. To achieve this, we add 0.5 to a flow's
+      // parentUnknowns value when either end terminates.
+      f.terminalAdj // Note: this only needs to be derived once.
+        ??= parentN.terminates[k.arriving.dir]
+          || f[k.arriving.node].terminates[k.leaving.dir]
+          ? 0.5
+          : 0;
+      parentUnknowns.set(
+        f,
+        parentN.unknowns[IN].size + parentN.unknowns[OUT].size + f.terminalAdj
       );
     });
+    // Helpful for debugging - Array.from(parentUnknowns).sort((a, b) => a[1] - b[1])
+    //   .forEach((x) => console.log(`${x[0].source.tipname} ${x[0].operation}`
+    //     + ` ${x[0].target.tipname}: ${x[1]}`));
+    // console.log('');
+
+    // Next, prioritize the flows by their count of unknowns (ascending),
+    // then by sourceRow (ascending):
+    const sortedFlows
+      = Array.from(queueOfFlows.values())
+        .sort((a, b) => parentUnknowns.get(a) - parentUnknowns.get(b)
+          || a.sourceRow - b.sourceRow);
+
+    // Are there _any_ flows with a single unknown? (If so, they'll be
+    // first in line.)
+    if (has_one_unknown(sortedFlows[0])) {
+      // We have /at least/ one. Resolve all the singletons we can!
+      sortedFlows
+        .filter((f) => has_one_unknown(f))
+        .forEach((f) => resolveEligibleFlow(f));
+    } else {
+      // Here we had _no_ singletons.
+      // Resolve ONE ambiguous flow, then loop again to look for any
+      // fresh singletons which resulted.
+      resolveEligibleFlow(sortedFlows[0]);
+    }
+  }
+  // Done calculating!
 
   // Construct the final list of approved_nodes, sorted by their order of
   // appearance in the source:
