@@ -601,6 +601,12 @@ const msg = {
     msg.consoleContainer.style.display = '';
     msg.add(msgHTML, 'console');
   },
+  flagsSeen: new Set(),
+  logOnce: (flag, msgHTML) => {
+    if (msg.flagsSeen.has(flag)) { return; }
+    msg.log(`<span class="info_text">${msgHTML}</span>`);
+    msg.flagsSeen.add(flag);
+  },
   queue: [],
   addToQueue: (msgHTML, msgArea) => { msg.queue.push([msgHTML, msgArea]); },
   // Clear out any old messages:
@@ -611,6 +617,7 @@ const msg = {
         el(id).replaceChildren();
       });
     msg.consoleContainer.style.display = 'none';
+    msg.flagsSeen.clear();
   },
   // If any pending messages have been queued, show them:
   showQueued: () => {
@@ -2345,11 +2352,7 @@ glob.process_sankey = () => {
     approvedFlows.push(thisFlow);
   });
 
-  // Calculate computed (unknown) values
-
-  // The algorithm is to look at each node that has exactly one unknown
-  // input or output flow, compute that value, and add the node
-  // connected by the formerly unknown flow to the list to look at.
+  // MARK: Calculate any dependent amounts
 
   // Set up constants we will need:
   // SYM_USE_REMAINDER = Adopt any remainder from this flow's SOURCE
@@ -2374,17 +2377,21 @@ glob.process_sankey = () => {
     f[k.arriving.node].unknowns[k.arriving.dir].add(f);
     involvedNodes.add(f[k.arriving.node].name);
   });
-  // For each involvedNode: is it an endpoint or origin?
-  // (Terminal nodes have an implicit additional unknown side.)
-  // We'd rather check with n.flows[].length, but that's not set up yet.
-  approvedFlows.forEach((f) => {
-    // Define the struct if it's not there yet. Begin with both = true.
-    f.source.terminates ??= { [IN]: true, [OUT]: true };
-    f.target.terminates ??= { [IN]: true, [OUT]: true };
-    // If terminates = true BUT a flow is leaving that side: set it false!
-    f.source.terminates[OUT] &&= !involvedNodes.has(f.source.name);
-    f.target.terminates[IN] &&= !involvedNodes.has(f.target.name);
-  });
+
+  if (queueOfFlows.size) {
+    msg.logOnce('declareCalculations', '<b>Resolving calculated flows.</b>');
+    // For each involvedNode: is it an endpoint or origin?
+    // (Terminal nodes have an implicit additional unknown side.)
+    // We'd rather check with n.flows[].length, but that's not set up yet.
+    approvedFlows.forEach((f) => {
+      // Initialize the struct if it's not present. Begin with both = true.
+      f.source.terminates ??= { [IN]: true, [OUT]: true };
+      f.target.terminates ??= { [IN]: true, [OUT]: true };
+      // Update relevant values to false if they aren't already:
+      f.source.terminates[OUT] &&= !involvedNodes.has(f.source.name);
+      f.target.terminates[IN] &&= !involvedNodes.has(f.target.name);
+    });
+  }
 
   // Make a place to keep the unknown count for each calculated flow's parent.
   // (It is cleared & re-built each time through the loop.)
@@ -2392,7 +2399,12 @@ glob.process_sankey = () => {
 
   function resolveEligibleFlow(ef) {
     const k = calculationKeys[ef.operation],
-      parentName = ef[k.leaving.node].name;
+      parentN = ef[k.leaving.node],
+      unknownCt = Math.trunc(parentUnknowns.get(ef)), // strip any .5s
+      unknownMsg
+        = unknownCt > 1
+          ? ` (&lsquo;${parentN.tipname}&rsquo; had ${unknownCt} unknowns)`
+          : '';
     // Find any flows which touch the 'parent' (i.e. data source).
     // We check af.value here, *not* .operation. If a calculation has been
     //   completed, we want to know that resulting amount.
@@ -2403,10 +2415,10 @@ glob.process_sankey = () => {
       .filter(
         (af) => !flowIsCalculated(af.value)
           && [af[k.arriving.node].name, af[k.leaving.node].name]
-            .includes(parentName)
+            .includes(parentN.name)
       )
       .forEach((af) => {
-        if (parentName === af[k.arriving.node].name) {
+        if (parentN.name === af[k.arriving.node].name) {
           // Add up amounts arriving at the parent from the other side:
           parentTotal += Number(af.value);
         } else {
@@ -2423,7 +2435,7 @@ glob.process_sankey = () => {
     msg.log(
       `<span class="info_text">Calculated:</span> ${escapeHTML(
         `${ef.source.tipname} [${ef.operation}] ${ef.target.tipname}`
-      )} = <span class="calced">${ep(ef.value)}</span>`
+      )} = <span class="calced">${ep(ef.value)}</span>${unknownMsg}`
     );
   }
 
@@ -2480,6 +2492,13 @@ glob.process_sankey = () => {
       // Here we had _no_ singletons.
       // Resolve ONE ambiguous flow, then loop again to look for any
       // fresh singletons which resulted.
+      // But first: note we're in Ambiguous Territory (if we haven't already)
+      msg.logOnce(
+        'warnAboutAmbiguousFlows',
+        '<em>Note: Beyond this point, some flow amounts depended on multiple unknown values.<br>'
+          + 'They will be resolved in the order of fewest unknowns + their order in the input data.</em>'
+      );
+      // (We do that first because the very next console msg will mention unknowns)
       resolveEligibleFlow(sortedFlows[0]);
     }
   }
