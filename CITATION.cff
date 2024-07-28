@@ -1,0 +1,25 @@
+# This CITATION.cff file was generated using https://bit.ly/cffinit
+
+cff-version: 1.2.0
+title: SankeyMATIC
+message: >-
+  For anyone wishing to cite this software, use the
+  information contained here.
+type: software
+authors:
+  - given-names: Steve
+    family-names: Bogart
+identifiers:
+  - type: url
+    value: 'https://sankeymatic.com/build/'
+    description: Public instance
+repository-code: 'https://github.com/nowthis/sankeymatic'
+url: 'https://sankeymatic.com/'
+abstract: >-
+  Make beautiful flow diagrams with SankeyMATIC, a Sankey
+  diagram builder for everyone.
+keywords:
+  - sankey-diagram
+  - data-visualization
+  - svg
+license: ISC
