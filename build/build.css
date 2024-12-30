@@ -37,6 +37,7 @@
   --screen-md: 1024px;
   --screen-lg: 1280px;
 
+  --grid-gap: 0.5em;
 }
 
 body {
@@ -224,6 +225,7 @@ input[type="range"]:active::-webkit-slider-runnable-track {
   justify-content: center;
 }
 
+.gap-tiny { gap: 0.1em; }
 .gap-small { gap: 0.5em; }
 .gap-medium { gap: 1em; }
 .gap-large { gap: 2em; }
@@ -582,10 +584,11 @@ svg g#sankey_labels rect {
    The 'stroke' is all we are seeing, so that is what gets colored.
    The stroke styling is now done in the JS, not the overall CSS. */
 
-td#other_entry {
+
+.diagram_controls {
   padding: 0 2px;
   background-color: #cce8ff;
-  vertical-align: middle;
+  vertical-align: start;
 }
 
 td#grapharea {
@@ -626,7 +629,7 @@ fieldset { border: var(--border-light); }
   padding: 5px 8px;
 }
 
-/* 
+/*
 #img_tag_hint {
   background-color: white;
   padding: 3px;
@@ -1059,6 +1062,28 @@ fieldset.simple {
   background-color: var(--bg-light);
 }
 
+.skm_grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
+  grid-template-areas:
+    "controls export"
+    "controls size"
+    "controls main"
+    "controls about";
+  grid-column-gap: var(--grid-gap);
+}
+
+.skm_grid > div {
+  height: fit-content;
+}
+
+.skm_grid > .diagram_controls { grid-area: controls; }
+.diagram_size     { grid-area: size; }
+.diagram_export   { grid-area: export; }
+.diagram_main     { grid-area: main; }
+.diagram_about    { grid-area: about; }
+
 /* media query land */
 
 @media screen and (width <= 1024px) {
@@ -1074,7 +1099,37 @@ fieldset.simple {
   .footer__nav ul{ margin: 0 .75em; }
 }
 
+@media (width <= 900px) {
+  main { margin: 0.5em; }
+
+  .okmessage { place-self: center; }
+
+  .skm_grid {
+    grid-template-columns: 100vw;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "main"
+      "export"
+      "about"
+      "size"
+      "controls";
+    justify-items: center;
+    grid-row-gap: var(--grid-gap);
+  }
+
+  #reset_moves_area,
+  #download_central {
+    text-align: center;
+    line-height: 1.8em;
+    text-wrap: pretty;
+  }
+
+  p#chart { max-width: 100vw; }
+}
+
 @media screen and (width <= 675px) {
+  main { margin: 0.5em 0; }
+
   .hs-sm-vs { flex-direction: column; }
 
   .header__links {

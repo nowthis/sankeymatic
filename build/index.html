@@ -44,15 +44,22 @@
 
 <main>
 <div id="example_diagrams" class="text_center">
-<h4>Sample Diagrams &amp; Starting Points:
+<div class="hs-sm-vs f-middle gap-small">
+<h4>Sample Diagrams &amp; Starting Points:</h4>
+<div class="hs-md-vs gap-tiny">
+<div class="hs space-between">
 <button type="button" id="load_example_simple" onclick="replaceGraph('simple_start'); return false;">Start Simple</button>
 <button type="button" id="load_example_financial_results" onclick="replaceGraph('financial_results'); return false;">Financial Results</button>
 <button type="button" id="load_example_job_search" onclick="replaceGraph('job_search'); return false;">Job Search</button>
-<button type="button" id="load_example_election" onclick="replaceGraph('election'); return false;">Ranked Election</button>
+</div>
+<div class="hs space-between">
 <!-- <button type="button" id="load_example_energy_all" onclick="replaceGraph('energy_flows_all'); return false;">Energy Flows</button> &nbsp; -->
 <button type="button" id="load_example_journey" onclick="replaceGraph('journey'); return false;">Journey</button>
+<button type="button" id="load_example_election" onclick="replaceGraph('election'); return false;">Ranked Election</button>
 <button type="button" id="load_example_basic_budget" onclick="replaceGraph('default_budget'); return false;">Budget</button>
-</h4>
+</div>
+</div>
+</div>
 
 <p id="replace_graph_warning" style="display: none;">
 <em>This will <strong>erase</strong> your changes. Are you sure?</em><br />
@@ -65,11 +72,9 @@
 <div class="center_basic">
 <form id="skm_form" onsubmit="process_sankey(); return false;">
 
-<table><tr><td>
+<div class="skm_grid">
 
-<table class="center_basic">
-<tr>
-    <td id="other_entry">
+<div class="center diagram_controls">
 
 <h2 class="ui_head" onclick="togglePanel('input_options');">
 <span id="input_options_indicator" class="indicator">&ndash;</span>
@@ -500,15 +505,13 @@ Diagram Scales match as closely as possible.
 <input type="checkbox" id="internal_revealshadows" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="internal_revealshadows" class="ropt">Reveal Shadow Nodes</label>
 </div>
 
-</div>
+</div> <!-- End Debug options -->
 
 </div> <!-- End LAYOUT -->
 
-</td>
-</tr>
-</table> <!-- End Left Column -->
+</div> <!-- End Left Column -->
 
-</td><td id="grapharea">
+<div class="diagram_export">
 <!-- EXPORT -->
 <div class="expandable_box">
 <p id="download_central" class="share-box">
@@ -565,10 +568,11 @@ Diagram Scales match as closely as possible.
   </footer>
 </dialog>
 </div>
+</div>
 
 <!-- SIZE & SPACING & BACKGROUND -->
 
-<div class="expandable_box">
+<div class="diagram_size expandable_box">
 <h2 class="ui_head" onclick="togglePanel('diagram_options');">
 <span id="diagram_options_indicator" class="indicator">&ndash;</span>
 Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
@@ -600,13 +604,14 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 </div>
 
 <!-- MOVING NODES -->
-<p id="reset_moves_area" class="form_elements1">
-Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type="button" id="reset_all_moved_nodes" onclick="resetMovesAndRender(); return false;">Reset all moved Nodes</button>
-</p>
+<div class="diagram_main">
 <div id="top_messages_container">
   <div id="info_messages"></div>
   <div id="issue_messages"></div>
 </div>
+<p id="reset_moves_area" class="form_elements1">
+Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type="button" id="reset_all_moved_nodes" onclick="resetMovesAndRender(); return false;">Reset all moved Nodes</button>
+</p>
 
 <p id="chart">
 <svg id="svg_scratch" height="600" width="600" xmlns="http://www.w3.org/2000/svg" class="hidden_under"></svg>
@@ -619,6 +624,9 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 <label class="smalllabel ropt" for="meta_mentionsankeymatic">Include &ldquo;Made at SankeyMATIC.com&rdquo;</label>
 </p>
 </div>
+</div> <!-- diagram_main -->
+
+<div class="diagram_about">
 <table id="messages" class="expandable_box">
 <tr><td>
   <div id="messages_area">
@@ -648,8 +656,10 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
 </div>
 </td></tr>
 </table>
-</td></tr></table> <!-- End SKM Form -->
-</form>
+</div> <!-- diagram_about -->
+
+</div> <!-- End skm_grid -->
+</form> <!-- End SKM Form -->
 
 </div>
 <!-- ====================== Bottom Matter ====================== -->
