@@ -91,13 +91,15 @@ Other [250] Budget
 Budget [450] Taxes
 Budget [420] Housing
 Budget [400] Food
-Budget [295] Transportation
-Budget [25] Savings
+Budget [255] Transportation
 
 // You can set a Node's color, like this:
-:Budget #708090
+:Budget #057
 //            ...or a color for a single Flow:
-Budget [160] Other Necessities #0F0
+Budget [160] Other Necessities #606
+
+// "[*]" means "Use any amount left over":
+Budget [*] Savings
 
 // Use the controls below to customize
 // your diagram's appearance...</textarea>
@@ -373,7 +375,7 @@ Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onch
 <td>
 <span class="no_wrap">
 <button id="theme_a_rotate_left" type="submit" title="Rotate theme colors left" onclick="nudgeColorTheme('a',1); return false;">&lt;</button>
-<span id="theme_a_guide"></span><input type="hidden" id="themeoffset_a" value="9">
+<span id="theme_a_guide"></span><input type="hidden" id="themeoffset_a" value="6">
 <button id="theme_a_rotate_right" type="submit" title="Rotate theme colors right" onclick="nudgeColorTheme('a',-1); return false;">&gt;</button>
 </span>
 </td>
