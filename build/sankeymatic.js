@@ -2400,11 +2400,22 @@ glob.process_sankey = () => {
   function resolveEligibleFlow(ef) {
     const k = calculationKeys[ef.operation],
       parentN = ef[k.leaving.node],
-      unknownCt = Math.trunc(parentUnknowns.get(ef)), // strip any .5s
+      unknownCt = Math.trunc(parentUnknowns.get(ef)); // strip any .5s
+
+    // Special notifications regarding more ambiguous flows:
+    let unknownMsg = '';
+    if (unknownCt > 1) {
       unknownMsg
-        = unknownCt > 1
-          ? ` (&lsquo;${parentN.tipname}&rsquo; had ${unknownCt} unknowns)`
-          : '';
+        = ` (&lsquo;${parentN.tipname}&rsquo; had ${unknownCt} unknowns)`;
+      // Say - once! - that we are in Ambiguous Territory. (We do this here
+      // because the very next console msg will mention the multiple unknowns.)
+      msg.logOnce(
+        'warnAboutAmbiguousFlows',
+        '<em>Note: Beyond this point, some flow amounts depended on multiple unknown values.<br>' +
+          'They will be resolved in the order of fewest unknowns + their order in the input data.</em>'
+      );
+    }
+
     // Find any flows which touch the 'parent' (i.e. data source).
     // We check af.value here, *not* .operation. If a calculation has been
     //   completed, we want to know that resulting amount.
@@ -2481,26 +2492,18 @@ glob.process_sankey = () => {
         .sort((a, b) => parentUnknowns.get(a) - parentUnknowns.get(b)
           || a.sourceRow - b.sourceRow);
 
-    // Are there _any_ flows with a single unknown? (If so, they'll be
-    // first in line.)
+    // Are there ANY flows with a single unknown?
     if (has_one_unknown(sortedFlows[0])) {
       // We have /at least/ one. Resolve all the singletons we can!
       sortedFlows
         .filter((f) => has_one_unknown(f))
         .forEach((f) => resolveEligibleFlow(f));
     } else {
-      // Here we had _no_ singletons.
-      // Resolve ONE ambiguous flow, then loop again to look for any
-      // fresh singletons which resulted.
-      // But first: note we're in Ambiguous Territory (if we haven't already)
-      msg.logOnce(
-        'warnAboutAmbiguousFlows',
-        '<em>Note: Beyond this point, some flow amounts depended on multiple unknown values.<br>'
-          + 'They will be resolved in the order of fewest unknowns + their order in the input data.</em>'
-      );
-      // (We do that first because the very next console msg will mention unknowns)
+      // Here we had _no_ internal singletons. We will resolve ONE ambiguous
+      // flow, then loop again to look for any resulting fresh singletons.
       resolveEligibleFlow(sortedFlows[0]);
     }
+    // Repeat the loop, i.e. recalculate unknowns given the new landscape:
   }
   // Done calculating!
 
