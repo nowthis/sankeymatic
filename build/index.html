@@ -175,6 +175,25 @@ Labels<span id="label_options_hint">...</span></h2>
 <span class="no_wrap" onmouseover="revealVal('labelvalue_weight');" onmouseout="fadeVal('labelvalue_weight');"><label for="labelvalue_weight" class="sr-only">Style for Node Values</label>
 <span class="smalllabel font_light">Light</span><span class="output_container"><input id="labelvalue_weight" class="slider_xsmall" type="range" min="100" max="700" step="300" value="400" list="tick400" onfocus="revealVal('labelvalue_weight');" onblur="fadeVal('labelvalue_weight');" oninput="updateOutput('labelvalue_weight'); process_sankey();" onchange="process_sankey();"><output id="labelvalue_weight_val" for="labelvalue_weight" class="fade-init output_6">-</output></span><span class="smalllabel font_bolder">Bold</span></span>
 </div>
+
+<div class="hs align-baseline gap-medium t-pad">
+<span><input type="checkbox" id="labelpercentage_appears" value="1" onchange="process_sankey();">
+<label for="labelpercentage_appears" class="ropt">Show <strong>Percentages</strong></label></span>
+</div>
+
+<div class="hs align-baseline gap-medium t-pad">
+<label for="labelpercentage_precision"><strong>Decimal Places:</strong></label>
+<input id="labelpercentage_precision" type="number" class="number_100s" min="0" max="6" step="1" value="2" onchange="process_sankey();">
+</div>
+
+<div class="hs align-center gap-medium t-pad">
+<span class="text_right">Calculate percentages<br /> based on:</span>
+<div class="vs">
+<span class="no_wrap"><input name="labelpercentage_total" type="radio" id="label_percentage_parent" value="parent" onchange="process_sankey();" checked="checked" /><label for="label_percentage_parent" class="ropt">Parent</label></span>
+<span class="no_wrap"><input name="labelpercentage_total" type="radio" id="label_percentage_total" value="total" onchange="process_sankey();" /><label for="label_percentage_total" class="ropt">Total</label></span>
+</div>
+</div>
+
 </div>
 
 <div class="hs gap-medium indented align-baseline b-pad">
