@@ -160,6 +160,46 @@ function clamp(n, min, max) {
   return isNumeric(n) ? Math.min(Math.max(Number(n), min), max) : min;
 }
 
+/**
+ * @param {string} fv A flow's value.
+ * @returns {boolean} True if the value is a special calculation symbol
+ */
+function isCalculated(fv) {
+  return [SYM_USE_REMAINDER, SYM_FILL_MISSING].includes(fv);
+}
+
+const LOCALE_USES_COMMA_AS_DECIMAL = new Intl.NumberFormat(navigator.languages).formatToParts(1.1)[1].value === ",";
+
+/**
+ * Parse a string into a number, handling locale-specific decimal separators.
+ * @param {string} value
+ * @returns {number | string | null}
+ */
+function parseAmountNumber(value) {
+  value = value.trim();
+  if (isCalculated(value)) {
+    return value;
+  }
+
+  // disambiguate the times when the value could have a comma as a decimal separator
+  // * if it has a period, use period
+  // * if it has more than one comma, use period
+  // * if it only has one comma, check the locale for confirmation
+  if (value.indexOf('.') === -1 // no `.` in the value
+    && value.indexOf(',') === value.lastIndexOf(',') // only one `,` in the value so it's ambiguous if it is thousand or decimal
+    && LOCALE_USES_COMMA_AS_DECIMAL) { // and the locale uses `,` as decimal separator
+    value = value.replace(',', '.');
+  }
+
+  value = value.replace(reCleanValue, '');
+  if (value === '') return null;
+
+  const floatValue = Number(value);
+  if (Number.isNaN(floatValue)) return null;
+
+  return floatValue;
+}
+
 // radioRef: get the object which lets you get/set a radio input value:
 function radioRef(rId) { return document.forms.skm_form.elements[rId]; }
 
@@ -2195,22 +2235,7 @@ glob.process_sankey = () => {
   //  Parse inputs into: approvedNodes, approvedFlows
   const goodFlows = [],
     approvedNodes = [],
-    approvedFlows = [],
-    SYM_USE_REMAINDER = '*',
-    SYM_FILL_MISSING = '?',
-    reFlowLine = new RegExp(
-      '^(?<sourceNode>.+)'
-      + `\\[(?<amount>[\\d\\s.+-]+|\\${SYM_USE_REMAINDER}|\\${SYM_FILL_MISSING}|)\\]`
-      + '(?<targetNodePlus>.+)$'
-    );
-
-  /**
-   * @param {string} fv A flow's value.
-   * @returns {boolean} True if the value is a special calculation symbol
-   */
-  function flowIsCalculated(fv) {
-    return [SYM_USE_REMAINDER, SYM_FILL_MISSING].includes(fv);
-  }
+    approvedFlows = [];
 
   // Loop through all the non-setting input lines:
   sourceLines.filter((l, i) => !linesWithSettings.has(i))
@@ -2235,21 +2260,28 @@ glob.process_sankey = () => {
       return;
     }
 
-    // Does this line look like a Flow?
-    matches = lineIn.match(reFlowLine);
-    if (matches !== null) {
-      const amountIn = matches[2].replace(/\s/g, ''),
-        isCalculated = flowIsCalculated(amountIn);
+    // attempt classic regex match
+    let [, source, amount, target, color, opacity] = lineIn.match(reFlowLine) || lineIn.match(reTSVFlowLine) || [];
 
+    const trialTarget = parseAmountNumber(target);
+    const trialAmount = parseAmountNumber(amount);
+    if (trialAmount === null && trialTarget !== null) {
+      target = amount;
+      amount = trialTarget;
+    }
+    else {
+      amount = trialAmount;
+    }
+    if (source && target) {
       // Is the Amount actually blank? Treat that like a comment (but log it):
-      if (amountIn === '') {
+      if (amount === '') {
         msg.log(`<span class="info_text">Skipped empty flow:</span> ${escapeHTML(lineIn)}`);
         return;
       }
 
       // Is Amount a number or a special operation?
       // Reject the line if it's neither:
-      if (!isNumeric(amountIn) && !isCalculated) {
+      if (amount === null) {
         warnAbout(
           lineIn,
           `The [Amount] must be a number in the form #.# or a wildcard ("${SYM_USE_REMAINDER}" or "${SYM_FILL_MISSING}").`
@@ -2257,19 +2289,24 @@ glob.process_sankey = () => {
         return;
       }
       // Diagrams don't currently support negative numbers:
-      if (Number(amountIn) < 0) {
+      if (Number(amount) < 0) {
         warnAbout(lineIn, 'Amounts must not be negative');
         return;
       }
 
+      color = color ? "#" + color : "";
+      opacity = opacity ? opacity : "";
+
       // All seems well, save it as good:
       goodFlows.push({
-        source: matches[1].trim(),
-        target: matches[3].trim(),
-        amount: amountIn,
+        source,
+        target,
+        amount,
         sourceRow: row,
         // Remember any special symbol even after the amount will be known:
-        operation: isCalculated ? amountIn : null,
+        operation: isCalculated(amount) ? amount : null,
+        color,
+        opacity,
       });
 
       // We need to know the maximum precision of the inputs (greatest
@@ -2277,7 +2314,7 @@ glob.process_sankey = () => {
       // checking operations (& display) later:
       maxDecimalPlaces = Math.max(
         maxDecimalPlaces,
-        (amountIn.split('.')[1] || '').length
+        ((amount + '').split('.')[1] || '').length
       );
       return;
     }
@@ -2309,30 +2346,9 @@ glob.process_sankey = () => {
         sourceRow: flow.sourceRow,
         operation: flow.operation,
         value: flow.amount,
-        color: '', // may be overwritten below
-        opacity: '', // ""
-      },
-      // Try to parse any extra info that isn't actually the target's name.
-      // The format of the Target string can be: "Name [#color[.opacity]]"
-      //   e.g. 'x [...] y #99aa00' or 'x [...] y #99aa00.25'
-      // Look for a candidate string starting with # for color info:
-      flowTargetPlus = flow.target.match(reFlowTargetWithSuffix);
-    if (flowTargetPlus !== null) {
-      // IFF the # string matches a stricter pattern, separate the target
-      // string into parts:
-      const [, possibleNodeName, possibleColor] = flowTargetPlus,
-        colorOpacity = possibleColor.match(reColorPlusOpacity);
-      if (colorOpacity !== null) {
-        // Looks like we found a color or opacity or both.
-        // Update the target's name with the trimmed string:
-        flow.target = possibleNodeName;
-        // If there was a color, adopt it:
-        if (colorOpacity[1]) { thisFlow.color = `#${colorOpacity[1]}`; }
-        // If there was an opacity, adopt it:
-        if (colorOpacity[2]) { thisFlow.opacity = colorOpacity[2]; }
-      }
-      // Otherwise we will treat it as part of the nodename, e.g. "Team #1"
-    }
+        color: flow.color,
+        opacity: flow.opacity,
+      };
 
     // Make sure the node names get saved; it may be their only appearance:
     thisFlow.source = setUpNode(flow.source, flow.sourceRow);
@@ -2420,11 +2436,11 @@ glob.process_sankey = () => {
     // We check af.value here, *not* .operation. If a calculation has been
     //   completed, we want to know that resulting amount.
     // (Note: We won't re-process flow 'ef' in this inner loop --
-    //   the 'flowIsCalculated' filter excludes its unresolved .value)
+    //   the 'isCalculated' filter excludes its unresolved .value)
     let [parentTotal, siblingTotal] = [0, 0];
     approvedFlows
       .filter(
-        (af) => !flowIsCalculated(af.value)
+        (af) => !isCalculated(af.value)
           && [af[k.arriving.node].name, af[k.leaving.node].name]
             .includes(parentN.name)
       )
@@ -2786,7 +2802,7 @@ glob.process_sankey();
 
 // Make the linter happy about imported objects:
 /* global
- d3 canvg global IN OUT BEFORE AFTER MAXBREAKPOINT
+ d3 canvg global IN OUT BEFORE AFTER MAXBREAKPOINT SYM_USE_REMAINDER SYM_FILL_MISSING
  sampleDiagramRecipes fontMetrics highlightStyles
  settingsMarker settingsAppliedPrefix settingsToBackfill
  userDataMarker sourceHeaderPrefix sourceURLLine

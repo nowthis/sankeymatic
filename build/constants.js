@@ -72,7 +72,8 @@ const MAXBREAKPOINT = 9999,
     ['internal_iterations', ['whole', 25, [0, 50]]],
     ['internal_revealshadows', ['yn', 'n', []]],
   ]),
-
+	SYM_USE_REMAINDER = '*',
+	SYM_FILL_MISSING = '?',
   // Some reusable regular expressions to be precompiled:
   reWholeNumber = /^\d+$/,
   reHalfNumber = /^\d+(?:\.5)?$/,
@@ -122,7 +123,18 @@ labelposition scheme per_stage
 labels relativesize 100
  magnify 100
 `,
+    // The format of a row can be in one of the formats:
+    // * `<source>[<amount>]<target>[#color[.opacity]]`
+    // * `<source>  <amount>  <target>[#color[.opacity]]`
+    // where `source` and `target` are the node names
+    // `amount` is numeric or one of the symbols `*` or `?`
+    // `color` is optional in 3 or 6 character hex
+    // `opacity` is optional in decimal form
+    // e.g. 'x [...] y #99aa00' or 'x [...] y #99aa00.25'
 
+  reFlowLine =    /^\s*(?<sourceNode>.+?)\s*(?<!\\)\[\s*(?<amount>[^\]]*?)\s*(?<!\\)\]\s*(?<targetNode>.*?)\s*(?:#\s*(?<color>[a-f0-9]{3,6})?(?<opacity>\.\d{1,4})?)?\s*$/i,
+  reTSVFlowLine = /^[ ]*(?<sourceNode>.+?)[ ]*(?<!\\)\t[ ]*(?<amount>[^\t]*?)[ ]*(?<!\\)\t[ ]*(?<targetNode>.*?)\s*(?:#\s*(?<color>[a-f0-9]{3,6})?(?<opacity>\.\d{1,4})?)?\s*$/i,
+	reCleanValue = /[^\-0-9.*?]/g,
   reNodeLine = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
   reFlowTargetWithSuffix = /^(.+)\s+(#\S+)$/,
 
