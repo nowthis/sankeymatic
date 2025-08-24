@@ -1034,7 +1034,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       valueSize = overallSize * (1 + relativeSizeAdjustment),
       nameParts = String(n.name).split('\\n'), // Use \n for multiline labels
       nameObjs = nameParts.map((part, i) => ({
-        txt: part,
+        // 160 = NBSP which prevents the collapsing of empty lines:
+        txt: part || String.fromCharCode(160),
         weight: cfg.labelname_weight,
         size: nameSize,
         newLine: i > 0
