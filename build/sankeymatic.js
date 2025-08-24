@@ -228,7 +228,7 @@ function escapeHTML(unsafeString) {
      .replaceAll('>', '&gt;')
      .replaceAll('"', '&quot;')
      .replaceAll("'", '&#039;')
-     .replaceAll('\n', '<br />');
+     .replaceAll('\n', '<br>');
 }
 
 // ep = "Enough Precision". Converts long decimals to have just 5 digits.
@@ -1003,7 +1003,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 
   // shadowFilter(i): true/false value indicating whether to display an item.
   // Normally shadows are hidden, but the revealshadows flag can override.
-  // i can be either a node or a flow.
+  // i can be either a node OR a flow.
   function shadowFilter(i) {
     return !i.isAShadow || cfg.internal_revealshadows;
   }
@@ -1021,7 +1021,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 
   /**
    * Given a Node, list all the label pieces we'll need to display.
-   * Also, scale their sizes according to the user's instructions.
+   * Also, scale their relative sizes according to the user's instructions.
    * @param {object} n - Node we are making the label for
    * @param {number} magnification - amount to scale this entire label
    * @returns {textFragment[]} List of text items
@@ -2029,7 +2029,7 @@ glob.process_sankey = () => {
    */
   function setUpNode(nodeName, row) {
     const { trueName, hideWholeLabel } = parseNodeName(nodeName),
-      thisNode = uniqueNodes.get(trueName); // Does this node exist?
+      thisNode = uniqueNodes.get(trueName); // Does this node already exist?
     if (thisNode) {
       // If so, should the new row # replace the stored row #?:
       if (thisNode.sourceRow > row) { thisNode.sourceRow = row; }
@@ -2072,6 +2072,7 @@ glob.process_sankey = () => {
     // Don't overwrite the 'name' value here, it can mess up tooltips:
     delete nodeParams.name;
 
+    // For non-blank items remaining in nodeParams, copy them to thisNode:
     Object.entries(nodeParams).forEach(([pName, pVal]) => {
       if (typeof pVal !== 'undefined' && pVal !== null && pVal !== '') {
         thisNode[pName] = pVal;
@@ -2082,11 +2083,10 @@ glob.process_sankey = () => {
   // Go through lots of validation with plenty of bailout points and
   // informative messages for the poor soul trying to do this.
 
-  // Note: Checking the 'Transparent' background-color box *no longer* means
-  // that the background-color-picker is pointless; it still affects the color
-  // value which will be given to "Made with SankeyMATIC".
-  // Therefore, we no longer disable the Background Color element, even when
-  // 'Transparent' is checked.
+  // Note: Checking the 'Transparent' background-color box *does not* mean
+  // that the background-color is pointless; it still affects the color
+  // given to "Made with SankeyMATIC". Therefore the Background Color
+  // chooser is still active even when 'Transparent' is checked.
 
   // BEGIN by resetting all message areas & revealing any queued messages:
   msg.resetAll();
@@ -2412,8 +2412,10 @@ glob.process_sankey = () => {
       // because the very next console msg will mention the multiple unknowns.)
       msg.logOnce(
         'warnAboutAmbiguousFlows',
-        '<em>Note: Beyond this point, some flow amounts depended on multiple unknown values.<br>' +
-          'They will be resolved in the order of fewest unknowns + their order in the input data.</em>'
+        `<br><em>Note: Beyond this point, some flow amounts depended on
+<strong>multiple</strong> unknown values.<br>
+They will be resolved in the order of fewest unknowns + their order
+in the input data.</em>`
       );
     }
 
@@ -2452,9 +2454,9 @@ glob.process_sankey = () => {
   }
 
   /**
-   * Test whether a flow's parent has only 1 unknown value left.
+   * Test whether a flow's parent has exactly 1 unknown value left.
    * @param {object} flow - the specific flow to test
-   * @returns true when the unknown count for the flow's parent is exactly 1
+   * @returns {boolean}
    */
   function has_one_unknown(flow) { return parentUnknowns.get(flow) === 1; }
 
