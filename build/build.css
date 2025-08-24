@@ -303,12 +303,18 @@ td {
 .pad-medium { padding: 0.7em; }
 
 .errormessage {
-  background-color: #fed;
+  background-color: #ffe4d3;
   width: fit-content;
   color: #600;
   border: 1px solid indianred;
   padding: 4px;
   margin: -1px 2px;
+}
+
+.errormessage code {
+  background-color: #ffeedf;
+  border-color: indianred;
+  line-height: 1.6em;
 }
 
 .okmessage {

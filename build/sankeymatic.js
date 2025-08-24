@@ -2256,7 +2256,7 @@ ${escapeHTML(lineIn)}`
         warnAbout(
           lineIn,
           `The [Amount] must be a number in the form #.# or a wildcard
-("${SYM_USE_REMAINDER}" or "${SYM_FILL_MISSING}").`
+(<code>${SYM_USE_REMAINDER}</code> or <code>${SYM_FILL_MISSING}</code>)`
         );
         return;
       }
