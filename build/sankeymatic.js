@@ -21,6 +21,20 @@ Requires:
 function el(domId) { return document.getElementById(domId); }
 function elV(domId) { return document.getElementById(domId).value; }
 
+/**
+ * Change "\n" to a space instead of a newline. (Used in logging, tooltips)
+ * @param {string} s
+ * @returns string
+ */
+function flatten(s) { return s.replaceAll('\\n', ' '); }
+
+/**
+ * Put fancy single quotes around a string
+ * @param {string} s
+ * @returns string
+ */
+function singleQuote(s) { return `‘${s}’`; }
+
 // togglePanel: Called directly from the page.
 // Given a panel's name, hide or show that control panel.
 glob.togglePanel = (panel) => {
@@ -228,6 +242,8 @@ function escapeHTML(unsafeString) {
      .replaceAll('>', '&gt;')
      .replaceAll('"', '&quot;')
      .replaceAll("'", '&#039;')
+     .replaceAll("‘", '&lsquo;')
+     .replaceAll("’", '&rsquo;')
      .replaceAll('\n', '<br>');
 }
 
@@ -1021,6 +1037,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
 
   /**
    * Given a Node, list all the label pieces we'll need to display.
+   * This usually includes the displayName & value, but various settings
+   * and attributes affect that.
    * Also, scale their relative sizes according to the user's instructions.
    * @param {object} n - Node we are making the label for
    * @param {number} magnification - amount to scale this entire label
@@ -1032,7 +1050,10 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       relativeSizeAdjustment = (cfg.labels_relativesize - 100) / 100,
       nameSize = overallSize * (1 - relativeSizeAdjustment),
       valueSize = overallSize * (1 + relativeSizeAdjustment),
-      nameParts = String(n.name).split('\\n'), // Use \n for multiline labels
+      displayName = n.displayName ?? n.name, // Use the custom label if defined
+      nameParts = displayName === ''
+        ? []
+        : String(displayName).split('\\n'), // Use \n for multiline labels
       nameObjs = nameParts.map((part, i) => ({
         // 160 = NBSP which prevents the collapsing of empty lines:
         txt: part || String.fromCharCode(160),
@@ -1047,7 +1068,11 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         size: valueSize,
         newLine: (cfg.labelname_appears && cfg.labelvalue_position === 'below'),
       };
-    if (!cfg.labelvalue_appears) { return nameObjs; }
+    if (!cfg.labelvalue_appears) {
+      // If no values && name is also blank, hide the whole label:
+      if (nameObjs.length === 0) { n.hideWholeLabel = true; }
+      return nameObjs;
+    }
     if (!cfg.labelname_appears) { return [valObj]; }
     switch (cfg.labelvalue_position) {
       case 'before': // separate the value from the name with 1 space
@@ -1108,6 +1133,11 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
             = cfg.labels_magnify === 100 ? 1 : 1 + nodePositionInRange,
           id = `label${n.index}`; // label0, label1..
         n.labelList = getLabelPieces(n, magnifyLabel);
+        if (n.labelList.length === 0) {
+          // If nothing to show after all, hide this one:
+          n.hideWholeLabel = true;
+          return;
+        }
         n.label = {
           dom_id: id,
           anchor: labelAnchor(n),
@@ -2039,7 +2069,7 @@ style="background-color: ${swRGB};">&nbsp;</span>`
     // This is a new Node. Set up its object, keyed to its trueName:
     const newNode = {
       name: trueName,
-      tipName: trueName.replaceAll('\\n', ' '),
+      tipName: flatten(trueName),
       hideWholeLabel: hideWholeLabel,
       sourceRow: row,
       paintInputs: [],
@@ -2047,6 +2077,46 @@ style="background-color: ${swRGB};">&nbsp;</span>`
     };
     uniqueNodes.set(trueName, newNode);
     return newNode;
+  }
+
+  /**
+   * @typedef {Object} UnquotingResult
+   * @property {boolean} success
+   * @property {string} [data] - The result if successful
+   * @property {string} [message] - The error message on failure.
+   */
+
+  /**
+   * If the input is a quoted string, return the unquoted string.
+   * Treats double occurrences of quotes as escapes, to allow strings
+   * such as '"Al''s Share"'
+   * @param {string} inString
+   * @returns {UnquotingResult} result
+   */
+
+  function tryUnquotingString(inString) {
+    const reFindQuotes = /^(?<quoteChar>['"])(?<innerString>.*)\1$/,
+      matches = inString.match(reFindQuotes);
+
+    // If no outer quotes were found, that's still valid:
+    if (!matches) { return { success: true, data: inString }; }
+
+    // Here, a valid outer quote pair was found.
+    const { quoteChar, innerString } = matches.groups,
+      twoQuotes = quoteChar + quoteChar;
+    // After removing all doubled quotes, 0 quoteChars should be left:
+    if (innerString.replaceAll(twoQuotes, '').includes(quoteChar)) {
+      return {
+        success: false,
+        message: 'Use 2 consecutive quotes inside a quoted string'
+      };
+    }
+
+    return {
+      success: true,
+      // Turn all doubled quotes into singles:
+      data: innerString.replaceAll(twoQuotes, quoteChar),
+    };
   }
 
   // updateNodeAttrs: Update an existing node's attributes.
@@ -2058,8 +2128,8 @@ style="background-color: ${swRGB};">&nbsp;</span>`
     // the big list:
     const thisNode = setUpNode(nodeParams.name, nodeParams.sourceRow);
 
-    // We've already used the 'sourceRow' value and don't want it to
-    // overwrite anything, so take it out of the params object:
+    // Don't overwrite the 'name' or 'sourceRow' values after setUpNode
+    delete nodeParams.name;
     delete nodeParams.sourceRow;
 
     // If there's a color and it's a color CODE, put back the #:
@@ -2068,8 +2138,41 @@ style="background-color: ${swRGB};">&nbsp;</span>`
       nodeParams.color = `#${nodeParams.color}`;
     }
 
-    // Don't overwrite the 'name' value here, it can mess up tooltips:
-    delete nodeParams.name;
+    // Is the user providing a custom label?
+    if (nodeParams.label) {
+      // If the label was quoted, process it to strip the quotes (and
+      // handle any inner quote characters):
+      const unquotingResult = tryUnquotingString(nodeParams.label);
+
+      // Check for an error & inform the user if so.
+      if (!unquotingResult.success) {
+        warnAbout(
+          nodeParams.label,
+          `In <code>label</code> for ${thisNode.name}:
+${unquotingResult.message}`
+        );
+      }
+
+      // Use the literal original value if unquoting was unsuccessful:
+      nodeParams.displayName = unquotingResult.data ?? nodeParams.label;
+      delete nodeParams.label; // We don't want an actual 'label' key around
+      if (nodeParams.displayName !== '') {
+        // Update the tooltip name to reflect the new display name:
+        nodeParams.tipName = flatten(nodeParams.displayName);
+        // For logging, make a string with the displayName AND the true name.
+        // (This helps in cases where nodes have the same displayName.)
+        nodeParams.logName
+          = `${singleQuote(nodeParams.tipName)} (${flatten(thisNode.name)})`;
+      } else {
+        // The custom label was an empty string. Write that to the node HERE
+        // (because blanks are not written by the loop below):
+        thisNode.displayName = '';
+        // Also reset tipName & logName, in case a previous label
+        // declaration wrote other values:
+        thisNode.tipName = flatten(thisNode.name);
+        delete thisNode.logName;
+      }
+    }
 
     // For non-blank items remaining in nodeParams, copy them to thisNode:
     Object.entries(nodeParams).forEach(([pName, pVal]) => {
@@ -2113,7 +2216,7 @@ style="background-color: ${swRGB};">&nbsp;</span>`
   }
 
   // Search for Settings we can apply:
-  let currentSettingGroup = '';
+  let currentSettingGroup = '', currentObject = null;
   sourceLines.forEach((lineIn, row) => {
     // Is it a Move line?
     const moveParts = lineIn.match(reMoveLine);
@@ -2135,12 +2238,17 @@ style="background-color: ${swRGB};">&nbsp;</span>`
 
     // If either was found, let's process it:
     if (settingParts !== null) {
-      // We found something, so remember this row index:
-      linesWithSettings.add(row);
-
       // Derive the setting name we're looking at:
       let origSettingName = settingParts[1],
         settingName = origSettingName.replace(/\s+/g, '_');
+
+      // Avoid name collisions:
+      // If it's a setting with nothing but 'node' (i.e. no second part
+      // like 'node_w'), skip it. Those will be handled elsewhere.
+      if (settingName === NODE_OBJ) { return; }
+
+      // Here we did find something, so remember this row index:
+      linesWithSettings.add(row);
 
       // Syntactic sugar - if the user typed the long version of a word,
       // fix it up so it's just the 1st letter so it will work:
@@ -2185,8 +2293,20 @@ style="background-color: ${swRGB};">&nbsp;</span>`
           settingValue,
           `Invalid value for <strong>${origSettingName}<strong>`
         );
+      } else if (origSettingName.substring(0, 5) === `${NODE_OBJ} `) {
+        // A node declaration was attempted, but there were spaces:
+        const nodeWarningStem
+          = `<code><strong>node</strong> <em>ID</em></code> lines
+may not have spaces in <em>ID</em>.<br>&nbsp;`;
+        // (We have a stem because more warning types are coming.)
+        warnAbout(
+          lineIn,
+          `${nodeWarningStem}Use
+<code><strong>.label</strong> <em>display name</em></code>
+or <code><strong>:</strong><em>node name #color</em></code>`
+        );
       } else {
-        // There wasn't a setting matching this name:
+        // No setting matched this name:
         warnAbout(origSettingName, 'Not a valid setting name');
       }
     }
@@ -2215,23 +2335,38 @@ style="background-color: ${swRGB};">&nbsp;</span>`
   // Loop through all the non-setting input lines:
   sourceLines.filter((l, i) => !linesWithSettings.has(i))
     .forEach((lineIn, row) => {
-    // Is it a blank line OR a comment? Skip it entirely:
+    // Is it a blank line OR a comment? Skip it entirely
+    // (without resetting currentObject):
     if (lineIn === '' || reCommentLine.test(lineIn)) {
       return;
     }
 
-    // Does this line look like a Node?
-    let matches = lineIn.match(reNodeLine);
+    // Is this a Node line? (v1, Loose)
+    let matches = lineIn.match(reNodeLineLoose);
     if (matches !== null) {
+      let nodeName = matches[1].trim();
       // Save/update it in the uniqueNodes structure:
       updateNodeAttrs({
-        name: matches[1].trim(),
+        name: nodeName,
         color: matches[2],
         opacity: matches[3],
         paintInputs: [matches[4], matches[5]],
         sourceRow: row,
       });
-      // No need to process this as a Data line, let's move on:
+      currentObject = { type: NODE_OBJ, name: nodeName };
+      return;
+    }
+
+    // Is this a Node line? (v2, Strict)
+    matches = lineIn.match(reNodeLineStrict);
+    if (matches !== null) {
+      let nodeName = matches[1].trim();
+      // Save/update it in the uniqueNodes structure:
+      updateNodeAttrs({
+        name: nodeName,
+        sourceRow: row,
+      });
+      currentObject = { type: NODE_OBJ, name: nodeName };
       return;
     }
 
@@ -2240,6 +2375,8 @@ style="background-color: ${swRGB};">&nbsp;</span>`
     if (matches !== null) {
       const amountIn = matches[2].replace(/\s/g, ''),
         isCalculated = flowIsCalculated(amountIn);
+        // future: currentObject = { type: FLOW_OBJ, sourceRow: row };
+        currentObject = null;
 
       // Is the Amount actually blank? Treat that like a comment (but log it):
       if (amountIn === '') {
@@ -2286,10 +2423,40 @@ ${escapeHTML(lineIn)}`
       return;
     }
 
+    // Is this an Attribute line?
+    matches = lineIn.match(reAttributeLine);
+    if (matches !== null) {
+      if (!currentObject) {
+        warnAbout(
+          lineIn,
+          'Found an Attribute without a preceding Node declaration'
+        );
+        return;
+      }
+      const [_, attrName, attrValue] = matches;
+      // Verify that the attribute name is valid for currentObject's type:
+      if (!validAttributes.get(currentObject.type)?.has(attrName)) {
+        warnAbout(
+          lineIn,
+          `Attribute type <code>${attrName}</code> is not valid for Nodes`
+        );
+      } else if (currentObject.type === NODE_OBJ) {
+        // TODO: Verify the syntax of the value
+        // Apply the new value to the existing object:
+        updateNodeAttrs({
+          name: currentObject.name,
+          [attrName]: attrValue,
+        })
+      } else {
+        warnAbout(lineIn, `Unsupported object type '${currentObject.type}'`)
+      }
+      return;
+    }
+
     // This is a non-blank line which did not match any pattern:
     warnAbout(
       lineIn,
-      'Does not match the format of a Flow or Node or Setting'
+      'Does not match the format of a Flow, Node, Attribute, or Setting'
       );
   });
 
@@ -2412,16 +2579,17 @@ ${escapeHTML(lineIn)}`
     // Special notifications regarding more ambiguous flows:
     let unknownMsg = '';
     if (unknownCt > 1) {
-      unknownMsg
-        = ` (&lsquo;${parentN.tipName}&rsquo; had ${unknownCt} unknowns)`;
+      unknownMsg = ` &mdash; <em>\
+${escapeHTML(parentN.logName ?? singleQuote(parentN.tipName))}
+had <strong>${unknownCt}</strong> unknowns</em>`;
       // Say - once! - that we are in Ambiguous Territory. (We do this here
       // because the very next console msg will mention the multiple unknowns.)
       msg.logOnce(
         'warnAboutAmbiguousFlows',
-        `<br><em>Note: Beyond this point, some flow amounts depended on
+        `<p><em>Note: Beyond this point, some flow amounts depended on
 <strong>multiple</strong> unknown values.<br>
 They will be resolved in the order of fewest unknowns + their order
-in the input data.</em>`
+in the input data.</em></p>`
       );
     }
 
@@ -2454,8 +2622,9 @@ in the input data.</em>`
     queueOfFlows.delete(ef);
     msg.log(
       `<span class="info_text">Calculated:</span>
-${escapeHTML(`${ef.source.tipName} [${ef.operation}] ${ef.target.tipName}`)} =
-<span class="calced">${ep(ef.value)}</span>${unknownMsg}`
+${escapeHTML(ef.source.logName ?? ef.source.tipName)}
+[<code>${ef.operation} = <span class="calced">${ep(ef.value)}</span></code>]
+${escapeHTML(ef.target.logName ?? ef.target.tipName)}${unknownMsg}`
     );
   }
 
@@ -2794,13 +2963,14 @@ glob.process_sankey();
 
 // Make the linter happy about imported objects:
 /* global
- d3 canvg global IN OUT BEFORE AFTER MAXBREAKPOINT
+ d3 canvg global IN OUT BEFORE AFTER MAXBREAKPOINT NODE_OBJ
  sampleDiagramRecipes fontMetrics highlightStyles
  settingsMarker settingsAppliedPrefix settingsToBackfill
  userDataMarker sourceHeaderPrefix sourceURLLine
  skmSettings colorGray60 userInputsField breakpointField
  reWholeNumber reHalfNumber reInteger reDecimal reYesNo reYes
- reCommentLine reSettingsValue reSettingsText reNodeLine
+ reCommentLine reSettingsValue reSettingsText
+ reAttributeLine validAttributes reNodeLineLoose reNodeLineStrict
  reMoveLine movesMarker
  reFlowTargetWithSuffix reColorPlusOpacity
  reBareColor reRGBColor LZString */

@@ -15,6 +15,9 @@ const MAXBREAKPOINT = 9999,
 //   decimal = always 0.0 - 1.0
 //   color = always a hex color spec
 //   yn = always y or n
+// ** CAUTION **: Never make an skmSetting with a suffix that is *also*
+// an skmObjectType (like .._node or .._flow or .._stage). That will
+// break one of the assumptions we make when parsing settings.
   skmSettings
     = new Map([
     ['size_w', ['whole', 600, [40]]],
@@ -123,7 +126,20 @@ labels relativesize 100
  magnify 100
 `,
 
-  reNodeLine = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
+  // Node definitions:
+  NODE_OBJ = 'node', // for easy referencing
+  // - Loose: ":my node name #color <<""
+  reNodeLineLoose
+    = /^:(.+) #([a-f0-9]{0,6})?(\.\d{1,4})?\s*(>>|<<)*\s*(>>|<<)*$/i,
+  // - Strict: "node myNodeName" (no spaces or dots), then attribute lines
+  reNodeLineStrict = new RegExp(`^${NODE_OBJ}\\s+([^ .]+)$`,'i'),
+
+  // Attribute lines look like: ".command value"
+  // Examples: .label "", (future:) .color lightseagreen, .minvalue 1000
+  reAttributeLine = /^\.([a-z]+)\s+(.+)$/i,
+  // validAttributes map: skmObjectType => Set([valid attribute strings])
+  validAttributes = new Map([[NODE_OBJ, new Set(['label'])]]),
+
   reFlowTargetWithSuffix = /^(.+)\s+(#\S+)$/,
 
   reColorPlusOpacity = /^#([a-f0-9]{3,6})?(\.\d{1,4})?$/i,

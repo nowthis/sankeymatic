@@ -525,6 +525,10 @@ span.toggleable:hover {
   border: none;
 }
 
+#console_area code {
+  line-height: 1.8em;
+}
+
 .info_text {
   color: var(--dark-blue);
 }
