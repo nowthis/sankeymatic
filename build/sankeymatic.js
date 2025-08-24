@@ -1009,10 +1009,10 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   }
 
   if (cfg.internal_revealshadows) {
-    // Add a usable tipname since they'll be used (i.e. avoid 'undefined'):
+    // Add a usable tipName since they'll be used (i.e. avoid 'undefined'):
     allNodes
       .filter((n) => n.isAShadow)
-      .forEach((n) => { n.tipname = '(shadow)'; });
+      .forEach((n) => { n.tipName = '(shadow)'; });
   }
   // MARK Label-measuring time
   // Depending on where labels are meant to be placed, we measure their
@@ -1096,7 +1096,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Set up label information for each Node:
   if (cfg.labelname_appears || cfg.labelvalue_appears) {
     allNodes.filter(shadowFilter)
-      .filter((n) => !n.hideLabel)
+      .filter((n) => !n.hideWholeLabel)
       .forEach((n) => {
         const totalRange = (Math.abs(cfg.labels_magnify - 100) * 2) / 100,
           nFactor = nodeScaleFn(n.value),
@@ -1244,7 +1244,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // Everything with this class value will move with the Node when it is
     // dragged:
     n.css_class = `for_${n.dom_id}`; // for_r0, for_r1...
-    n.tooltip = `${n.tipname}:\n${withUnits(n.value)}`;
+    n.tooltip = `${n.tipName}:\n${withUnits(n.value)}`;
     n.opacity = n.opacity || cfg.node_opacity;
 
     // Fill in any missing Node colors. (Flows may inherit from these.)
@@ -1255,7 +1255,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // If there are no non-blank strings in the node name, substitute
       // a word-ish value (rather than crash):
       const colorKeyString
-        = (n.tipname?.match(/^\s*(\S+)/) || [null, 'name-is-blank'])[1];
+        = (n.tipName?.match(/^\s*(\S+)/) || [null, 'name-is-blank'])[1];
       // Don't use up colors on shadow nodes:
       n.color = n.isAShadow ? colorGray60 : colorScaleFn(colorKeyString);
     }
@@ -1264,7 +1264,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       = darkBg ? d3.rgb(n.color).brighter(2) : d3.rgb(n.color).darker(2);
 
     // Set up label presentation values:
-    if (n.labelList?.length && !n.hideLabel) {
+    if (n.labelList?.length && !n.hideWholeLabel) {
       // Which side of the node will the label be on?
       switch (n.label.anchor) {
         case 'start': n.label.x = n.x + n.dx + pad.lblMarginAfter; break;
@@ -1299,7 +1299,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .forEach((f) => {
     f.dom_id = `flow${f.index}`; // flow0, flow1...
     f.tooltip
-      = `${f.source.tipname} → ${f.target.tipname}: ${withUnits(f.value)}`;
+      = `${f.source.tipName} → ${f.target.tipName}: ${withUnits(f.value)}`;
     // Fill in any missing opacity values and the 'hover' counterparts:
     f.opacity = f.opacity || cfg.flow_opacity;
     // Hover opacity = halfway between the user's opacity and 1.0:
@@ -1715,7 +1715,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     diagLabels.selectAll()
       .data(allNodes.filter(shadowFilter))
       .enter()
-      .filter((n) => !n.hideLabel)
+      .filter((n) => !n.hideWholeLabel)
       .append('text')
         .attr('id', (n) => n.label.dom_id)
         // Associate this label with its Node using the CSS class:
@@ -2009,13 +2009,13 @@ glob.process_sankey = () => {
    * @param {string} rawName a node name from the input data
    * @returns {object} nameInfo
    * @returns {string} nameInfo.trueName The real node name (without dashes)
-   * @returns {boolean} nameInfo.hideLabel True if the name was struck through
+   * @returns {boolean} nameInfo.hideWholeLabel True if the name was -struck-
    */
   function parseNodeName(rawName) {
     const hiddenNameMatches = rawName.match(/^-(.*)-$/),
       hideThisLabel = hiddenNameMatches !== null,
       trueName = hideThisLabel ? hiddenNameMatches[1] : rawName;
-    return { trueName: trueName, hideLabel: hideThisLabel };
+    return { trueName: trueName, hideWholeLabel: hideThisLabel };
   }
 
   /**
@@ -2028,20 +2028,20 @@ glob.process_sankey = () => {
    * @returns {object} The node's object (from uniqueNodes)
    */
   function setUpNode(nodeName, row) {
-    const { trueName, hideLabel } = parseNodeName(nodeName),
+    const { trueName, hideWholeLabel } = parseNodeName(nodeName),
       thisNode = uniqueNodes.get(trueName); // Does this node exist?
     if (thisNode) {
       // If so, should the new row # replace the stored row #?:
       if (thisNode.sourceRow > row) { thisNode.sourceRow = row; }
-      // Update hideLabel if this instance of the name was struck through:
-      thisNode.hideLabel ||= hideLabel;
+      // Update hideWholeLabel if *this* instance of the name was -struck-:
+      thisNode.hideWholeLabel ||= hideWholeLabel;
       return thisNode;
     }
     // This is a new Node. Set up its object, keyed to its trueName:
     const newNode = {
       name: trueName,
-      tipname: trueName.replaceAll('\\n', ' '),
-      hideLabel: hideLabel,
+      tipName: trueName.replaceAll('\\n', ' '),
+      hideWholeLabel: hideWholeLabel,
       sourceRow: row,
       paintInputs: [],
       unknowns: { [IN]: new Set(), [OUT]: new Set() },
@@ -2407,7 +2407,7 @@ glob.process_sankey = () => {
     let unknownMsg = '';
     if (unknownCt > 1) {
       unknownMsg
-        = ` (&lsquo;${parentN.tipname}&rsquo; had ${unknownCt} unknowns)`;
+        = ` (&lsquo;${parentN.tipName}&rsquo; had ${unknownCt} unknowns)`;
       // Say - once! - that we are in Ambiguous Territory. (We do this here
       // because the very next console msg will mention the multiple unknowns.)
       msg.logOnce(
@@ -2446,7 +2446,7 @@ glob.process_sankey = () => {
     queueOfFlows.delete(ef);
     msg.log(
       `<span class="info_text">Calculated:</span> ${escapeHTML(
-        `${ef.source.tipname} [${ef.operation}] ${ef.target.tipname}`
+        `${ef.source.tipName} [${ef.operation}] ${ef.target.tipName}`
       )} = <span class="calced">${ep(ef.value)}</span>${unknownMsg}`
     );
   }
@@ -2482,8 +2482,8 @@ glob.process_sankey = () => {
       );
     });
     // Helpful for debugging - Array.from(parentUnknowns).sort((a, b) => a[1] - b[1])
-    //   .forEach((x) => console.log(`${x[0].source.tipname} ${x[0].operation}`
-    //     + ` ${x[0].target.tipname}: ${x[1]}`));
+    //   .forEach((x) => console.log(`${x[0].source.tipName} ${x[0].operation}`
+    //     + ` ${x[0].target.tipName}: ${x[1]}`));
     // console.log('');
 
     // Next, prioritize the flows by their count of unknowns (ascending),
