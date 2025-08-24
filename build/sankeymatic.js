@@ -395,8 +395,8 @@ function flatFlowPathMaker(f) {
   // [M]ove to the flow source's top; draw a [v]ertical line down,
   // a [L]ine to the opposite corner, a [v]ertical line up,
   // then [z] close.
-  return `M${ep(sx)} ${ep(syTop)}v${ep(f.dy)}`
-    + `L${ep(tx)} ${ep(tyBot)}v${ep(-f.dy)}z`;
+  return `M${ep(sx)} ${ep(syTop)}v${ep(f.dy)}\
+L${ep(tx)} ${ep(tyBot)}v${ep(-f.dy)}z`;
 }
 
 // curvedFlowPathFunction(curvature):
@@ -431,8 +431,8 @@ function curvedFlowPathFunction(curvature) {
     // Draw a Bezier [C]urve using control points [xcp1,syC] & [xcp2,tyC]
     // End at the center of the flow's target [tx,tyC]
     return (
-      `M${ep(sEnd)} ${ep(syC)}C${ep(xcp1)} ${ep(syC)} `
-        + `${ep(xcp2)} ${ep(tyC)} ${ep(tStart)} ${ep(tyC)}`
+      `M${ep(sEnd)} ${ep(syC)}C${ep(xcp1)} ${ep(syC)} \
+${ep(xcp2)} ${ep(tyC)} ${ep(tStart)} ${ep(tyC)}`
     );
   };
 }
@@ -1528,8 +1528,8 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // [m]ove down by this node's height
       // [H]orizontal line back to the left edge (x=0)
       // ..Then the same operation [v]ertically, using this node's width.
-      .attr('d', `M0 ${ep(n.lastPos.y)} h${ep(graph.w)} m0 ${ep(n.dy)} H0`
-           + `M${ep(n.lastPos.x)} 0 v${ep(graph.h)} m${ep(n.dx)} 0 V0`)
+      .attr('d', `M0 ${ep(n.lastPos.y)} h${ep(graph.w)} m0 ${ep(n.dy)} H0\
+M${ep(n.lastPos.x)} 0 v${ep(graph.h)} m${ep(n.dx)} 0 V0`)
       .attr('stroke', grayColor)
       .attr('stroke-width', 1)
       .attr('stroke-dasharray', '1 3')
@@ -1960,9 +1960,9 @@ function loadFromQueryString() {
       } else {
         // Tell the user something went wrong:
         msg.addToQueue(
-          `The input string provided in the URL (${highlightSafeValue(
-            `${compressedInputs.substring(0, 8)}...`
-          )}) was not decodable.`,
+          `The input string provided in the URL
+(${highlightSafeValue(`${compressedInputs.substring(0, 8)}...`)})
+was not decodable.`,
           'issue'
         );
       }
@@ -1980,11 +1980,10 @@ glob.process_sankey = () => {
   // Update the display of all known themes given their offsets:
   function updateColorThemeDisplay() {
     // template string for the color swatches:
-    const makeSpanTag = (color, count, themeName) => (
-      `<span style="background-color: ${color};" `
-      + `class="color_sample_${count}" `
-      + `title="${color} from d3 color scheme ${themeName}">`
-      + '&nbsp;</span>'
+    const makeSpanTag = (swRGB, themeSize, themeName) => (
+      `<span class="color_sample_${themeSize}" \
+title="${swRGB} from d3 color scheme ${themeName}" \
+style="background-color: ${swRGB};">&nbsp;</span>`
     );
     for (const t of colorThemes.keys()) {
       const theme = approvedColorTheme(t),
@@ -2244,7 +2243,10 @@ glob.process_sankey = () => {
 
       // Is the Amount actually blank? Treat that like a comment (but log it):
       if (amountIn === '') {
-        msg.log(`<span class="info_text">Skipped empty flow:</span> ${escapeHTML(lineIn)}`);
+        msg.log(
+          `<span class="info_text">Skipped empty flow:</span>
+${escapeHTML(lineIn)}`
+        );
         return;
       }
 
@@ -2253,7 +2255,8 @@ glob.process_sankey = () => {
       if (!isNumeric(amountIn) && !isCalculated) {
         warnAbout(
           lineIn,
-          `The [Amount] must be a number in the form #.# or a wildcard ("${SYM_USE_REMAINDER}" or "${SYM_FILL_MISSING}").`
+          `The [Amount] must be a number in the form #.# or a wildcard
+("${SYM_USE_REMAINDER}" or "${SYM_FILL_MISSING}").`
         );
         return;
       }
@@ -2380,7 +2383,10 @@ glob.process_sankey = () => {
   });
 
   if (queueOfFlows.size) {
-    msg.logOnce('declareCalculations', '<b>Resolving calculated flows.</b>');
+    msg.logOnce(
+      'declareCalculations',
+      '<strong>Resolving calculated flows:</strong>'
+    );
     // For each involvedNode: is it an endpoint or origin?
     // (Terminal nodes have an implicit additional unknown side.)
     // We'd rather check with n.flows[].length, but that's not set up yet.
@@ -2447,9 +2453,9 @@ in the input data.</em>`
     ef[k.arriving.node].unknowns[k.arriving.dir].delete(ef);
     queueOfFlows.delete(ef);
     msg.log(
-      `<span class="info_text">Calculated:</span> ${escapeHTML(
-        `${ef.source.tipName} [${ef.operation}] ${ef.target.tipName}`
-      )} = <span class="calced">${ep(ef.value)}</span>${unknownMsg}`
+      `<span class="info_text">Calculated:</span>
+${escapeHTML(`${ef.source.tipName} [${ef.operation}] ${ef.target.tipName}`)} =
+<span class="calced">${ep(ef.value)}</span>${unknownMsg}`
     );
   }
 
@@ -2484,9 +2490,8 @@ in the input data.</em>`
       );
     });
     // Helpful for debugging - Array.from(parentUnknowns).sort((a, b) => a[1] - b[1])
-    //   .forEach((x) => console.log(`${x[0].source.tipName} ${x[0].operation}`
-    //     + ` ${x[0].target.tipName}: ${x[1]}`));
-    // console.log('');
+    //   .forEach((x) => console.log(
+    // `${x[0].source.tipName} ${x[0].operation} ${x[0].target.tipName}: ${x[1]}`));
 
     // Next, prioritize the flows by their count of unknowns (ascending),
     // then by sourceRow (ascending):
@@ -2653,8 +2658,9 @@ in the input data.</em>`
         .sort((a, b) => b - a)
         .map((v) => withUnits(v))
         .join(' + ');
-    return `<dfn title="${formattedSum} from ${flowCt} `
-      + `Flows: ${breakdown}">${formattedSum}</dfn>`;
+    return `<dfn \
+title="${formattedSum} from ${flowCt} Flows: ${breakdown}"\
+>${formattedSum}</dfn>`;
   }
 
   // Given maxDecimalPlaces, we can derive the smallest important
@@ -2722,10 +2728,10 @@ in the input data.</em>`
     // Make a nice table of the differences:
     differences.forEach((diffRec) => {
       differenceRows.push(
-        `<tr><td class="nodename">${escapeHTML(diffRec.name)}</td>`
-        + `<td>${diffRec.total[IN]}</td>`
-        + `<td>${diffRec.total[OUT]}</td>`
-        + `<td>${diffRec.difference}</td></tr>`
+        `<tr><td class="nodename">${escapeHTML(diffRec.name)}</td>\
+<td>${diffRec.total[IN]}</td>\
+<td>${diffRec.total[OUT]}</td>\
+<td>${diffRec.difference}</td></tr>`
       );
     });
     msg.add(
@@ -2735,19 +2741,18 @@ in the input data.</em>`
   }
 
   // Reflect summary stats to the user:
-  let totalsMsg
-    = `<strong>${approvedFlows.length} Flows</strong> between `
-    + `<strong>${approvedNodes.length} Nodes</strong>. `;
+  let totalsMsg = `<strong>${approvedFlows.length} Flows</strong> between
+<strong>${approvedNodes.length} Nodes</strong>. `;
 
   // Do the totals match? If not, mention the different totals:
   if (Math.abs(grandTotal[IN] - grandTotal[OUT]) > epsilonDifference) {
     const gtLt = grandTotal[IN] > grandTotal[OUT] ? '&gt;' : '&lt;';
     totalsMsg
-      += `Total Inputs: <strong>${withUnits(grandTotal[IN])}</strong> ${gtLt}`
-      + ` Total Outputs: <strong>${withUnits(grandTotal[OUT])}</strong>`;
+      += `Total Inputs: <strong>${withUnits(grandTotal[IN])}</strong> ${gtLt}
+Total Outputs: <strong>${withUnits(grandTotal[OUT])}</strong>`;
   } else {
-    totalsMsg += 'Total Inputs = Total Outputs = '
-      + `<strong>${withUnits(grandTotal[IN])}</strong> &#9989;`;
+    totalsMsg += `Total Inputs = Total Outputs =
+<strong>${withUnits(grandTotal[IN])}</strong> &#9989;`;
   }
   msg.add(totalsMsg, 'total');
 
@@ -2769,8 +2774,8 @@ in the input data.</em>`
       { ...numberStyle, decimalPlaces: 4 }
     );
   el('scale_figures').innerHTML
-    = `<strong>${unitsPerPixel}</strong> per pixel `
-    + `(${withUnits(maxNodeVal)}/${formattedPixelCount}px)`;
+    = `<strong>${unitsPerPixel}</strong> per pixel
+(${withUnits(maxNodeVal)}/${formattedPixelCount}px)`;
 
   updateResetNodesUI();
 

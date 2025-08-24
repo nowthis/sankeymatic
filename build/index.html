@@ -62,7 +62,7 @@
 </div>
 
 <p id="replace_graph_warning" style="display: none;">
-<em>This will <strong>erase</strong> your changes. Are you sure?</em><br />
+<em>This will <strong>erase</strong> your changes. Are you sure?</em><br>
 <input type="hidden" id="demo_graph_chosen" value="" />
 <button type="button" id="replace_graph_yes" onclick="replaceGraphConfirmed(); return false;">Yes, replace the diagram</button>
 <button type="button" id="replace_graph_no" onclick="hideReplaceGraphWarning(); return false;">Cancel</button>
@@ -112,7 +112,7 @@ Budget [*] Savings
 <div class="bottom_center_self">
 <button id="save_my_work_button" type="submit" class="loadsave_button"
  onclick="saveDiagramToFile(); return false;"
- title="Save the current diagram and settings to a local text file">Save my<br />work <strong>↘</strong></button>
+ title="Save the current diagram and settings to a local text file">Save my<br>work <strong>↘</strong></button>
 
 <p>
 <input type="file" id="load_diagram_from_file"
@@ -121,13 +121,13 @@ Budget [*] Savings
   onchange="loadDiagramFile(); return null;" />
 <label id="load_diagram_button" for="load_diagram_from_file" role="button"
  class="label_as_button loadsave_button"
- title="Load a diagram definition from a text file"><strong>↖</strong> Load<br />from file</label></p>
+ title="Load a diagram definition from a text file"><strong>↖</strong> Load<br>from file</label></p>
 
 </div>
 </div>
 
 <p class="form_elements3 grid_entire_row">
-<strong>Arrange the diagram:</strong><br />
+<strong>Arrange the diagram:</strong><br>
 <span><input name="layout_order" id="layout_order_automatic" value="automatic" type="radio" onchange="process_sankey();" checked="checked" /><label for="layout_order_automatic" class="ropt">Automatically</label></span>
 <span><input name="layout_order" id="layout_order_exact" value="exact" type="radio" onchange="process_sankey();" class="spaced_checkbox" /><label for="layout_order_exact" class="ropt">Using the exact input order</label></span>
 </p>
@@ -207,9 +207,9 @@ Labels<span id="label_options_hint">...</span></h2>
 <div class="vs align-center justify-center text_center b-divider" onmouseover="revealVal('labels_magnify');" onmouseout="fadeVal('labels_magnify');">
     <label for="labels_magnify">Show larger labels for:</label>
     <div class="hs justify-center gap-small no_wrap">
-        <div class="align-center"><strong>Small</strong><br />Amounts</div>
+        <div class="align-center"><strong>Small</strong><br>Amounts</div>
         <span class="output_container"><input id="labels_magnify" class="slider_medium" type="range" min="50" max="150" value="100" list="tick100" onfocus="revealVal('labels_magnify');" onblur="fadeVal('labels_magnify');" oninput="updateOutput('labels_magnify'); process_sankey();" onchange="process_sankey();"><output id="labels_magnify_val" for="labels_magnify" class="fade-init output_12">-</output></span>
-        <div class="align-center"><strong>Large</strong><br />Amounts</div>
+        <div class="align-center"><strong>Large</strong><br>Amounts</div>
     </div>
 </div>
 
@@ -238,9 +238,9 @@ When a Node has an <strong>empty side</strong>, place its label there.
 <div class="vs align-center justify-center text_center" onmouseover="revealVal('labelposition_autoalign');" onmouseout="fadeVal('labelposition_autoalign');">
 <label for="labelposition_autoalign" style="line-height: 2;">When neither side is empty, place labels:</label>
 <div class="hs align-center justify-center gap-small">
-<div class="align-center no_wrap"><strong>Before</strong><br />the Node</div>
+<div class="align-center no_wrap"><strong>Before</strong><br>the Node</div>
 <span class="output_container"><input id="labelposition_autoalign" class="slider_medium" type="range" min="-1" max="1" step="1" value="0" onfocus="revealVal('labelposition_autoalign');" onblur="fadeVal('labelposition_autoalign');" oninput="updateOutput('labelposition_autoalign'); checkRadio('label_scheme_auto'); process_sankey();" onchange="checkRadio('label_scheme_auto'); process_sankey();" list="tick-align"><output id="labelposition_autoalign_val" for="labelposition_autoalign" class="fade-init output_6">-</output></span>
-<div class="align-center no_wrap"><strong>After</strong><br />the Node</div>
+<div class="align-center no_wrap"><strong>After</strong><br>the Node</div>
 </div>
 </div>
 
@@ -251,7 +251,7 @@ When a Node has an <strong>empty side</strong>, place its label there.
 <span class="no_wrap"><input name="labelposition_scheme" type="radio" id="label_scheme_perstage" value="per_stage" onchange="process_sankey();" /><label for="label_scheme_perstage" class="ropt"><strong>Per Stage</strong></label></span>
 
 <div class="hs align-center justify-center gap-small t-pad b-divider">
-<span class="text_right">Place labels for<br /> the <strong>first stage</strong>:</span>
+<span class="text_right">Place labels for<br> the <strong>first stage</strong>:</span>
 <div class="vs">
 <span class="no_wrap"><input name="labelposition_first" type="radio" id="label_first_before" value="before" onchange="checkRadio('label_scheme_perstage'); process_sankey();" checked="checked" /><label for="label_first_before" class="ropt">Before the Nodes</label></span>
 
@@ -281,7 +281,7 @@ When a Node has an <strong>empty side</strong>, place its label there.
 <input name="labelvalue_position" type="radio" id="labelvalue_after" value="after" onchange="process_sankey();" /><label for="labelvalue_after" class="ropt rrect arr-option">Examples:&nbsp;100</label>
 </div>
 <div class="hs align-center">
-<input name="labelvalue_position" type="radio" id="labelvalue_below" value="below" onchange="process_sankey();" checked="checked" /><label for="labelvalue_below" class="ropt rrect arr-option">Examples<br />100</label>
+<input name="labelvalue_position" type="radio" id="labelvalue_below" value="below" onchange="process_sankey();" checked="checked" /><label for="labelvalue_below" class="ropt rrect arr-option">Examples<br>100</label>
 </div>
 </div>
 <div class="vs gap-small">
@@ -289,7 +289,7 @@ When a Node has an <strong>empty side</strong>, place its label there.
 <input name="labelvalue_position" type="radio" id="labelvalue_before" value="before" onchange="process_sankey();" /><label for="labelvalue_before" class="ropt rrect arr-option">100&nbsp;Examples</label>
 </div>
 <div class="hs align-center">
-<input name="labelvalue_position" type="radio" id="labelvalue_above" value="above" onchange="process_sankey();" /><label for="labelvalue_above" class="ropt rrect arr-option">100<br />Examples</label>
+<input name="labelvalue_position" type="radio" id="labelvalue_above" value="above" onchange="process_sankey();" /><label for="labelvalue_above" class="ropt rrect arr-option">100<br>Examples</label>
 </div>
 </div>
 </div>
@@ -322,7 +322,7 @@ When a Node has an <strong>empty side</strong>, place its label there.
 <option value="X.">1000000.00</option>
 <option value="X,">1000000,00</option>
 </select>
-<br />
+<br>
 <span><input type="checkbox" id="labelvalue_fullprecision" value="1" onchange="process_sankey();" checked="checked">
 <label for="labelvalue_fullprecision" class="ropt">Show trailing 0s <small>(best for currency)</small></label></span>
 </div>
@@ -364,7 +364,7 @@ Nodes<span id="node_options_hint">:</span></h2>
 <legend>Default Node Colors</legend>
 <div class="fieldset_contents">
 Use <input name="node_theme" type="radio" id="node_theme_none" value="none" onchange="process_sankey();" /><label for="node_theme_none" class="ropt">one color:</label>
-<input type="color" id="node_color" title="Single Node Color" size="7" maxlength="7" value="#888888" onchange="checkRadio('node_theme_none'); process_sankey();"> or a Theme:<br />
+<input type="color" id="node_color" title="Single Node Color" size="7" maxlength="7" value="#888888" onchange="checkRadio('node_theme_none'); process_sankey();"> or a Theme:<br>
 <table id="color_themes">
 <tr>
 <td>
@@ -452,10 +452,10 @@ Flows<span id="flow_options_hint">:</span></h2>
 
 Use <input name="flow_inheritfrom" type="radio" id="flow_inherit_none" value="none" onchange="process_sankey();" /><label for="flow_inherit_none" class="ropt">one color:</label>
 
-<input type="color" id="flow_color" title="Single Flow Color" size="7" maxlength="7" value="#999999" onchange="checkRadio('flow_inherit_none'); process_sankey();" /> or colors from:<br />
+<input type="color" id="flow_color" title="Single Flow Color" size="7" maxlength="7" value="#999999" onchange="checkRadio('flow_inherit_none'); process_sankey();" /> or colors from:<br>
 <span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_from_source" value="source" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_source">each flow's Source</label></span>
 <span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_from_target" value="target" onchange="process_sankey();" /><label class="ropt" for="flow_inherit_from_target">each flow's Target</label></span>
-<br />
+<br>
 <span class="no_wrap"><input name="flow_inheritfrom" type="radio" id="flow_inherit_outside_in" value="outside-in" onchange="process_sankey();" checked="checked" /><label class="ropt" for="flow_inherit_outside_in">the outermost nodes (flowing in)</label></span>
 </div>
 </fieldset>
@@ -468,16 +468,16 @@ Use <input name="flow_inheritfrom" type="radio" id="flow_inherit_none" value="no
 Layout Options<span id="layout_options_hint">...</span></h2>
 <div id="layout_options" class="form_chunk" style="display: none;">
 <div class="form_elements1 text_center">
-<small>Note: these options only apply to diagrams<br /> with 3 or more columns of nodes:</small>
+<small>Note: these options only apply to diagrams<br> with 3 or more columns of nodes:</small>
 
 <table style="width: 100%;"><tr>
 <td>
-<input type="checkbox" id="layout_justifyorigins" value="1" onchange="process_sankey();"><br />
-<label for="layout_justifyorigins" class="ropt">Place all<br /> flow <strong>origins</strong><br /> at the <strong>left</strong> edge</label>
+<input type="checkbox" id="layout_justifyorigins" value="1" onchange="process_sankey();"><br>
+<label for="layout_justifyorigins" class="ropt">Place all<br> flow <strong>origins</strong><br> at the <strong>left</strong> edge</label>
 </td>
 <td class="text_right">
-<input type="checkbox" id="layout_justifyends" value="1" onchange="process_sankey();"><br />
-<label for="layout_justifyends" class="spaced_label ropt">Place all<br /> flow <strong>endpoints</strong><br /> at the <strong>right</strong> edge</label>
+<input type="checkbox" id="layout_justifyends" value="1" onchange="process_sankey();"><br>
+<label for="layout_justifyends" class="spaced_label ropt">Place all<br> flow <strong>endpoints</strong><br> at the <strong>right</strong> edge</label>
 </td>
 </tr></table>
 </div>
@@ -487,9 +487,9 @@ Layout Options<span id="layout_options_hint">...</span></h2>
 </p>
 
 <p class="form_elements1 text_center">
-<strong>Diagram Scale</strong> = <span id="scale_figures"></span><br />
-For fair comparisons <em>between</em> diagrams:<br />
-1) Use the same units for each, and 2) Make their<br />
+<strong>Diagram Scale</strong> = <span id="scale_figures"></span><br>
+For fair comparisons <em>between</em> diagrams:<br>
+1) Use the same units for each, and 2) Make their<br>
 Diagram Scales match as closely as possible.
 </p>
 
@@ -560,7 +560,7 @@ Diagram Scales match as closely as possible.
 <div id="generatedLink" class="long-link-area text_left" contenteditable="true">(generating link...)</div>
 <div class="hs align-start space-around">
 <p style="max-width: 25em;">Visiting this link will take anyone to the 'Build' interface and fill in the same data and settings you have now.</p>
-<p class="text_center"><button id="copyLinkButton" class="loadsave_button" onclick="copyGeneratedLink(); return false;">⧉ Copy Public Link</button><br /><span id="copiedMsg"></span></p>
+<p class="text_center"><button id="copyLinkButton" class="loadsave_button" onclick="copyGeneratedLink(); return false;">⧉ Copy Public Link</button><br><span id="copiedMsg"></span></p>
 </div>
 </div>
   </section>
@@ -588,7 +588,7 @@ Diagram Size &amp; Background<span id="diagram_options_hint">:</span></h2>
 
 <label for="bg_color" class="spaced_label"><strong>Background Color:</strong></label>
 <input type="color" id="bg_color" size="7" maxlength="7" value="#FFFFFF" onchange="process_sankey();">
-<input type="checkbox" id="bg_transparent" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="bg_transparent" class="ropt">Transparent</label><br />
+<input type="checkbox" id="bg_transparent" value="1" onchange="process_sankey();" class="spaced_checkbox"><label for="bg_transparent" class="ropt">Transparent</label><br>
 </p>
 
 <p class="form_elements2">
@@ -689,7 +689,7 @@ Move Nodes by <em>dragging</em>. Double-click a Node to reset, or: <button type=
     </p>
     <p>
   <small><a href="https://github.com/nowthis/sankeymatic" title="(new window) SankeyMATIC source code at GitHub" target="_blank" rel="noopener"><strong>Source code</strong> is available</a> at GitHub.<br>
-  SankeyMATIC builds on the open source tool <a href="http://d3js.org/" title="(new window) D3's home page" target="_blank" rel="noopener">D3.js</a><br />
+  SankeyMATIC builds on the open source tool <a href="http://d3js.org/" title="(new window) D3's home page" target="_blank" rel="noopener">D3.js</a><br>
   &amp; a modified version of its <a href="https://github.com/d3/d3-sankey" title="(new window) The D3 Sankey plugin at GitHub" target="_blank" rel="noopener">Sankey plugin</a>.
     </small>
     </p>
