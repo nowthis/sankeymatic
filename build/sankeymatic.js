@@ -681,6 +681,7 @@ glob.replaceGraphConfirmed = () => {
   flowsEl.select();
   // ... then replace it with the new content.
   flowsEl.setRangeText(savedRecipe.flows, 0, flowsEl.selectionEnd, 'start');
+  glob.fileIsDirty = true;
 
   // Un-focus the input field (on tablets, this keeps the keyboard from
   // auto-popping-up):
@@ -1928,7 +1929,9 @@ glob.saveDiagramToFile = () => {
   );
 };
 
+// Loads a diagram file from the file input, supported by all browsers
 glob.loadDiagramFile = async () => {
+  console.debug("Using fallback file loading flow without auto-update");
   const fileList = el('load_diagram_from_file').files;
 
   // Did the user provide a file?
@@ -1939,6 +1942,63 @@ glob.loadDiagramFile = async () => {
     userFileName = fileList[0].name;
   setUpNewInputs(uploadedText, highlightSafeValue(userFileName));
   glob.process_sankey();
+};
+  
+// Loads the contents of a file
+glob.loadDiagramFromFileObject = async (fileObject) => {
+  // Keep track of the latest file metadata
+  glob.loadedFileObject = fileObject;
+  if (glob.loadedFileObject.size > 10000000 /* 10 MB */) {
+    console.error("File too large");
+    return;
+  }
+  const fileContents = await glob.loadedFileObject.text();
+  setUpNewInputs(
+    fileContents,
+    highlightSafeValue(glob.loadedFileObject.name)
+  );
+  glob.process_sankey();
+
+  glob.fileIsDirty = false;
+};
+
+// Handle file opening in the modern way, which allows auto-reloading
+// Not supported by all browsers, so the classic method is a fallback.
+glob.loadDiagramFileModern = async (clickEvent) => {
+  if (!glob.showOpenFilePicker) {
+    // Return from the click handler of the file input,
+    // which will continue with the fallback method.
+    return;
+  }
+  // Prevents the file input from opening a file picker, as that's just a fallback method
+  clickEvent.preventDefault();
+
+  // Choose a file and load it
+  const [fileHandle] = await showOpenFilePicker({
+    types: [
+      {
+        accept: { "text/plain": [".txt", ".text", ".skm"] },
+      },
+    ],
+  });
+  await glob.loadDiagramFromFileObject(await fileHandle.getFile());
+
+  // Auto-updates whenever the file changes, unless it has been changed in the textbox
+  el(userInputsField).addEventListener("input", () => { glob.fileIsDirty = true; });
+  clearInterval(glob.autoUpdater);
+  glob.autoUpdater = setInterval(async () => {
+    if (glob.fileIsDirty) {
+      // The file was edited in the browser after the last load, so don't overwrite those changes with the file contents.
+      clearInterval(glob.autoUpdater);
+      return;
+    }
+
+    // Check the file system for a changed modified date.
+    const newFileObject = await fileHandle.getFile();
+    if (newFileObject.lastModified > glob.loadedFileObject.lastModified) {
+      glob.loadDiagramFromFileObject(newFileObject);
+    }
+  }, 400);
 };
 
 // MARK dialog functions
@@ -2757,11 +2817,13 @@ ${escapeHTML(ef.target.logName ?? ef.target.tipName)}${unknownMsg}`
   if (glob.newInputsImportedFrom) {
     // Drop all the auto-generated content and all successful settings:
     el(userInputsField).value = removeAutoLines(updatedSourceLines);
+    glob.fileIsDirty = true;
     // Also, leave them a note confirming where the inputs came from.
     msg.add(`Imported diagram from ${glob.newInputsImportedFrom}`);
     glob.newInputsImportedFrom = null;
   } else {
     el(userInputsField).value = updatedSourceLines.join('\n');
+    glob.fileIsDirty = true;
   }
 
   // Were there any good flows at all? If not, offer a little help and then
