@@ -136,9 +136,10 @@ labels relativesize 100
 
   // Attribute lines look like: ".command value"
   // Examples: .label "", (future:) .color lightseagreen, .minvalue 1000
-  reAttributeLine = /^\.([a-z]+)\s+(.+)$/i,
+  // Note: Uses single space \s then (.*) to preserve leading whitespace in value
+  reAttributeLine = /^\.([a-z]+)\s(.*)$/i,
   // validAttributes map: skmObjectType => Set([valid attribute strings])
-  validAttributes = new Map([[NODE_OBJ, new Set(['label'])]]),
+  validAttributes = new Map([[NODE_OBJ, new Set(['label', 'prefix', 'suffix'])]]),
 
   reFlowTargetWithSuffix = /^(.+)\s+(#\S+)$/,
 

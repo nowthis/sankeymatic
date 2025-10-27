@@ -272,12 +272,16 @@ function updateMarks(stringIn, numberMarks) {
 }
 
 // formatUserData: produce a value in the user's designated format:
-function formatUserData(numberIn, nStyle) {
+// Optionally accepts per-node prefix/suffix overrides
+function formatUserData(numberIn, nStyle, prefixOverride, suffixOverride) {
   const nString = updateMarks(
     d3.format(`,.${nStyle.decimalPlaces}${nStyle.trimString}f`)(numberIn),
     nStyle.marks
   );
-  return `${nStyle.prefix}${nString}${nStyle.suffix}`;
+  // Use overrides if provided (including empty strings), otherwise use the style's values
+  const actualPrefix = prefixOverride !== undefined ? prefixOverride : nStyle.prefix;
+  const actualSuffix = suffixOverride !== undefined ? suffixOverride : nStyle.suffix;
+  return `${actualPrefix}${nString}${actualSuffix}`;
 }
 
 // initializeDiagram: Reset the SVG tag to have the chosen size &
@@ -1063,7 +1067,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
           || (cfg.labelvalue_appears && cfg.labelvalue_position === 'above'),
       })),
       valObj = {
-        txt: withUnits(n.value),
+        txt: formatUserData(n.value, numberStyle, n.prefix, n.suffix),
         weight: cfg.labelvalue_weight,
         size: valueSize,
         newLine: (cfg.labelname_appears && cfg.labelvalue_position === 'below'),
@@ -1274,7 +1278,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // Everything with this class value will move with the Node when it is
     // dragged:
     n.css_class = `for_${n.dom_id}`; // for_r0, for_r1...
-    n.tooltip = `${n.tipName}:\n${withUnits(n.value)}`;
+    n.tooltip = `${n.tipName}:\n${formatUserData(n.value, numberStyle, n.prefix, n.suffix)}`;
     n.opacity = n.opacity || cfg.node_opacity;
 
     // Fill in any missing Node colors. (Flows may inherit from these.)
@@ -1329,7 +1333,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     .forEach((f) => {
     f.dom_id = `flow${f.index}`; // flow0, flow1...
     f.tooltip
-      = `${f.source.tipName} → ${f.target.tipName}: ${withUnits(f.value)}`;
+      = `${f.source.tipName} → ${f.target.tipName}: ${formatUserData(f.value, numberStyle, f.source.prefix, f.source.suffix)}`;
     // Fill in any missing opacity values and the 'hover' counterparts:
     f.opacity = f.opacity || cfg.flow_opacity;
     // Hover opacity = halfway between the user's opacity and 1.0:
@@ -2172,6 +2176,36 @@ ${unquotingResult.message}`
         thisNode.tipName = flatten(thisNode.name);
         delete thisNode.logName;
       }
+    }
+
+    // Is the user providing a custom prefix?
+    if (nodeParams.prefix !== undefined) {
+      const unquotingResult = tryUnquotingString(nodeParams.prefix);
+      if (!unquotingResult.success) {
+        warnAbout(
+          nodeParams.prefix,
+          `In <code>prefix</code> for ${thisNode.name}:
+${unquotingResult.message}`
+        );
+      }
+      // Store the unquoted prefix (could be empty string to clear global prefix)
+      thisNode.prefix = unquotingResult.data ?? nodeParams.prefix;
+      delete nodeParams.prefix;
+    }
+
+    // Is the user providing a custom suffix?
+    if (nodeParams.suffix !== undefined) {
+      const unquotingResult = tryUnquotingString(nodeParams.suffix);
+      if (!unquotingResult.success) {
+        warnAbout(
+          nodeParams.suffix,
+          `In <code>suffix</code> for ${thisNode.name}:
+${unquotingResult.message}`
+        );
+      }
+      // Store the unquoted suffix (could be empty string to clear global suffix)
+      thisNode.suffix = unquotingResult.data ?? nodeParams.suffix;
+      delete nodeParams.suffix;
     }
 
     // For non-blank items remaining in nodeParams, copy them to thisNode:
