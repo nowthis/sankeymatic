@@ -23,3 +23,9 @@ Produced by **Steve Bogart** ([@nowthis@tilde.zone](https://tilde.zone/@nowthis)
 SankeyMATIC was inspired by the big energy flow diagram in [d3](http://d3js.org/)'s gallery of examples (visible these days [at ObservableHQ](https://observablehq.com/@d3/sankey)).
 
 Initially built on a [fork of that very d3 Sankey library](https://github.com/nowthis/d3-plugin-captain-sankey) and evolving from there, SankeyMATIC is intended to make it possible for anyone with a web browser to generate complex and beautiful flow diagrams while requiring zero knowledge of coding.
+
+### Run using Docker
+
+```shell
+docker run -d -p 80:80 lnxslck/sankeymatic:latest
+```
