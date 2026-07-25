@@ -36,7 +36,7 @@ const MAXBREAKPOINT = 9999,
     ['node_color', ['color', '#888888', []]],
     ['node_opacity', ['decimal', 1.0, []]],
     ['flow_curvature', ['decimal', 0.5, []]],
-    ['flow_inheritfrom', ['radio', 'none', ['source', 'target', 'outside-in', 'none']]],
+    ['flow_inheritfrom', ['radio', 'none', ['source', 'target', 'source-target', 'outside-in', 'none']]],
     ['flow_color', ['color', '#999999', []]],
     ['flow_opacity', ['decimal', 0.45, []]],
     ['layout_order', ['radio', 'automatic', ['automatic', 'exact']]],
@@ -150,6 +150,14 @@ labels relativesize 100
 
   reFlowTargetWithSuffix = /^(.+)\s+(#\S+)$/,
 
+  // TODO xxx - update reColorPlusOpacity to handle start and end colors for gradient
+  // Currently:       Name [#color[.opacity]] .... but actually is #[color][.opacity]
+  // Should handle:   Name #[[color][-color]][.opacity]]
+  //  -- examples:      #.25                    opacity only
+  //                    #606  #606.25           color / or plus opacity
+  //                    #606-999  #606-999.25   color gradient / or plus opacity
+//  change to regex needs to wait until supporting code is updated to handle it
+//  reColorPlusOpacity = /^#(([a-f0-9]{3,6})(-[a-f0-9]{3,6})?)?(\.\d{1,4})?$/i,
   reColorPlusOpacity = /^#([a-f0-9]{3,6})?(\.\d{1,4})?$/i,
   reBareColor = /^(?:[a-f0-9]{3}|[a-f0-9]{6})$/i,
   reRGBColor = /^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i,
@@ -415,8 +423,8 @@ yellowgreen`.split(' ')),
         node_h: 50,
         node_spacing: 80,
         node_border: 0,
-        node_theme: 'none',
-        flow_inheritfrom: 'none',
+        node_theme: 'c',
+        flow_inheritfrom: 'source-target',
         layout_justifyends: 'n',
         layout_order: 'automatic',
         labelname_size: 18,

@@ -405,12 +405,12 @@ glob.saveDiagramAsSVG = () => {
     // Add a title placeholder & credit comment after the FIRST tag:
     .replace(
       />/,
-      '>\r\n<title>Your Diagram Title</title>\r\n'
+      '>\r\n<title>Sankey Diagram</title>\r\n'
           + `<!-- Generated with SankeyMATIC: ${glob.humanTimestamp()} -->\r\n`
       )
     // Add some line breaks to highlight where [g]roups start/end
-    // and where each path/text/rect begins:
-    .replace(/><(g|\/g|path|text|rect)/g, '>\r\n<$1');
+    // and where each path/text/rect/gradient definition begins:
+    .replace(/><(g|\/g|path|text|rect|defs|linearGradient)/g, '>\r\n<$1');
   downloadATextFile(svgForExport, `sankeymatic_${glob.fileTimestamp()}.svg`);
 };
 
@@ -426,7 +426,21 @@ function flatFlowPathMaker(f) {
     syTop = f.source.y + f.sy,         // source flow top
     tyBot = f.target.y + f.ty + f.dy;  // target flow bottom
 
-  f.renderAs = 'flat'; // Render this path as a filled parallelogram
+  // TODO - we use a gradient if two colors exist, but do not care if they are
+  // the same.  Because the rendering is slightly different - for flat we have
+  // a stroked outline, for curved we have a different algorithm entirely - we
+  // keep it this way so the final result depends on whether a gradient is 
+  // intended, and not whether the actual gradient is visible or not.
+  if (! f.gradientcolor && f.gradientcolor.length === 0) {
+    f.renderAs = 'flat'; // Render this path as a filled parallelogram
+  } else {
+    f.renderAs = 'flatgradient'; // Render this path as a gradient filled parallelogram
+  }
+
+  // TODO: if the source / target bars are manually dragged to flip them
+  // horizontally, then the line should go from source leading edge to target
+  // trailing edge; you can demonstrate this by dragging bars to create sharp angles
+
 
   // This SVG Path spec means:
   // [M]ove to the flow source's top; draw a [v]ertical line down,
@@ -444,8 +458,14 @@ function curvedFlowPathFunction(curvature) {
   return (f) => {
     const syC = f.source.y + f.sy + f.dy / 2, // source flow's y center
       tyC = f.target.y + f.ty + f.dy / 2,     // target flow's y center
-      sEnd = f.source.x + f.source.dx,  // source's trailing edge
-      tStart = f.target.x;              // target's leading edge
+      sEnd = f.source.x + f.source.dx,        // source's trailing edge
+      tStart = f.target.x,                    // target's leading edge
+                                        // - extra for gradient shapes
+      syT = f.source.y + f.sy,          // source flow's y top
+      syB = f.source.y + f.sy + f.dy,   // source flow's y bottom
+      tyT = f.target.y + f.ty,          // target flow's y top
+      tyB = f.target.y + f.ty + f.dy,   // target flow's y bottom
+      flH = f.dy;                       // target flow's height
 
     // Watch out for a nearly-straight path (total rise/fall < 2 pixels OR
     // very little horizontal space to work with).
@@ -455,22 +475,66 @@ function curvedFlowPathFunction(curvature) {
       return flatFlowPathMaker(f);
     }
 
-    f.renderAs = 'curved'; // Render this path as a curved stroke
 
-    // Make the curved path:
-    // Set up a function for interpolating between the two x values:
-    const xinterpolate = d3.interpolateNumber(sEnd, tStart),
-      // Pick 2 curve control points given the curvature & its converse:
-      xcp1 = xinterpolate(curvature),
-      xcp2 = xinterpolate(1 - curvature);
-    // This SVG Path spec means:
-    // [M]ove to the center of the flow's start [sx,syC]
-    // Draw a Bezier [C]urve using control points [xcp1,syC] & [xcp2,tyC]
-    // End at the center of the flow's target [tx,tyC]
-    return (
-      `M${ep(sEnd)} ${ep(syC)}C${ep(xcp1)} ${ep(syC)} \
-${ep(xcp2)} ${ep(tyC)} ${ep(tStart)} ${ep(tyC)}`
-    );
+
+
+    // If the flow is one color we use a single stroke from start to end,
+    // defined as a thick line.
+    if (! f.gradientcolor && f.gradientcolor.length === 0) {
+      f.renderAs = 'curved';
+
+      // Make the curved path:
+      // Set up a function for interpolating between the two x values:
+      const xinterpolate = d3.interpolateNumber(sEnd, tStart),
+        // Pick 2 curve control points given the curvature & its converse:
+        xcp1 = xinterpolate(curvature),
+        xcp2 = xinterpolate(1 - curvature);
+      // This SVG Path spec means:
+      // [M]ove to the center of the flow's start [sx,syC]
+      // Draw a Bezier [C]urve using control points [xcp1,syC] & [xcp2,tyC]
+      // End at the center of the flow's target [tx,tyC]
+      return (
+        `M${ep(sEnd)} ${ep(syC)}C${ep(xcp1)} ${ep(syC)} \
+  ${ep(xcp2)} ${ep(tyC)} ${ep(tStart)} ${ep(tyC)}`
+      );
+    }
+    // If the flow is a gradient color then we need to construct a
+    // less pretty, but filled shape with a bezier curve top and bottom.
+    //
+    // NOTE: for high levels of curviness this starts to look very different
+    // to "curved" rendering above, by becoming of variable width
+    // e.g. see this https://stackoverflow.com/questions/79353825/2d-how-to-make-bezier-curve-line-has-width-by-using-python
+    // as a demonstration of the difference between a bezier curve of given width
+    // and the shape inside two bezier curves offset by that width.
+    //
+    // TODO: it's possible the d3 area.curve functions can already handle this.
+    //
+    else {
+      f.renderAs = 'curvedgradient';
+
+      // Make the curved path:
+      // Set up a function for interpolating between the two x values:
+      const xinterpolate = d3.interpolateNumber(sEnd, tStart),
+        // Pick 2 curve control points given the curvature & its converse:
+        xcp1 = xinterpolate(curvature),
+        xcp2 = xinterpolate(1 - curvature);
+      // This SVG Path spec means:
+      // [M]ove to the top flow's start [sx,syT]
+      // Draw a Bezier [C]urve using control points [xcp1,syT] & [xcp2,tyT]
+      // move [v]ertically (relative), the height of the flow (flH)
+      // Draw the same bezier in reverse (to end at bottom of flow's start bar)
+      // finally, [Z] closes the shape
+      return (
+        `M${ep(sEnd)} ${ep(syT)}\
+  C${ep(xcp1)} ${ep(syT)} ${ep(xcp2)} ${ep(tyT)} ${ep(tStart)} ${ep(tyT)}\
+  v${ep(flH)}\
+  C${ep(xcp2)} ${ep(tyB)} ${ep(xcp1)} ${ep(syB)} ${ep(sEnd)} ${ep(syB)}\
+  Z`
+      );
+    }
+
+
+
   };
 }
 
@@ -1036,6 +1100,13 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     }
   }
 
+  // hasGradientFilter(i): true/false value indicating whether the given
+  // flow has a gradient (versus solid color) defined.
+  function hasGradientFilter(i) {
+    return (i.gradientcolor || i.gradientcolor.length > 0);
+  }
+
+
   // MARK Shadow logic
 
   // shadowFilter(i): true/false value indicating whether to display an item.
@@ -1356,7 +1427,7 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // Hover opacity = halfway between the user's opacity and 1.0:
     f.opacity_on_hover = 0.5 + Number(f.opacity) / 2;
 
-    // Derive any missing Flow colors.
+    // Calculate any missing Flow colors (those not specified in the input text)
     if (f.color === '') {
       // Stroke Color priority order:
       // 0. If it's a shadow, just color it gray.
@@ -1374,6 +1445,11 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         switch (cfg.flow_inheritfrom) {
           case 'source': f.color = f.source.color; break;
           case 'target': f.color = f.target.color; break;
+	  case 'source-target':
+	    // save both colors
+            f.color = f.source.color;
+	    f.gradientcolor = f.target.color;
+	    break; 
           case 'outside-in':
             // Is the flow's midpoint in the right half, or left?
             // (In the exact middle, we use the source color.)
@@ -1386,8 +1462,9 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
         }
       }
     }
-    // Set up alternative values to enable the current flow to be
-    // rendered as either flat or curved:
+    // Set up additional values to enable the flow to be rendered as
+    // either flat or curved, and solid or gradient filled.
+    // 
     // When a flow is FLAT:
     //  * It's really a parallelogram, so it needs a 'fill' value.
     //  * We still add a stroke because very angled flows can look too
@@ -1395,8 +1472,16 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
     // When a flow is CURVED:
     //  * No fill; only stroke-width!
     //  * stroke-width is set to at least 1px so tiny flows can be seen.
-    f.fill = { flat: f.color, curved: 'none' };
-    f.stroke_width = { flat: 0.5, curved: Math.max(1, f.dy) };
+    // When a flow has a GRADIENT:
+    //  * Use a fill of the gradient that's defined in a "defs" block
+    //  * Set stroke-width to zero since the stroke is not also gradiented
+    f.fill = { flat: f.color, curved: 'none',
+               flatgradient: "url('#gradient-" + f.dom_id + "')",
+               curvedgradient: "url('#gradient-" + f.dom_id + "')" };
+
+    f.stroke_width = { flat: 0.5, curved: Math.max(1, f.dy),
+	               flatgradient: 0, curvedgradient: 0 };
+
   });
 
   // At this point, allNodes and allFlows are ready to go. Draw!
@@ -1478,6 +1563,35 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
   // Add a tooltip for each flow:
   diagFlows.append('title').text((f) => f.tooltip);
 
+
+  // If any of our flows have a gradient (see hasGradientFilter) we generate
+  // linearGradient definitions for each one.  This will take effect on the
+  // "source-target" flow inherited color, or (future) via manual definition.
+  // 
+  // NOTE: if there are no gradients we leave behind an empty "defs" block; 
+  // it does not cause a problem, but an optimisation would be to detect this
+  // and omit it if needed.
+  const diagGradients = diagMain.append("defs")
+      .attr("id", "source-target-gradients")
+	  .selectAll()
+	  .data(allFlows.filter(hasGradientFilter))
+	  .enter()
+	  .append("linearGradient")
+          .attr("id", (f) => "gradient-" + f.dom_id)
+	  // if bars are dragged to opposite sides of the canvas, we need to invert
+	  // the gradient; note there is no need for y co-ords for gradient line.
+	  .attr("x1", (f) => f.target.x > f.source.x ? "5%" : "95%")
+	  .attr("x2", (f) => f.target.x > f.source.x ? "95%" : "5%")
+	  // sort alphabetically
+	  .sort((a, b) => b.dom_id - a.dom_id);
+
+
+  // add first and second stop for each gradient definition.
+  // In the event that f.gradientcolor is not defined we default to f.color
+  diagGradients.append("stop").attr("offset", "0%").attr("stop-color", (f) => f.color);
+  diagGradients.append("stop").attr("offset", "100%").attr("stop-color", (f) => f.gradientcolor || f.color);
+
+
   // MARK Drag functions for Nodes
 
   // isAZeroMove: simple test of whether every offset is 0 (no move at all):
@@ -1550,6 +1664,12 @@ function render_sankey(allNodes, allFlows, cfg, numberStyle) {
       // so derive those attributes again:)
       .attr('fill', (f) => f.fill[f.renderAs])
       .attr('stroke-width', (f) => ep(f.stroke_width[f.renderAs]));
+
+    // For every gradient, flip it if the bars have been inverted
+    diagGradients
+	  .attr("x1", (f) => f.target.x > f.source.x ? "5%" : "95%")
+	  .attr("x2", (f) => f.target.x > f.source.x ? "95%" : "5%");
+
   }
 
   // Show helpful guides/content for the current drag. We put it all in a
@@ -2054,8 +2174,7 @@ style="background-color: ${swRGB};">&nbsp;</span>`
         renderedGuide = colorset
           .map((c) => makeSpanTag(c, colorset.length, theme.d3Name))
           .join('');
-        // SOMEDAY: Add an indicator for which colors are/are not
-        // in use?
+        // SOMEDAY: Add an indicator for which colors are/are not in use?
       el(`theme_${t}_guide`).innerHTML = renderedGuide;
       el(`theme_${t}_label`).textContent = theme.nickname;
     }
@@ -2552,16 +2671,22 @@ ${escapeHTML(lineIn)}`
         sourceRow: flow.sourceRow,
         operation: flow.operation,
         value: flow.amount,
-        color: '', // may be overwritten below
+        color: '',   // may be overwritten below
+        gradientcolor: '',  // special case for source-target gradient; not otherwise used
         opacity: '', // ""
       },
+
+      // TODO -- the new "color gradient" addition calls for this to be
+      // expanded to allow for flow.color and also flow.gradientcolor to be defined
+      // here.  I would imagine Name #[[color[-color]][.opacity]] would work well.
+
       // Try to parse any extra info that isn't actually the target's name.
       // The format of the Target string can be: "Name [#color[.opacity]]"
       //   e.g. 'x [...] y #99aa00' or 'x [...] y #99aa00.25'
       // Look for a candidate string starting with # for color info:
       flowTargetPlus = flow.target.match(reFlowTargetWithSuffix);
     if (flowTargetPlus !== null) {
-      // IFF the # string matches a stricter pattern, separate the target
+      // IF the # string matches a stricter pattern, separate the target
       // string into parts:
       const [, possibleNodeName, possibleColor] = flowTargetPlus,
         colorOpacity = possibleColor.match(reColorPlusOpacity);
