@@ -2826,14 +2826,41 @@ ${escapeHTML(ef.target.logName ?? ef.target.tipName)}${unknownMsg}`
   // Having processed all the lines now -- if the current inputs came from a
   // file or from a URL, we can clean out all the auto-generated stuff,
   // leaving just the user's inputs:
+  const userInputsEl = el(userInputsField);
   if (glob.newInputsImportedFrom) {
     // Drop all the auto-generated content and all successful settings:
-    el(userInputsField).value = removeAutoLines(updatedSourceLines);
+    userInputsEl.value = removeAutoLines(updatedSourceLines);
     // Also, leave them a note confirming where the inputs came from.
     msg.add(`Imported diagram from ${glob.newInputsImportedFrom}`);
     glob.newInputsImportedFrom = null;
-  } else {
-    el(userInputsField).value = updatedSourceLines.join('\n');
+  } else if (linesWithValidSettings.size) {
+    // Marking lines is the only thing which can change the field's text here,
+    // so when nothing was marked we leave it completely alone -- that is the
+    // common case while someone is typing, and it keeps their caret and their
+    // undo history intact.
+    // Replacing .value does send the caret to the end, so put it back. Every
+    // marked line at or above a position pushed that position along by the
+    // length of the prefix we inserted:
+    const hadFocus = document.activeElement === userInputsEl,
+      priorSelStart = userInputsEl.selectionStart,
+      priorSelEnd = userInputsEl.selectionEnd;
+    userInputsEl.value = updatedSourceLines.join('\n');
+    if (hadFocus) {
+      const prefixLen = settingsAppliedPrefix.length;
+      let lineStart = 0, startShift = 0, endShift = 0;
+      origSourceLines.forEach((l, row) => {
+        if (linesWithValidSettings.has(row)) {
+          if (lineStart <= priorSelStart) { startShift += prefixLen; }
+          if (lineStart <= priorSelEnd) { endShift += prefixLen; }
+        }
+        lineStart += l.length + 1; // + 1 for the line's newline
+      });
+      const maxPos = userInputsEl.value.length;
+      userInputsEl.setSelectionRange(
+        clamp(priorSelStart + startShift, 0, maxPos),
+        clamp(priorSelEnd + endShift, 0, maxPos)
+      );
+    }
   }
 
   // Were there any good flows at all? If not, offer a little help and then

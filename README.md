@@ -18,6 +18,14 @@ Produced by **Steve Bogart** ([@nowthis@tilde.zone](https://tilde.zone/@nowthis)
 * [d3.js](https://github.com/d3/d3) version 7.x
 * [Canvg](https://github.com/canvg/canvg) 3.0.9
 
+### Running the tests:
+
+The text transforms behind the Diagram Inputs keyboard shortcuts have unit tests. They use only Node's built-in test runner, so there is nothing to install:
+
+```
+node --test test/
+```
+
 ### Background:
 
 SankeyMATIC was inspired by the big energy flow diagram in [d3](http://d3js.org/)'s gallery of examples (visible these days [at ObservableHQ](https://observablehq.com/@d3/sankey)).
